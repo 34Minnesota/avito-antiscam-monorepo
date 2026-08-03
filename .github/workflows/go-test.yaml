@@ -1,0 +1,57 @@
+name: Run go test
+
+on:
+  workflow_call:
+    inputs:
+      go-version:
+        required: false
+        type: string
+        default: "1.26"
+      working-directory:
+        required: false
+        type: string
+        default: "backend"
+      test-packages:
+        required: false
+        type: string
+        default: "./..."
+      coverage-threshold:
+        required: false
+        type: number
+        default: 80
+      run-race:
+        required: false
+        type: boolean
+        default: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ inputs.go-version }}
+          cache: true
+
+      - name: Run test
+        run: |
+          RACE_FLAG=""
+          if [ "${{ inputs.run-race }}" = "true" ]; then
+            RACE_FLAG="-race"
+          fi
+          go test -v $RACE_FLAG -coverprofile=coverage.out -covermode=atomic ${{ inputs.test-packages }}
+          go tool cover -html=coverage.out -o coverage.html
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: coverage-report-${{ github.run_id }}
+          path: |
+            coverage.html
+            coverage.out
+          retention-days: 5
+          if-no-files-found: warn

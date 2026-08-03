@@ -14,6 +14,7 @@ import (
 	"net/url"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/gin-gonic/gin"
@@ -100,20 +101,22 @@ func (e ScreenType) Valid() bool {
 type ActionResult struct {
 	Attempt  AttemptState `json:"attempt"`
 	Feedback struct {
-		Explanation string   `json:"explanation"`
-		RiskMarkers []string `json:"riskMarkers"`
-		ScoreDelta  int      `json:"scoreDelta"`
+		Explanation string       `json:"explanation"`
+		RiskMarkers []RiskMarker `json:"riskMarkers"`
+		ScoreDelta  int          `json:"scoreDelta"`
 	} `json:"feedback"`
 }
 
 // AttemptState defines model for AttemptState.
 type AttemptState struct {
 	AttemptId    openapi_types.UUID `json:"attemptId"`
+	IsOutdated   bool               `json:"isOutdated"`
 	Revision     int                `json:"revision"`
 	ScenarioSlug string             `json:"scenarioSlug"`
-	Score        int                `json:"score"`
+	Score        Score              `json:"score"`
 	Screen       Screen             `json:"screen"`
 	Status       AttemptStateStatus `json:"status"`
+	Version      ScenarioVersion    `json:"version"`
 }
 
 // AttemptStateStatus defines model for AttemptState.Status.
@@ -125,9 +128,12 @@ type AvailableAction struct {
 	TransitionId openapi_types.UUID `json:"transitionId"`
 }
 
-// CreateSessionResponse defines model for CreateSessionResponse.
-type CreateSessionResponse struct {
-	SessionId openapi_types.UUID `json:"sessionId"`
+// CurrentVersionProgress defines model for CurrentVersionProgress.
+type CurrentVersionProgress struct {
+	ActiveAttemptId *openapi_types.UUID `json:"activeAttemptId"`
+	AttemptsCount   int                 `json:"attemptsCount"`
+	BestScore       *Score              `json:"bestScore"`
+	Completed       bool                `json:"completed"`
 }
 
 // Error defines model for Error.
@@ -137,32 +143,87 @@ type Error struct {
 	RequestId *string `json:"requestId,omitempty"`
 }
 
+// HistoricalVersionProgress defines model for HistoricalVersionProgress.
+type HistoricalVersionProgress struct {
+	AttemptsCount int             `json:"attemptsCount"`
+	BestScore     *Score          `json:"bestScore"`
+	Completed     bool            `json:"completed"`
+	CompletedAt   *time.Time      `json:"completedAt"`
+	Version       ScenarioVersion `json:"version"`
+}
+
+// OutdatedActiveAttempt defines model for OutdatedActiveAttempt.
+type OutdatedActiveAttempt struct {
+	AttemptId      openapi_types.UUID `json:"attemptId"`
+	CurrentVersion ScenarioVersion    `json:"currentVersion"`
+	ScenarioSlug   string             `json:"scenarioSlug"`
+	ScenarioTitle  string             `json:"scenarioTitle"`
+	Version        ScenarioVersion    `json:"version"`
+}
+
+// ProgressResponse defines model for ProgressResponse.
+type ProgressResponse struct {
+	CompletedScenarios     int                     `json:"completedScenarios"`
+	CompletionPercent      int                     `json:"completionPercent"`
+	OutdatedActiveAttempts []OutdatedActiveAttempt `json:"outdatedActiveAttempts"`
+	Roles                  []RoleProgress          `json:"roles"`
+	TotalScenarios         int                     `json:"totalScenarios"`
+}
+
+// RiskMarker defines model for RiskMarker.
+type RiskMarker struct {
+	Code        string `json:"code"`
+	Description string `json:"description"`
+	Title       string `json:"title"`
+}
+
 // RoleProgress defines model for RoleProgress.
 type RoleProgress struct {
-	Role      RoleProgressRole `json:"role"`
-	Scenarios []struct {
-		AttemptsCount int    `json:"attemptsCount"`
-		BestScore     *int   `json:"bestScore"`
-		Completed     bool   `json:"completed"`
-		Slug          string `json:"slug"`
-	} `json:"scenarios"`
+	CompletedScenarios int                `json:"completedScenarios"`
+	Role               RoleProgressRole   `json:"role"`
+	Scenarios          []ScenarioProgress `json:"scenarios"`
+	TotalScenarios     int                `json:"totalScenarios"`
 }
 
 // RoleProgressRole defines model for RoleProgress.Role.
 type RoleProgressRole string
 
+// ScenarioProgress defines model for ScenarioProgress.
+type ScenarioProgress struct {
+	CurrentProgress CurrentVersionProgress `json:"currentProgress"`
+	CurrentVersion  ScenarioVersion        `json:"currentVersion"`
+
+	// History Прошлые версии не влияют на currentProgress.
+	History      []HistoricalVersionProgress `json:"history"`
+	ScenarioSlug string                      `json:"scenarioSlug"`
+	Title        string                      `json:"title"`
+}
+
 // ScenarioSummary defines model for ScenarioSummary.
 type ScenarioSummary struct {
-	BestScore  *int                `json:"bestScore"`
-	Completed  bool                `json:"completed"`
-	RiskModule string              `json:"riskModule"`
-	Role       ScenarioSummaryRole `json:"role"`
-	Slug       string              `json:"slug"`
-	Title      string              `json:"title"`
+	CurrentProgress CurrentVersionProgress `json:"currentProgress"`
+	CurrentVersion  ScenarioVersion        `json:"currentVersion"`
+	RiskModule      string                 `json:"riskModule"`
+	Role            ScenarioSummaryRole    `json:"role"`
+	Slug            string                 `json:"slug"`
+	Title           string                 `json:"title"`
 }
 
 // ScenarioSummaryRole defines model for ScenarioSummary.Role.
 type ScenarioSummaryRole string
+
+// ScenarioVersion defines model for ScenarioVersion.
+type ScenarioVersion struct {
+	Number      int       `json:"number"`
+	PublishedAt time.Time `json:"publishedAt"`
+}
+
+// Score defines model for Score.
+type Score struct {
+	MaxPoints int `json:"maxPoints"`
+	Percent   int `json:"percent"`
+	Points    int `json:"points"`
+}
 
 // Screen defines model for Screen.
 type Screen struct {
@@ -177,9 +238,6 @@ type ScreenType string
 
 // AttemptID defines model for AttemptID.
 type AttemptID = openapi_types.UUID
-
-// SessionID defines model for SessionID.
-type SessionID = openapi_types.UUID
 
 // BadRequest defines model for BadRequest.
 type BadRequest = Error
@@ -196,35 +254,11 @@ type NotFound = Error
 // Unauthorized defines model for Unauthorized.
 type Unauthorized = Error
 
-// GetAttemptParams defines parameters for GetAttempt.
-type GetAttemptParams struct {
-	XSessionID SessionID `json:"X-Session-ID"`
-}
-
 // ExecuteActionJSONBody defines parameters for ExecuteAction.
 type ExecuteActionJSONBody struct {
+	ClientActionId   openapi_types.UUID `json:"clientActionId"`
 	ExpectedRevision int                `json:"expectedRevision"`
 	TransitionId     openapi_types.UUID `json:"transitionId"`
-}
-
-// ExecuteActionParams defines parameters for ExecuteAction.
-type ExecuteActionParams struct {
-	XSessionID SessionID `json:"X-Session-ID"`
-}
-
-// GetProgressParams defines parameters for GetProgress.
-type GetProgressParams struct {
-	XSessionID SessionID `json:"X-Session-ID"`
-}
-
-// ListScenariosParams defines parameters for ListScenarios.
-type ListScenariosParams struct {
-	XSessionID SessionID `json:"X-Session-ID"`
-}
-
-// CreateAttemptParams defines parameters for CreateAttempt.
-type CreateAttemptParams struct {
-	XSessionID SessionID `json:"X-Session-ID"`
 }
 
 // ExecuteActionJSONRequestBody defines body for ExecuteAction for application/json ContentType.
@@ -237,22 +271,19 @@ type ServerInterface interface {
 	HealthCheck(c *gin.Context)
 
 	// (GET /v1/attempts/{attemptId})
-	GetAttempt(c *gin.Context, attemptId AttemptID, params GetAttemptParams)
+	GetAttempt(c *gin.Context, attemptId AttemptID)
 
 	// (POST /v1/attempts/{attemptId}/actions)
-	ExecuteAction(c *gin.Context, attemptId AttemptID, params ExecuteActionParams)
+	ExecuteAction(c *gin.Context, attemptId AttemptID)
 
 	// (GET /v1/progress)
-	GetProgress(c *gin.Context, params GetProgressParams)
+	GetProgress(c *gin.Context)
 
 	// (GET /v1/scenarios)
-	ListScenarios(c *gin.Context, params ListScenariosParams)
+	ListScenarios(c *gin.Context)
 
 	// (POST /v1/scenarios/{slug}/attempts)
-	CreateAttempt(c *gin.Context, slug string, params CreateAttemptParams)
-
-	// (POST /v1/sessions)
-	CreateSession(c *gin.Context)
+	CreateAttempt(c *gin.Context, slug string)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -292,33 +323,6 @@ func (siw *ServerInterfaceWrapper) GetAttempt(c *gin.Context) {
 		return
 	}
 
-	// Parameter object where we will unmarshal all parameters from the context
-	var params GetAttemptParams
-
-	headers := c.Request.Header
-
-	// ------------- Required header parameter "X-Session-ID" -------------
-	if valueList, found := headers[http.CanonicalHeaderKey("X-Session-ID")]; found {
-		var XSessionID SessionID
-		n := len(valueList)
-		if n != 1 {
-			siw.ErrorHandler(c, fmt.Errorf("Expected one value for X-Session-ID, got %d", n), http.StatusBadRequest)
-			return
-		}
-
-		err = runtime.BindStyledParameterWithOptions("simple", "X-Session-ID", valueList[0], &XSessionID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
-		if err != nil {
-			siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter X-Session-ID: %w", err), http.StatusBadRequest)
-			return
-		}
-
-		params.XSessionID = XSessionID
-
-	} else {
-		siw.ErrorHandler(c, fmt.Errorf("Header parameter X-Session-ID is required, but not found"), http.StatusBadRequest)
-		return
-	}
-
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
 		if c.IsAborted() {
@@ -326,7 +330,7 @@ func (siw *ServerInterfaceWrapper) GetAttempt(c *gin.Context) {
 		}
 	}
 
-	siw.Handler.GetAttempt(c, attemptId, params)
+	siw.Handler.GetAttempt(c, attemptId)
 }
 
 // ExecuteAction operation middleware
@@ -344,33 +348,6 @@ func (siw *ServerInterfaceWrapper) ExecuteAction(c *gin.Context) {
 		return
 	}
 
-	// Parameter object where we will unmarshal all parameters from the context
-	var params ExecuteActionParams
-
-	headers := c.Request.Header
-
-	// ------------- Required header parameter "X-Session-ID" -------------
-	if valueList, found := headers[http.CanonicalHeaderKey("X-Session-ID")]; found {
-		var XSessionID SessionID
-		n := len(valueList)
-		if n != 1 {
-			siw.ErrorHandler(c, fmt.Errorf("Expected one value for X-Session-ID, got %d", n), http.StatusBadRequest)
-			return
-		}
-
-		err = runtime.BindStyledParameterWithOptions("simple", "X-Session-ID", valueList[0], &XSessionID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
-		if err != nil {
-			siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter X-Session-ID: %w", err), http.StatusBadRequest)
-			return
-		}
-
-		params.XSessionID = XSessionID
-
-	} else {
-		siw.ErrorHandler(c, fmt.Errorf("Header parameter X-Session-ID is required, but not found"), http.StatusBadRequest)
-		return
-	}
-
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
 		if c.IsAborted() {
@@ -378,42 +355,12 @@ func (siw *ServerInterfaceWrapper) ExecuteAction(c *gin.Context) {
 		}
 	}
 
-	siw.Handler.ExecuteAction(c, attemptId, params)
+	siw.Handler.ExecuteAction(c, attemptId)
 }
 
 // GetProgress operation middleware
 func (siw *ServerInterfaceWrapper) GetProgress(c *gin.Context) {
 
-	var err error
-	_ = err
-
-	// Parameter object where we will unmarshal all parameters from the context
-	var params GetProgressParams
-
-	headers := c.Request.Header
-
-	// ------------- Required header parameter "X-Session-ID" -------------
-	if valueList, found := headers[http.CanonicalHeaderKey("X-Session-ID")]; found {
-		var XSessionID SessionID
-		n := len(valueList)
-		if n != 1 {
-			siw.ErrorHandler(c, fmt.Errorf("Expected one value for X-Session-ID, got %d", n), http.StatusBadRequest)
-			return
-		}
-
-		err = runtime.BindStyledParameterWithOptions("simple", "X-Session-ID", valueList[0], &XSessionID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
-		if err != nil {
-			siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter X-Session-ID: %w", err), http.StatusBadRequest)
-			return
-		}
-
-		params.XSessionID = XSessionID
-
-	} else {
-		siw.ErrorHandler(c, fmt.Errorf("Header parameter X-Session-ID is required, but not found"), http.StatusBadRequest)
-		return
-	}
-
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
 		if c.IsAborted() {
@@ -421,42 +368,12 @@ func (siw *ServerInterfaceWrapper) GetProgress(c *gin.Context) {
 		}
 	}
 
-	siw.Handler.GetProgress(c, params)
+	siw.Handler.GetProgress(c)
 }
 
 // ListScenarios operation middleware
 func (siw *ServerInterfaceWrapper) ListScenarios(c *gin.Context) {
 
-	var err error
-	_ = err
-
-	// Parameter object where we will unmarshal all parameters from the context
-	var params ListScenariosParams
-
-	headers := c.Request.Header
-
-	// ------------- Required header parameter "X-Session-ID" -------------
-	if valueList, found := headers[http.CanonicalHeaderKey("X-Session-ID")]; found {
-		var XSessionID SessionID
-		n := len(valueList)
-		if n != 1 {
-			siw.ErrorHandler(c, fmt.Errorf("Expected one value for X-Session-ID, got %d", n), http.StatusBadRequest)
-			return
-		}
-
-		err = runtime.BindStyledParameterWithOptions("simple", "X-Session-ID", valueList[0], &XSessionID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
-		if err != nil {
-			siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter X-Session-ID: %w", err), http.StatusBadRequest)
-			return
-		}
-
-		params.XSessionID = XSessionID
-
-	} else {
-		siw.ErrorHandler(c, fmt.Errorf("Header parameter X-Session-ID is required, but not found"), http.StatusBadRequest)
-		return
-	}
-
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
 		if c.IsAborted() {
@@ -464,7 +381,7 @@ func (siw *ServerInterfaceWrapper) ListScenarios(c *gin.Context) {
 		}
 	}
 
-	siw.Handler.ListScenarios(c, params)
+	siw.Handler.ListScenarios(c)
 }
 
 // CreateAttempt operation middleware
@@ -482,33 +399,6 @@ func (siw *ServerInterfaceWrapper) CreateAttempt(c *gin.Context) {
 		return
 	}
 
-	// Parameter object where we will unmarshal all parameters from the context
-	var params CreateAttemptParams
-
-	headers := c.Request.Header
-
-	// ------------- Required header parameter "X-Session-ID" -------------
-	if valueList, found := headers[http.CanonicalHeaderKey("X-Session-ID")]; found {
-		var XSessionID SessionID
-		n := len(valueList)
-		if n != 1 {
-			siw.ErrorHandler(c, fmt.Errorf("Expected one value for X-Session-ID, got %d", n), http.StatusBadRequest)
-			return
-		}
-
-		err = runtime.BindStyledParameterWithOptions("simple", "X-Session-ID", valueList[0], &XSessionID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
-		if err != nil {
-			siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter X-Session-ID: %w", err), http.StatusBadRequest)
-			return
-		}
-
-		params.XSessionID = XSessionID
-
-	} else {
-		siw.ErrorHandler(c, fmt.Errorf("Header parameter X-Session-ID is required, but not found"), http.StatusBadRequest)
-		return
-	}
-
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
 		if c.IsAborted() {
@@ -516,20 +406,7 @@ func (siw *ServerInterfaceWrapper) CreateAttempt(c *gin.Context) {
 		}
 	}
 
-	siw.Handler.CreateAttempt(c, slug, params)
-}
-
-// CreateSession operation middleware
-func (siw *ServerInterfaceWrapper) CreateSession(c *gin.Context) {
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		middleware(c)
-		if c.IsAborted() {
-			return
-		}
-	}
-
-	siw.Handler.CreateSession(c)
+	siw.Handler.CreateAttempt(c, slug)
 }
 
 // GinServerOptions provides options for the Gin server.
@@ -560,7 +437,6 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	}
 
 	router.GET(options.BaseURL+"/healthz", wrapper.HealthCheck)
-	router.POST(options.BaseURL+"/v1/sessions", wrapper.CreateSession)
 	router.GET(options.BaseURL+"/v1/scenarios", wrapper.ListScenarios)
 	router.POST(options.BaseURL+"/v1/scenarios/:slug/attempts", wrapper.CreateAttempt)
 	router.GET(options.BaseURL+"/v1/attempts/:attemptId", wrapper.GetAttempt)
@@ -595,7 +471,6 @@ func (response HealthCheck200Response) VisitHealthCheckResponse(w http.ResponseW
 
 type GetAttemptRequestObject struct {
 	AttemptId AttemptID `json:"attemptId"`
-	Params    GetAttemptParams
 }
 
 type GetAttemptResponseObject interface {
@@ -660,7 +535,6 @@ func (response GetAttempt500JSONResponse) VisitGetAttemptResponse(w http.Respons
 
 type ExecuteActionRequestObject struct {
 	AttemptId AttemptID `json:"attemptId"`
-	Params    ExecuteActionParams
 	Body      *ExecuteActionJSONRequestBody
 }
 
@@ -767,17 +641,13 @@ func (response ExecuteAction500JSONResponse) VisitExecuteActionResponse(w http.R
 }
 
 type GetProgressRequestObject struct {
-	Params GetProgressParams
 }
 
 type GetProgressResponseObject interface {
 	VisitGetProgressResponse(w http.ResponseWriter) error
 }
 
-type GetProgress200JSONResponse struct {
-	Roles          []RoleProgress `json:"roles"`
-	TotalCompleted int            `json:"totalCompleted"`
-}
+type GetProgress200JSONResponse ProgressResponse
 
 func (response GetProgress200JSONResponse) VisitGetProgressResponse(w http.ResponseWriter) error {
 
@@ -820,7 +690,6 @@ func (response GetProgress500JSONResponse) VisitGetProgressResponse(w http.Respo
 }
 
 type ListScenariosRequestObject struct {
-	Params ListScenariosParams
 }
 
 type ListScenariosResponseObject interface {
@@ -839,20 +708,6 @@ func (response ListScenarios200JSONResponse) VisitListScenariosResponse(w http.R
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type ListScenarios400JSONResponse struct{ BadRequestJSONResponse }
-
-func (response ListScenarios400JSONResponse) VisitListScenariosResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(400)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -886,12 +741,25 @@ func (response ListScenarios500JSONResponse) VisitListScenariosResponse(w http.R
 }
 
 type CreateAttemptRequestObject struct {
-	Slug   string `json:"slug"`
-	Params CreateAttemptParams
+	Slug string `json:"slug"`
 }
 
 type CreateAttemptResponseObject interface {
 	VisitCreateAttemptResponse(w http.ResponseWriter) error
+}
+
+type CreateAttempt200JSONResponse AttemptState
+
+func (response CreateAttempt200JSONResponse) VisitCreateAttemptResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
 }
 
 type CreateAttempt201JSONResponse AttemptState
@@ -936,58 +804,9 @@ func (response CreateAttempt404JSONResponse) VisitCreateAttemptResponse(w http.R
 	return err
 }
 
-type CreateAttempt409JSONResponse struct{ ConflictJSONResponse }
-
-func (response CreateAttempt409JSONResponse) VisitCreateAttemptResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(409)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
 type CreateAttempt500JSONResponse struct{ InternalErrorJSONResponse }
 
 func (response CreateAttempt500JSONResponse) VisitCreateAttemptResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(500)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type CreateSessionRequestObject struct {
-}
-
-type CreateSessionResponseObject interface {
-	VisitCreateSessionResponse(w http.ResponseWriter) error
-}
-
-type CreateSession201JSONResponse CreateSessionResponse
-
-func (response CreateSession201JSONResponse) VisitCreateSessionResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(201)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type CreateSession500JSONResponse struct{ InternalErrorJSONResponse }
-
-func (response CreateSession500JSONResponse) VisitCreateSessionResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response); err != nil {
@@ -1019,9 +838,6 @@ type StrictServerInterface interface {
 
 	// (POST /v1/scenarios/{slug}/attempts)
 	CreateAttempt(ctx context.Context, request CreateAttemptRequestObject) (CreateAttemptResponseObject, error)
-
-	// (POST /v1/sessions)
-	CreateSession(ctx context.Context, request CreateSessionRequestObject) (CreateSessionResponseObject, error)
 }
 
 type StrictHandlerFunc func(ctx *gin.Context, request any) (any, error)
@@ -1106,11 +922,10 @@ func (sh *strictHandler) HealthCheck(ctx *gin.Context) {
 }
 
 // GetAttempt operation middleware
-func (sh *strictHandler) GetAttempt(ctx *gin.Context, attemptId AttemptID, params GetAttemptParams) {
+func (sh *strictHandler) GetAttempt(ctx *gin.Context, attemptId AttemptID) {
 	var request GetAttemptRequestObject
 
 	request.AttemptId = attemptId
-	request.Params = params
 
 	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
 		return sh.ssi.GetAttempt(ctx, request.(GetAttemptRequestObject))
@@ -1133,11 +948,10 @@ func (sh *strictHandler) GetAttempt(ctx *gin.Context, attemptId AttemptID, param
 }
 
 // ExecuteAction operation middleware
-func (sh *strictHandler) ExecuteAction(ctx *gin.Context, attemptId AttemptID, params ExecuteActionParams) {
+func (sh *strictHandler) ExecuteAction(ctx *gin.Context, attemptId AttemptID) {
 	var request ExecuteActionRequestObject
 
 	request.AttemptId = attemptId
-	request.Params = params
 
 	var body ExecuteActionJSONRequestBody
 	if err := ctx.ShouldBindJSON(&body); err != nil {
@@ -1167,10 +981,8 @@ func (sh *strictHandler) ExecuteAction(ctx *gin.Context, attemptId AttemptID, pa
 }
 
 // GetProgress operation middleware
-func (sh *strictHandler) GetProgress(ctx *gin.Context, params GetProgressParams) {
+func (sh *strictHandler) GetProgress(ctx *gin.Context) {
 	var request GetProgressRequestObject
-
-	request.Params = params
 
 	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
 		return sh.ssi.GetProgress(ctx, request.(GetProgressRequestObject))
@@ -1193,10 +1005,8 @@ func (sh *strictHandler) GetProgress(ctx *gin.Context, params GetProgressParams)
 }
 
 // ListScenarios operation middleware
-func (sh *strictHandler) ListScenarios(ctx *gin.Context, params ListScenariosParams) {
+func (sh *strictHandler) ListScenarios(ctx *gin.Context) {
 	var request ListScenariosRequestObject
-
-	request.Params = params
 
 	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
 		return sh.ssi.ListScenarios(ctx, request.(ListScenariosRequestObject))
@@ -1219,11 +1029,10 @@ func (sh *strictHandler) ListScenarios(ctx *gin.Context, params ListScenariosPar
 }
 
 // CreateAttempt operation middleware
-func (sh *strictHandler) CreateAttempt(ctx *gin.Context, slug string, params CreateAttemptParams) {
+func (sh *strictHandler) CreateAttempt(ctx *gin.Context, slug string) {
 	var request CreateAttemptRequestObject
 
 	request.Slug = slug
-	request.Params = params
 
 	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
 		return sh.ssi.CreateAttempt(ctx, request.(CreateAttemptRequestObject))
@@ -1245,63 +1054,47 @@ func (sh *strictHandler) CreateAttempt(ctx *gin.Context, slug string, params Cre
 	}
 }
 
-// CreateSession operation middleware
-func (sh *strictHandler) CreateSession(ctx *gin.Context) {
-	var request CreateSessionRequestObject
-
-	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
-		return sh.ssi.CreateSession(ctx, request.(CreateSessionRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "CreateSession")
-	}
-
-	response, err := handler(ctx, request)
-
-	if err != nil {
-		sh.options.HandlerErrorFunc(ctx, err)
-	} else if validResponse, ok := response.(CreateSessionResponseObject); ok {
-		if err := validResponse.VisitCreateSessionResponse(ctx.Writer); err != nil {
-			sh.options.ResponseErrorHandlerFunc(ctx, err)
-		}
-	} else if response != nil {
-		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
-	}
-}
-
 // Base64 encoded, compressed with deflate, json marshaled OpenAPI spec.
 // Stored as a slice of fixed-width chunks rather than one concatenated
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
-	"lx6SSPikSsq62WxsNP4LAAD//w==",
+	"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",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

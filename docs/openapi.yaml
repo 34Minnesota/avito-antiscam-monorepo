@@ -5,36 +5,23 @@ info:
   description: API интерактивного тренажёра безопасных сделок.
 servers:
   - url: /api
+security:
+  - bearerAuth: []
 
 paths:
   /healthz:
     get:
       operationId: healthCheck
+      security: []
       responses:
-        "200":
-          description: Сервис доступен
-
-  /v1/sessions:
-    post:
-      operationId: createSession
-      responses:
-        "201":
-          description: Анонимная сессия создана
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CreateSessionResponse"
-        "500":
-          $ref: "#/components/responses/InternalError"
+        "200": { description: Сервис доступен }
 
   /v1/scenarios:
     get:
       operationId: listScenarios
-      parameters:
-        - $ref: "#/components/parameters/SessionID"
       responses:
         "200":
-          description: Список доступных сценариев
+          description: Сценарии и прогресс в их текущих версиях
           content:
             application/json:
               schema:
@@ -43,208 +30,160 @@ paths:
                 properties:
                   scenarios:
                     type: array
-                    items:
-                      $ref: "#/components/schemas/ScenarioSummary"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "500":
-          $ref: "#/components/responses/InternalError"
+                    items: { $ref: "#/components/schemas/ScenarioSummary" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "500": { $ref: "#/components/responses/InternalError" }
 
   /v1/scenarios/{slug}/attempts:
     post:
       operationId: createAttempt
       parameters:
-        - $ref: "#/components/parameters/SessionID"
         - name: slug
           in: path
           required: true
-          schema:
-            type: string
-            pattern: "^[a-z0-9-]+$"
+          schema: { type: string, pattern: "^[a-z0-9-]+$" }
       responses:
-        "201":
-          description: Попытка начата
+        "200":
+          description: Существующая незавершённая попытка текущей версии
           content:
             application/json:
-              schema:
-                $ref: "#/components/schemas/AttemptState"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "409":
-          $ref: "#/components/responses/Conflict"
-        "500":
-          $ref: "#/components/responses/InternalError"
+              schema: { $ref: "#/components/schemas/AttemptState" }
+        "201":
+          description: Новая попытка текущей версии
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AttemptState" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalError" }
 
   /v1/attempts/{attemptId}:
     get:
       operationId: getAttempt
-      parameters:
-        - $ref: "#/components/parameters/SessionID"
-        - $ref: "#/components/parameters/AttemptID"
+      parameters: [ { $ref: "#/components/parameters/AttemptID" } ]
       responses:
         "200":
-          description: Текущее состояние попытки
+          description: Состояние принадлежащей пользователю попытки
           content:
             application/json:
-              schema:
-                $ref: "#/components/schemas/AttemptState"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "500":
-          $ref: "#/components/responses/InternalError"
+              schema: { $ref: "#/components/schemas/AttemptState" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalError" }
 
   /v1/attempts/{attemptId}/actions:
     post:
       operationId: executeAction
-      parameters:
-        - $ref: "#/components/parameters/SessionID"
-        - $ref: "#/components/parameters/AttemptID"
+      parameters: [ { $ref: "#/components/parameters/AttemptID" } ]
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [transitionId, expectedRevision]
+              required: [transitionId, expectedRevision, clientActionId]
               properties:
-                transitionId:
-                  type: string
-                  format: uuid
-                expectedRevision:
-                  type: integer
-                  minimum: 0
+                transitionId: { type: string, format: uuid }
+                expectedRevision: { type: integer, minimum: 0 }
+                clientActionId: { type: string, format: uuid }
       responses:
         "200":
-          description: Действие применено
+          description: Действие применено либо возвращён результат его повтора
           content:
             application/json:
-              schema:
-                $ref: "#/components/schemas/ActionResult"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "409":
-          $ref: "#/components/responses/Conflict"
+              schema: { $ref: "#/components/schemas/ActionResult" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
         "422":
           description: Переход недоступен из текущего состояния попытки
           content:
             application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
-        "500":
-          $ref: "#/components/responses/InternalError"
+              schema: { $ref: "#/components/schemas/Error" }
+        "500": { $ref: "#/components/responses/InternalError" }
 
   /v1/progress:
     get:
       operationId: getProgress
-      parameters:
-        - $ref: "#/components/parameters/SessionID"
       responses:
         "200":
-          description: Прогресс текущей анонимной сессии
+          description: Прогресс в текущих версиях, история и устаревшие незавершённые попытки
           content:
             application/json:
-              schema:
-                type: object
-                required: [roles, totalCompleted]
-                properties:
-                  totalCompleted:
-                    type: integer
-                    minimum: 0
-                  roles:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/RoleProgress"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "500":
-          $ref: "#/components/responses/InternalError"
+              schema: { $ref: "#/components/schemas/ProgressResponse" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "500": { $ref: "#/components/responses/InternalError" }
 
 components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
   parameters:
-    SessionID:
-      name: X-Session-ID
-      in: header
-      required: true
-      schema:
-        type: string
-        format: uuid
     AttemptID:
       name: attemptId
       in: path
       required: true
-      schema:
-        type: string
-        format: uuid
-
+      schema: { type: string, format: uuid }
   responses:
     BadRequest:
       description: Некорректный запрос
-      content:
-        application/json:
-          schema: { $ref: "#/components/schemas/Error" }
+      content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
     Unauthorized:
-      description: Сессия отсутствует или не существует
-      content:
-        application/json:
-          schema: { $ref: "#/components/schemas/Error" }
+      description: Отсутствует или недействителен Bearer JWT
+      content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
     NotFound:
-      description: Ресурс не найден
-      content:
-        application/json:
-          schema: { $ref: "#/components/schemas/Error" }
+      description: Ресурс не найден или не принадлежит текущему пользователю
+      content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
     Conflict:
-      description: Конфликт состояния или устаревшая revision
-      content:
-        application/json:
-          schema: { $ref: "#/components/schemas/Error" }
+      description: Устаревшая revision либо clientActionId использован с другими данными
+      content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
     InternalError:
       description: Внутренняя ошибка сервера
-      content:
-        application/json:
-          schema: { $ref: "#/components/schemas/Error" }
-
+      content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
   schemas:
-    CreateSessionResponse:
+    Score:
       type: object
-      required: [sessionId]
+      required: [points, maxPoints, percent]
       properties:
-        sessionId:
-          type: string
-          format: uuid
-
+        points: { type: integer, minimum: 0 }
+        maxPoints: { type: integer, minimum: 1 }
+        percent: { type: integer, minimum: 0, maximum: 100 }
+    ScenarioVersion:
+      type: object
+      required: [number, publishedAt]
+      properties:
+        number: { type: integer, minimum: 1 }
+        publishedAt: { type: string, format: date-time }
+    CurrentVersionProgress:
+      type: object
+      required: [completed, attemptsCount, bestScore, activeAttemptId]
+      properties:
+        completed: { type: boolean }
+        attemptsCount: { type: integer, minimum: 0 }
+        bestScore: { oneOf: [ { $ref: "#/components/schemas/Score" }, { type: "null" } ] }
+        activeAttemptId: { type: [string, "null"], format: uuid }
     ScenarioSummary:
       type: object
-      required: [slug, title, role, riskModule, completed, bestScore]
+      required: [slug, title, role, riskModule, currentVersion, currentProgress]
       properties:
         slug: { type: string }
         title: { type: string }
         role: { type: string, enum: [buyer, seller] }
         riskModule: { type: string }
-        completed: { type: boolean }
-        bestScore: { type: [integer, "null"], minimum: 0 }
-
+        currentVersion: { $ref: "#/components/schemas/ScenarioVersion" }
+        currentProgress: { $ref: "#/components/schemas/CurrentVersionProgress" }
     AttemptState:
       type: object
-      required: [attemptId, scenarioSlug, status, score, revision, screen]
+      required: [attemptId, scenarioSlug, version, isOutdated, status, score, revision, screen]
       properties:
         attemptId: { type: string, format: uuid }
         scenarioSlug: { type: string }
+        version: { $ref: "#/components/schemas/ScenarioVersion" }
+        isOutdated: { type: boolean }
         status: { type: string, enum: [in_progress, completed] }
-        score: { type: integer }
+        score: { $ref: "#/components/schemas/Score" }
         revision: { type: integer, minimum: 0 }
-        screen:
-          $ref: "#/components/schemas/Screen"
-
+        screen: { $ref: "#/components/schemas/Screen" }
     Screen:
       type: object
       required: [nodeKey, type, content]
@@ -254,48 +193,87 @@ components:
         content: { type: string }
         actions:
           type: array
-          items:
-            $ref: "#/components/schemas/AvailableAction"
-
+          items: { $ref: "#/components/schemas/AvailableAction" }
     AvailableAction:
       type: object
       required: [transitionId, label]
       properties:
         transitionId: { type: string, format: uuid }
         label: { type: string }
-
+    RiskMarker:
+      type: object
+      required: [code, title, description]
+      properties:
+        code: { type: string }
+        title: { type: string }
+        description: { type: string }
     ActionResult:
       type: object
       required: [attempt, feedback]
       properties:
-        attempt:
-          $ref: "#/components/schemas/AttemptState"
+        attempt: { $ref: "#/components/schemas/AttemptState" }
         feedback:
           type: object
           required: [scoreDelta, explanation, riskMarkers]
           properties:
-            scoreDelta: { type: integer }
+            scoreDelta: { type: integer, minimum: 0 }
             explanation: { type: string }
             riskMarkers:
               type: array
-              items: { type: string }
-
+              items: { $ref: "#/components/schemas/RiskMarker" }
+    HistoricalVersionProgress:
+      type: object
+      required: [version, completed, attemptsCount, bestScore, completedAt]
+      properties:
+        version: { $ref: "#/components/schemas/ScenarioVersion" }
+        completed: { type: boolean }
+        attemptsCount: { type: integer, minimum: 0 }
+        bestScore: { oneOf: [ { $ref: "#/components/schemas/Score" }, { type: "null" } ] }
+        completedAt: { type: [string, "null"], format: date-time }
+    ScenarioProgress:
+      type: object
+      required: [scenarioSlug, title, currentVersion, currentProgress, history]
+      properties:
+        scenarioSlug: { type: string }
+        title: { type: string }
+        currentVersion: { $ref: "#/components/schemas/ScenarioVersion" }
+        currentProgress: { $ref: "#/components/schemas/CurrentVersionProgress" }
+        history:
+          type: array
+          description: Прошлые версии не влияют на currentProgress.
+          items: { $ref: "#/components/schemas/HistoricalVersionProgress" }
     RoleProgress:
       type: object
-      required: [role, scenarios]
+      required: [role, totalScenarios, completedScenarios, scenarios]
       properties:
         role: { type: string, enum: [buyer, seller] }
+        totalScenarios: { type: integer, minimum: 0 }
+        completedScenarios: { type: integer, minimum: 0 }
         scenarios:
           type: array
-          items:
-            type: object
-            required: [slug, completed, bestScore, attemptsCount]
-            properties:
-              slug: { type: string }
-              completed: { type: boolean }
-              bestScore: { type: [integer, "null"] }
-              attemptsCount: { type: integer, minimum: 0 }
-
+          items: { $ref: "#/components/schemas/ScenarioProgress" }
+    OutdatedActiveAttempt:
+      type: object
+      required: [attemptId, scenarioSlug, scenarioTitle, version, currentVersion]
+      properties:
+        attemptId: { type: string, format: uuid }
+        scenarioSlug: { type: string }
+        scenarioTitle: { type: string }
+        version: { $ref: "#/components/schemas/ScenarioVersion" }
+        currentVersion: { $ref: "#/components/schemas/ScenarioVersion" }
+    ProgressResponse:
+      type: object
+      required: [totalScenarios, completedScenarios, completionPercent, roles, outdatedActiveAttempts]
+      properties:
+        totalScenarios: { type: integer, minimum: 0 }
+        completedScenarios: { type: integer, minimum: 0 }
+        completionPercent: { type: integer, minimum: 0, maximum: 100 }
+        roles:
+          type: array
+          items: { $ref: "#/components/schemas/RoleProgress" }
+        outdatedActiveAttempts:
+          type: array
+          items: { $ref: "#/components/schemas/OutdatedActiveAttempt" }
     Error:
       type: object
       required: [code, message]

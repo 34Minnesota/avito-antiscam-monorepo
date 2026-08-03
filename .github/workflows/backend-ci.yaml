@@ -1,0 +1,29 @@
+name: Backend CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - '.golangci.yaml'
+      - '.github/workflows/go-*.yml'
+      - '.github/workflows/backend-ci.yml'
+  pull_request:
+    paths:
+      - 'backend/**'
+      - '.golangci.yaml'
+      - '.github/workflows/go-*.yml'
+      - '.github/workflows/backend-ci.yml'
+
+jobs:
+  lint:
+    uses: ./.github/workflows/go-lint.yml
+    with:
+      working-directory: backend
+
+  test:
+    needs: lint
+    uses: ./.github/workflows/go-test.yml
+    with:
+      working-directory: backend
+      run-race: true

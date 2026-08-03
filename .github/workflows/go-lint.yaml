@@ -1,0 +1,44 @@
+name: Lint Go
+
+on:
+  workflow_call:
+    inputs:
+      go-version:
+        required: false
+        type: string
+        default: "1.26"
+      working-directory:
+        required: false
+        type: string
+        default: "backend"
+      config-path:
+
+        required: false
+        type: string
+        default: ".golangci.yaml"
+      fail-on-error:
+        required: false
+        type: boolean
+        default: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ inputs.go-version }}
+          cache: false
+
+      - name: Run golangci-lint
+        continue-on-error: ${{ !inputs.fail-on-error }}
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+          working-directory: ${{ inputs.working-directory }}
+          args: --config=${{ github.workspace }}/${{ inputs.config-path }} --timeout=5m
+          verbose: true

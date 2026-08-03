@@ -12,7 +12,6 @@ on:
         type: string
         default: "backend"
       config-path:
-
         required: false
         type: string
         default: ".golangci.yaml"
@@ -20,13 +19,19 @@ on:
         required: false
         type: boolean
         default: true
+      only-new-issues:
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: ${{ inputs.only-new-issues && 0 || 1 }}
 
       - name: Setup go
         uses: actions/setup-go@v5
@@ -35,10 +40,33 @@ jobs:
           cache: false
 
       - name: Run golangci-lint
-        continue-on-error: ${{ !inputs.fail-on-error }}
-        uses: golangci/golangci-lint-action@v6
+        id: lint
+        continue-on-error: true
+        uses: golangci/golangci-lint-action@v8
         with:
           version: latest
           working-directory: ${{ inputs.working-directory }}
           args: --config=${{ github.workspace }}/${{ inputs.config-path }} --timeout=5m
+          only-new-issues: ${{ inputs.only-new-issues }}
           verbose: true
+
+      - name: Write job summary
+        if: always()
+        run: |
+          {
+            echo "## Lint"
+            echo
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Result | ${{ steps.lint.outcome == 'success' && '**passed**' || '**failed**' }} |"
+            echo "| Config | \`${{ inputs.config-path }}\` |"
+            echo "| Only new issues | \`${{ inputs.only-new-issues }}\` |"
+            echo
+            if [ "${{ steps.lint.outcome }}" != "success" ]; then
+              echo "Issues are annotated inline on the changed lines — see the **Files changed** tab of the PR."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Fail job if lint failed
+        if: steps.lint.outcome == 'failure' && inputs.fail-on-error
+        run: exit 1

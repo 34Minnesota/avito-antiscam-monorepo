@@ -128,12 +128,22 @@ type AvailableAction struct {
 	TransitionId openapi_types.UUID `json:"transitionId"`
 }
 
+// CompletedAttemptResult defines model for CompletedAttemptResult.
+type CompletedAttemptResult struct {
+	AttemptId   openapi_types.UUID `json:"attemptId"`
+	CompletedAt time.Time          `json:"completedAt"`
+	Passed      bool               `json:"passed"`
+	Score       Score              `json:"score"`
+	Version     ScenarioVersion    `json:"version"`
+}
+
 // CurrentVersionProgress defines model for CurrentVersionProgress.
 type CurrentVersionProgress struct {
 	ActiveAttemptId *openapi_types.UUID `json:"activeAttemptId"`
 	AttemptsCount   int                 `json:"attemptsCount"`
 	BestScore       *Score              `json:"bestScore"`
 	Completed       bool                `json:"completed"`
+	Passed          bool                `json:"passed"`
 }
 
 // Error defines model for Error.
@@ -148,7 +158,7 @@ type HistoricalVersionProgress struct {
 	AttemptsCount int             `json:"attemptsCount"`
 	BestScore     *Score          `json:"bestScore"`
 	Completed     bool            `json:"completed"`
-	CompletedAt   *time.Time      `json:"completedAt"`
+	Passed        bool            `json:"passed"`
 	Version       ScenarioVersion `json:"version"`
 }
 
@@ -166,6 +176,8 @@ type ProgressResponse struct {
 	CompletedScenarios     int                     `json:"completedScenarios"`
 	CompletionPercent      int                     `json:"completionPercent"`
 	OutdatedActiveAttempts []OutdatedActiveAttempt `json:"outdatedActiveAttempts"`
+	PassedPercent          int                     `json:"passedPercent"`
+	PassedScenarios        int                     `json:"passedScenarios"`
 	Roles                  []RoleProgress          `json:"roles"`
 	TotalScenarios         int                     `json:"totalScenarios"`
 }
@@ -180,6 +192,9 @@ type RiskMarker struct {
 // RoleProgress defines model for RoleProgress.
 type RoleProgress struct {
 	CompletedScenarios int                `json:"completedScenarios"`
+	CompletionPercent  int                `json:"completionPercent"`
+	PassedPercent      int                `json:"passedPercent"`
+	PassedScenarios    int                `json:"passedScenarios"`
 	Role               RoleProgressRole   `json:"role"`
 	Scenarios          []ScenarioProgress `json:"scenarios"`
 	TotalScenarios     int                `json:"totalScenarios"`
@@ -194,9 +209,12 @@ type ScenarioProgress struct {
 	CurrentVersion  ScenarioVersion        `json:"currentVersion"`
 
 	// History Прошлые версии не влияют на currentProgress.
-	History      []HistoricalVersionProgress `json:"history"`
-	ScenarioSlug string                      `json:"scenarioSlug"`
-	Title        string                      `json:"title"`
+	History []HistoricalVersionProgress `json:"history"`
+
+	// RecentAttempts Последние завершённые попытки по всем версиям, от новых к старым.
+	RecentAttempts []CompletedAttemptResult `json:"recentAttempts"`
+	ScenarioSlug   string                   `json:"scenarioSlug"`
+	Title          string                   `json:"title"`
 }
 
 // ScenarioSummary defines model for ScenarioSummary.
@@ -215,6 +233,7 @@ type ScenarioSummaryRole string
 // ScenarioVersion defines model for ScenarioVersion.
 type ScenarioVersion struct {
 	Number      int       `json:"number"`
+	PassPercent int       `json:"passPercent"`
 	PublishedAt time.Time `json:"publishedAt"`
 }
 
@@ -244,6 +263,9 @@ type BadRequest = Error
 
 // Conflict defines model for Conflict.
 type Conflict = Error
+
+// DependencyUnavailable defines model for DependencyUnavailable.
+type DependencyUnavailable = Error
 
 // InternalError defines model for InternalError.
 type InternalError = Error
@@ -447,6 +469,8 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 type BadRequestJSONResponse Error
 
 type ConflictJSONResponse Error
+
+type DependencyUnavailableJSONResponse Error
 
 type InternalErrorJSONResponse Error
 
@@ -685,6 +709,22 @@ func (response GetProgress500JSONResponse) VisitGetProgressResponse(w http.Respo
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetProgress503JSONResponse struct {
+	DependencyUnavailableJSONResponse
+}
+
+func (response GetProgress503JSONResponse) VisitGetProgressResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -1059,42 +1099,45 @@ func (sh *strictHandler) CreateAttempt(ctx *gin.Context, slug string) {
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
+	"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",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

@@ -41,6 +41,8 @@ func NewAttempt(
 	scorePoints, maxScorePoints, revision int,
 	startedAt, completedAt *time.Time,
 ) Attempt {
+	// TODO(owner: training-engine): enforce status/timestamp, ownership, score and revision
+	// invariants when the attempt engine replaces this hydration constructor.
 	return Attempt{
 		ID:                id,
 		UserID:            userID,

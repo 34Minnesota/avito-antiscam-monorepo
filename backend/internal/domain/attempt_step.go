@@ -23,6 +23,8 @@ func NewAttemptStep(
 	scoreDelta int,
 	createdAt time.Time,
 ) AttemptStep {
+	// TODO(owner: training-engine): enforce positive step numbers, non-negative deltas
+	// and client_action_id idempotency in the attempt engine transaction.
 	return AttemptStep{
 		ID:             id,
 		AttemptID:      attemptID,

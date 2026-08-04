@@ -22,6 +22,8 @@ func NewScenarioVersion(
 	maxScorePoints int,
 	publishedAt time.Time,
 ) ScenarioVersion {
+	// TODO(owner: scenario): validate UUIDs, version, start-node ownership and pass_percent
+	// in the Scenario aggregate; progress treats this module as an external contract.
 	return ScenarioVersion{
 		ID:             id,
 		ScenarioID:     scenarioID,

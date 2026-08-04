@@ -7,22 +7,11 @@ import (
 )
 
 type Score struct {
-	Points    int
-	MaxPoints int
-	Percent   int
+	points    int
+	maxPoints int
 }
 
-func NewScore(
-	points, maxPoints, percent int,
-) Score {
-	return Score{
-		Points:    points,
-		MaxPoints: maxPoints,
-		Percent:   percent,
-	}
-}
-
-func newScore(points, maxPoints int) (Score, error) {
+func NewScore(points, maxPoints int) (Score, error) {
 	if maxPoints <= 0 {
 		return Score{}, core_errors.ErrInvalidMaxPoints
 	}
@@ -35,11 +24,22 @@ func newScore(points, maxPoints int) (Score, error) {
 		return Score{}, core_errors.ErrScoreOverflow
 	}
 
-	percent := int(math.Round(
-		float64(points) * 100 / float64(maxPoints),
-	))
+	return Score{
+		points:    points,
+		maxPoints: maxPoints,
+	}, nil
+}
 
-	return NewScore(points, maxPoints, percent), nil
+func (s Score) Points() int {
+	return s.points
+}
+
+func (s Score) MaxPoints() int {
+	return s.maxPoints
+}
+
+func (s Score) Percent() int {
+	return int(math.Round(float64(s.points) * 100 / float64(s.maxPoints)))
 }
 
 func (s Score) Apply(scoreDelta int) (Score, error) {
@@ -47,9 +47,9 @@ func (s Score) Apply(scoreDelta int) (Score, error) {
 		return Score{}, core_errors.ErrNegativeDelta
 	}
 
-	if scoreDelta > s.MaxPoints-s.Points {
+	if scoreDelta > s.maxPoints-s.points {
 		return Score{}, core_errors.ErrScoreOverflow
 	}
 
-	return newScore(s.Points+scoreDelta, s.MaxPoints)
+	return NewScore(s.points+scoreDelta, s.maxPoints)
 }

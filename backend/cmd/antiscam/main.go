@@ -6,25 +6,31 @@ import (
 	"github.com/gin-gonic/gin"
 
 	openapi "github.com/34Minnesota/avito-antiscam-monorepo/backend/generated/openapi"
-
-	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/api"
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/config"
-	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/auth"
+	transport "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/transport/http"
+
+	authservice "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/auth"
+	authstorage "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/storage/postgres/auth"
 )
 
 func main() {
 
 	router := gin.Default()
 
+	// PostgreSQL
 	db := config.NewDatabase()
 	defer db.Close()
 
-	repository := auth.NewSessionStore()
+	// Repository
+	authRepository := authstorage.NewRepository(db)
 
-	service := auth.NewService(repository)
+	// Service
+	authService := authservice.NewService(authRepository)
 
-	server := api.NewServer(service)
+	// HTTP
+	server := transport.NewServer(authService)
 
+	// Временная ручка для проверки middleware.
 	authorized := router.Group("/")
 
 	authorized.Use(server.SessionMiddleware())
@@ -34,6 +40,7 @@ func main() {
 		c.JSON(200, session)
 	})
 
+	// OpenAPI
 	openapi.RegisterHandlers(router, server)
 
 	log.Println("🚀 AntiScam API started on :8080")

@@ -1,4 +1,4 @@
-package api
+package http
 
 import (
 	"net/http"
@@ -28,8 +28,11 @@ func (s *Server) SessionMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		session, ok := s.auth.ValidateSession(id)
-		if !ok {
+		session, err := s.auth.ValidateSession(
+			c.Request.Context(),
+			id,
+		)
+		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"message": "session not found",
 			})

@@ -1,4 +1,4 @@
-package api
+package http
 
 import (
 	"net/http"
@@ -6,16 +6,16 @@ import (
 	"github.com/gin-gonic/gin"
 
 	openapi "github.com/34Minnesota/avito-antiscam-monorepo/backend/generated/openapi"
-	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/auth"
+	authservice "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/auth"
 )
 
 type Server struct {
-	auth *auth.Service
+	auth *authservice.Service
 }
 
-func NewServer(authService *auth.Service) *Server {
+func NewServer(auth *authservice.Service) *Server {
 	return &Server{
-		auth: authService,
+		auth: auth,
 	}
 }
 
@@ -32,7 +32,14 @@ func (s *Server) HealthCheck(c *gin.Context) {
 // -----------------------------------------------------
 
 func (s *Server) CreateSession(c *gin.Context) {
-	session := s.auth.CreateSession()
+
+	session, err := s.auth.CreateSession(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "failed to create session",
+		})
+		return
+	}
 
 	response := openapi.CreateSessionResponse{
 		SessionId: session.ID,

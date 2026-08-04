@@ -1,4 +1,4 @@
-package http
+package httptransport
 
 import (
 	"net/http"
@@ -48,11 +48,9 @@ func (s *Server) CreateSession(c *gin.Context) {
 		return
 	}
 
-	response := openapi.CreateSessionResponse{
-		SessionId: session.ID,
-	}
-
-	c.JSON(http.StatusCreated, response)
+	c.JSON(http.StatusCreated, gin.H{
+		"sessionId": session.ID,
+	})
 }
 
 // -----------------------------------------------------
@@ -61,7 +59,6 @@ func (s *Server) CreateSession(c *gin.Context) {
 
 func (s *Server) ListScenarios(
 	c *gin.Context,
-	params openapi.ListScenariosParams,
 ) {
 	c.JSON(http.StatusNotImplemented, gin.H{
 		"message": "not implemented",
@@ -71,7 +68,6 @@ func (s *Server) ListScenarios(
 func (s *Server) CreateAttempt(
 	c *gin.Context,
 	slug string,
-	params openapi.CreateAttemptParams,
 ) {
 	c.JSON(http.StatusNotImplemented, gin.H{
 		"message": "not implemented",
@@ -81,7 +77,6 @@ func (s *Server) CreateAttempt(
 func (s *Server) GetAttempt(
 	c *gin.Context,
 	attemptID openapi.AttemptID,
-	params openapi.GetAttemptParams,
 ) {
 	c.JSON(http.StatusNotImplemented, gin.H{
 		"message": "not implemented",
@@ -91,7 +86,6 @@ func (s *Server) GetAttempt(
 func (s *Server) ExecuteAction(
 	c *gin.Context,
 	attemptID openapi.AttemptID,
-	params openapi.ExecuteActionParams,
 ) {
 	c.JSON(http.StatusNotImplemented, gin.H{
 		"message": "not implemented",
@@ -100,7 +94,6 @@ func (s *Server) ExecuteAction(
 
 func (s *Server) GetProgress(
 	c *gin.Context,
-	params openapi.GetProgressParams,
 ) {
 	c.JSON(http.StatusNotImplemented, gin.H{
 		"message": "not implemented",

@@ -6,11 +6,11 @@ note: >
   чтобы не было двух расходящихся источников схемы.
 
 tables:
-  anonymous_sessions:
-    columns:
-      id: { type: uuid, primary_key: true }
-      created_at: { type: timestamptz, not_null: true }
-      last_seen_at: { type: timestamptz, not_null: true }
+  users:
+    owner: auth
+    note: >
+      Таблица и доменная модель принадлежат модулю User/Auth. Модули training
+      и progress используют только users.id и не изменяют эту сущность.
 
   scenarios:
     columns:
@@ -19,19 +19,25 @@ tables:
       title: { type: varchar(200), not_null: true }
       role: { type: scenario_role, not_null: true }
       risk_module: { type: varchar(100), not_null: true }
-      is_published: { type: boolean, not_null: true, default: false }
+      current_version_id: { type: uuid, nullable: true, references: scenario_versions.id }
       created_at: { type: timestamptz, not_null: true }
+    note: >
+      Сценарий — стабильный логический объект. Публикация новой версии меняет
+      только current_version_id; предыдущие scenario_versions не изменяются.
 
   scenario_versions:
     columns:
       id: { type: uuid, primary_key: true }
       scenario_id: { type: uuid, not_null: true, references: scenarios.id }
-      version: { type: integer, not_null: true }
+      version: { type: integer, not_null: true, minimum: 1 }
       start_node_id: { type: uuid, nullable: true }
-      published_at: { type: timestamptz, nullable: true }
+      max_score_points: { type: integer, not_null: true, minimum: 1 }
+      # TODO(owner: scenario): добавить колонку в production-миграцию Scenario-модуля.
+      pass_percent: { type: smallint, not_null: true, minimum: 1, maximum: 100 }
+      published_at: { type: timestamptz, not_null: true }
     constraints:
       - unique: [scenario_id, version]
-      - exactly_one_published_version_per_scenario
+      - published scenario_versions are immutable
 
   scenario_nodes:
     columns:
@@ -53,7 +59,7 @@ tables:
       from_node_id: { type: uuid, not_null: true, references: scenario_nodes.id }
       to_node_id: { type: uuid, not_null: true, references: scenario_nodes.id }
       label: { type: text, not_null: true }
-      score_delta: { type: integer, not_null: true }
+      score_delta: { type: integer, not_null: true, minimum: 0 }
       explanation: { type: text, not_null: true }
 
   risk_markers:
@@ -74,26 +80,33 @@ tables:
   attempts:
     columns:
       id: { type: uuid, primary_key: true }
-      session_id: { type: uuid, not_null: true, references: anonymous_sessions.id }
+      user_id: { type: uuid, not_null: true, references: users.id }
       scenario_version_id:
         { type: uuid, not_null: true, references: scenario_versions.id }
       current_node_id: { type: uuid, not_null: true, references: scenario_nodes.id }
       status: { type: attempt_status, not_null: true }
-      score: { type: integer, not_null: true, default: 0 }
-      revision: { type: integer, not_null: true, default: 0 }
+      score_points: { type: integer, not_null: true, default: 0, minimum: 0 }
+      max_score_points: { type: integer, not_null: true, minimum: 1 }
+      revision: { type: integer, not_null: true, default: 0, minimum: 0 }
       started_at: { type: timestamptz, not_null: true }
       completed_at: { type: timestamptz, nullable: true }
+    note: >
+      max_score_points копируется из scenario_versions при старте попытки.
+      Поэтому исторический результат остаётся интерпретируемым.
 
   attempt_steps:
     columns:
       id: { type: uuid, primary_key: true }
       attempt_id: { type: uuid, not_null: true, references: attempts.id }
+      step_no: { type: integer, not_null: true, minimum: 1 }
       transition_id:
         { type: uuid, not_null: true, references: scenario_transitions.id }
-      score_delta: { type: integer, not_null: true }
+      client_action_id: { type: uuid, not_null: true }
+      score_delta: { type: integer, not_null: true, minimum: 0 }
       created_at: { type: timestamptz, not_null: true }
     constraints:
-      - unique: [attempt_id, transition_id]
+      - unique: [attempt_id, step_no]
+      - unique: [attempt_id, client_action_id]
 
 enums:
   scenario_role: [buyer, seller]
@@ -103,11 +116,19 @@ enums:
 business_invariants:
   - start_node_id должен принадлежать той же scenario_version.
   - Переход связывает узлы только одной scenario_version.
-  - Попытка всегда привязана к конкретной опубликованной версии сценария.
-  - Выполнение действия проверяет session_id, current_node_id и revision в одной транзакции.
-  - Повторная отправка уже применённого действия не создаёт второй attempt_step.
+  - current_version_id сценария указывает на опубликованную версию этого же сценария.
+  - Новая публикация создаёт новую неизменяемую scenario_version и меняет current_version_id.
+  - Попытка всегда привязана к конкретной scenario_version и пользователю из User/Auth domain.
+  - Новая попытка создаётся только для current_version_id.
+  - Незавершённая попытка устаревшей версии может быть завершена, но не участвует в прогрессе текущей версии.
+  - score_points равен сумме score_delta её attempt_steps; процент результата вычисляется как round(100 * score_points / max_score_points).
+  - Успешность вычисляется без округления: score_points * 100 >= max_score_points * pass_percent.
+  - Выполнение действия проверяет user_id, current_node_id и revision в одной транзакции.
+  - Повтор client_action_id возвращает ранее сохранённый результат и не создаёт второй attempt_step.
 
 indexes:
-  - { table: scenarios, columns: [is_published, role] }
-  - { table: attempts, columns: [session_id, status] }
-  - { table: attempt_steps, columns: [attempt_id, created_at] }
+  - { table: scenarios, columns: [role, current_version_id] }
+  - { table: attempts, columns: [user_id, scenario_version_id, status, completed_at] }
+  - { table: attempts, columns: [user_id, started_at] }
+  - { table: attempt_steps, columns: [attempt_id, step_no] }
+  - { table: attempt_steps, columns: [attempt_id, client_action_id], unique: true }

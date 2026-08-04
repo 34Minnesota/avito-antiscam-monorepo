@@ -1,0 +1,119 @@
+package progress_test
+
+import (
+	"context"
+	"errors"
+	"testing"
+	"time"
+
+	"github.com/google/uuid"
+
+	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
+	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/progress"
+)
+
+type repositoryStub struct {
+	snapshot domain.ProgressSnapshot
+	err      error
+	limit    int
+}
+
+func (r *repositoryStub) Load(_ context.Context, _ domain.UserID, limit int) (domain.ProgressSnapshot, error) {
+	r.limit = limit
+	return r.snapshot, r.err
+}
+
+func TestGetAggregatesCurrentProgress(t *testing.T) {
+	t.Parallel()
+	passedScore := mustScore(t, 80, 100)
+	failedScore := mustScore(t, 60, 100)
+	now := time.Now().UTC()
+	version := func() domain.Version {
+		return domain.Version{ID: uuid.New(), Number: 1, MaxPoints: 100, PassPercent: 70, PublishedAt: now}
+	}
+	firstVersion, secondVersion := version(), version()
+	repo := &repositoryStub{snapshot: domain.ProgressSnapshot{Scenarios: []domain.ScenarioProgress{
+		{ID: uuid.New(), Slug: "buyer-one", Title: "Buyer", Role: domain.RoleBuyer,
+			Current:        domain.VersionProgress{Version: firstVersion, AttemptsCount: 3, Completed: true, Passed: true, BestScore: &passedScore},
+			RecentAttempts: []domain.AttemptResult{{ID: uuid.New(), Version: firstVersion, Score: passedScore, Passed: true, CompletedAt: now}}},
+		{ID: uuid.New(), Slug: "seller-one", Title: "Seller", Role: domain.RoleSeller,
+			Current: domain.VersionProgress{Version: secondVersion, AttemptsCount: 2, Completed: true, Passed: false, BestScore: &failedScore}},
+	}}}
+	result, err := progress.New(repo).Get(context.Background(), mustUserID(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if repo.limit != progress.HistoryLimit {
+		t.Fatalf("limit = %d", repo.limit)
+	}
+	if result.TotalScenarios != 2 || result.CompletedScenarios != 2 || result.PassedScenarios != 1 {
+		t.Fatalf("unexpected totals: %+v", result)
+	}
+	if result.CompletionPercent != 100 || result.PassedPercent != 50 {
+		t.Fatalf("unexpected percentages: %+v", result)
+	}
+	if len(result.Roles) != 2 || result.Roles[0].Role != domain.RoleBuyer || result.Roles[1].Role != domain.RoleSeller {
+		t.Fatalf("unexpected roles: %+v", result.Roles)
+	}
+}
+
+func TestGetEmptyCatalogReturnsZeroPercentages(t *testing.T) {
+	t.Parallel()
+	result, err := progress.New(&repositoryStub{}).Get(context.Background(), mustUserID(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.TotalScenarios != 0 || result.CompletionPercent != 0 || result.PassedPercent != 0 || len(result.Roles) != 2 {
+		t.Fatalf("unexpected empty progress: %+v", result)
+	}
+}
+
+func TestGetRejectsInvalidSnapshotAndMissingDependency(t *testing.T) {
+	t.Parallel()
+	_, err := progress.New(nil).Get(context.Background(), mustUserID(t))
+	if !errors.Is(err, progress.ErrDependencyUnavailable) {
+		t.Fatalf("got %v", err)
+	}
+	invalid := domain.ScenarioProgress{ID: uuid.New(), Slug: "broken", Title: "Broken", Role: domain.RoleBuyer}
+	_, err = progress.New(&repositoryStub{snapshot: domain.ProgressSnapshot{Scenarios: []domain.ScenarioProgress{invalid}}}).Get(context.Background(), mustUserID(t))
+	if !errors.Is(err, progress.ErrDataInconsistent) {
+		t.Fatalf("got %v", err)
+	}
+}
+
+func TestGetRejectsOversizedOrUnorderedHistory(t *testing.T) {
+	t.Parallel()
+	now := time.Now().UTC()
+	v := domain.Version{ID: uuid.New(), Number: 1, MaxPoints: 100, PassPercent: 70, PublishedAt: now}
+	score := mustScore(t, 80, 100)
+	attempts := make([]domain.AttemptResult, progress.HistoryLimit+1)
+	for index := range attempts {
+		attempts[index] = domain.AttemptResult{ID: uuid.New(), Version: v, Score: score, Passed: true, CompletedAt: now.Add(-time.Duration(index) * time.Minute)}
+	}
+	snapshot := domain.ProgressSnapshot{Scenarios: []domain.ScenarioProgress{{
+		ID: uuid.New(), Slug: "scenario", Title: "Scenario", Role: domain.RoleBuyer,
+		Current: domain.VersionProgress{Version: v}, RecentAttempts: attempts,
+	}}}
+	_, err := progress.New(&repositoryStub{snapshot: snapshot}).Get(context.Background(), mustUserID(t))
+	if !errors.Is(err, progress.ErrDataInconsistent) {
+		t.Fatalf("got %v", err)
+	}
+}
+
+func mustScore(t *testing.T, points, max int) domain.Score {
+	t.Helper()
+	score, err := domain.NewScore(points, max)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return score
+}
+
+func mustUserID(t *testing.T) domain.UserID {
+	t.Helper()
+	id, err := domain.NewUserID(uuid.New())
+	if err != nil {
+		t.Fatal(err)
+	}
+	return id
+}

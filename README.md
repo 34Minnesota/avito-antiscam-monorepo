@@ -3,5 +3,6 @@
 
 ## Run
 
-docker compose up -d
+make db-up
+make migrate-up
 make run

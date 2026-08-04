@@ -4,18 +4,22 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 
 	openapi "github.com/34Minnesota/avito-antiscam-monorepo/backend/generated/openapi"
+	applogger "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/logger"
 	authservice "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/auth"
 )
 
 type Server struct {
-	auth *authservice.Service
+	auth   *authservice.Service
+	logger *applogger.Logger
 }
 
-func NewServer(auth *authservice.Service) *Server {
+func NewServer(auth *authservice.Service, logger *applogger.Logger) *Server {
 	return &Server{
-		auth: auth,
+		auth:   auth,
+		logger: logger,
 	}
 }
 
@@ -35,6 +39,9 @@ func (s *Server) CreateSession(c *gin.Context) {
 
 	session, err := s.auth.CreateSession(c.Request.Context())
 	if err != nil {
+		if s.logger != nil {
+			s.logger.Error("create session request failed", zap.Error(err))
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "failed to create session",
 		})

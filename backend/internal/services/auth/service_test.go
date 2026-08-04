@@ -48,7 +48,7 @@ func TestCreateSession(t *testing.T) {
 		session: expected,
 	}
 
-	service := NewService(repository)
+	service := NewService(repository, nil)
 
 	session, err := service.CreateSession(context.Background())
 	if err != nil {
@@ -72,7 +72,7 @@ func TestValidateSessionSuccess(t *testing.T) {
 		session: expected,
 	}
 
-	service := NewService(repository)
+	service := NewService(repository, nil)
 
 	session, err := service.ValidateSession(
 		context.Background(),
@@ -93,7 +93,7 @@ func TestValidateSessionFail(t *testing.T) {
 		err: errors.New("session not found"),
 	}
 
-	service := NewService(repository)
+	service := NewService(repository, nil)
 
 	_, err := service.ValidateSession(
 		context.Background(),

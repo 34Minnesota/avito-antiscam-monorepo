@@ -32,6 +32,8 @@ tables:
       version: { type: integer, not_null: true, minimum: 1 }
       start_node_id: { type: uuid, nullable: true }
       max_score_points: { type: integer, not_null: true, minimum: 1 }
+      # TODO(owner: scenario): добавить колонку в production-миграцию Scenario-модуля.
+      pass_percent: { type: smallint, not_null: true, minimum: 1, maximum: 100 }
       published_at: { type: timestamptz, not_null: true }
     constraints:
       - unique: [scenario_id, version]
@@ -120,6 +122,7 @@ business_invariants:
   - Новая попытка создаётся только для current_version_id.
   - Незавершённая попытка устаревшей версии может быть завершена, но не участвует в прогрессе текущей версии.
   - score_points равен сумме score_delta её attempt_steps; процент результата вычисляется как round(100 * score_points / max_score_points).
+  - Успешность вычисляется без округления: score_points * 100 >= max_score_points * pass_percent.
   - Выполнение действия проверяет user_id, current_node_id и revision в одной транзакции.
   - Повтор client_action_id возвращает ранее сохранённый результат и не создаёт второй attempt_step.
 

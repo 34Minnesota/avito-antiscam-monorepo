@@ -113,6 +113,7 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/ProgressResponse" }
         "401": { $ref: "#/components/responses/Unauthorized" }
+        "503": { $ref: "#/components/responses/DependencyUnavailable" }
         "500": { $ref: "#/components/responses/InternalError" }
 
 components:
@@ -140,6 +141,9 @@ components:
     InternalError:
       description: Внутренняя ошибка сервера
       content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
+    DependencyUnavailable:
+      description: Внешний Auth, Scenario или storage-контракт временно недоступен
+      content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
   schemas:
     Score:
       type: object
@@ -150,15 +154,17 @@ components:
         percent: { type: integer, minimum: 0, maximum: 100 }
     ScenarioVersion:
       type: object
-      required: [number, publishedAt]
+      required: [number, passPercent, publishedAt]
       properties:
         number: { type: integer, minimum: 1 }
+        passPercent: { type: integer, minimum: 1, maximum: 100 }
         publishedAt: { type: string, format: date-time }
     CurrentVersionProgress:
       type: object
-      required: [completed, attemptsCount, bestScore, activeAttemptId]
+      required: [completed, passed, attemptsCount, bestScore, activeAttemptId]
       properties:
         completed: { type: boolean }
+        passed: { type: boolean }
         attemptsCount: { type: integer, minimum: 0 }
         bestScore: { oneOf: [ { $ref: "#/components/schemas/Score" }, { type: "null" } ] }
         activeAttemptId: { type: [string, "null"], format: uuid }
@@ -223,16 +229,25 @@ components:
               items: { $ref: "#/components/schemas/RiskMarker" }
     HistoricalVersionProgress:
       type: object
-      required: [version, completed, attemptsCount, bestScore, completedAt]
+      required: [version, completed, passed, attemptsCount, bestScore]
       properties:
         version: { $ref: "#/components/schemas/ScenarioVersion" }
         completed: { type: boolean }
+        passed: { type: boolean }
         attemptsCount: { type: integer, minimum: 0 }
         bestScore: { oneOf: [ { $ref: "#/components/schemas/Score" }, { type: "null" } ] }
-        completedAt: { type: [string, "null"], format: date-time }
+    CompletedAttemptResult:
+      type: object
+      required: [attemptId, version, score, passed, completedAt]
+      properties:
+        attemptId: { type: string, format: uuid }
+        version: { $ref: "#/components/schemas/ScenarioVersion" }
+        score: { $ref: "#/components/schemas/Score" }
+        passed: { type: boolean }
+        completedAt: { type: string, format: date-time }
     ScenarioProgress:
       type: object
-      required: [scenarioSlug, title, currentVersion, currentProgress, history]
+      required: [scenarioSlug, title, currentVersion, currentProgress, history, recentAttempts]
       properties:
         scenarioSlug: { type: string }
         title: { type: string }
@@ -242,13 +257,21 @@ components:
           type: array
           description: Прошлые версии не влияют на currentProgress.
           items: { $ref: "#/components/schemas/HistoricalVersionProgress" }
+        recentAttempts:
+          type: array
+          maxItems: 20
+          description: Последние завершённые попытки по всем версиям, от новых к старым.
+          items: { $ref: "#/components/schemas/CompletedAttemptResult" }
     RoleProgress:
       type: object
-      required: [role, totalScenarios, completedScenarios, scenarios]
+      required: [role, totalScenarios, completedScenarios, passedScenarios, completionPercent, passedPercent, scenarios]
       properties:
         role: { type: string, enum: [buyer, seller] }
         totalScenarios: { type: integer, minimum: 0 }
         completedScenarios: { type: integer, minimum: 0 }
+        passedScenarios: { type: integer, minimum: 0 }
+        completionPercent: { type: integer, minimum: 0, maximum: 100 }
+        passedPercent: { type: integer, minimum: 0, maximum: 100 }
         scenarios:
           type: array
           items: { $ref: "#/components/schemas/ScenarioProgress" }
@@ -263,11 +286,13 @@ components:
         currentVersion: { $ref: "#/components/schemas/ScenarioVersion" }
     ProgressResponse:
       type: object
-      required: [totalScenarios, completedScenarios, completionPercent, roles, outdatedActiveAttempts]
+      required: [totalScenarios, completedScenarios, passedScenarios, completionPercent, passedPercent, roles, outdatedActiveAttempts]
       properties:
         totalScenarios: { type: integer, minimum: 0 }
         completedScenarios: { type: integer, minimum: 0 }
+        passedScenarios: { type: integer, minimum: 0 }
         completionPercent: { type: integer, minimum: 0, maximum: 100 }
+        passedPercent: { type: integer, minimum: 0, maximum: 100 }
         roles:
           type: array
           items: { $ref: "#/components/schemas/RoleProgress" }

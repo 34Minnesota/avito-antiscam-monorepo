@@ -2,21 +2,19 @@ package auth
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
+	postgrespool "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/storage/postgres/pool"
 )
 
 type AuthRepository struct {
-	pool *pgxpool.Pool
+	pool *postgrespool.Pool
 }
 
-func NewRepository(pool *pgxpool.Pool) *AuthRepository {
+func NewRepository(pool *postgrespool.Pool) *AuthRepository {
 	return &AuthRepository{
 		pool: pool,
 	}
@@ -25,11 +23,14 @@ func NewRepository(pool *pgxpool.Pool) *AuthRepository {
 func (r *AuthRepository) Create(
 	ctx context.Context,
 ) (domain.Session, error) {
+	ctx, cancel := context.WithTimeout(ctx, r.pool.OpTimeout())
+	defer cancel()
 
+	now := time.Now().UTC()
 	session := domain.Session{
 		ID:         uuid.New(),
-		CreatedAt:  time.Now().UTC(),
-		LastSeenAt: time.Now().UTC(),
+		CreatedAt:  now,
+		LastSeenAt: now,
 	}
 
 	const query = `
@@ -59,6 +60,8 @@ func (r *AuthRepository) Get(
 	ctx context.Context,
 	id uuid.UUID,
 ) (domain.Session, error) {
+	ctx, cancel := context.WithTimeout(ctx, r.pool.OpTimeout())
+	defer cancel()
 
 	const query = `
 		SELECT
@@ -82,10 +85,6 @@ func (r *AuthRepository) Get(
 	)
 
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return domain.Session{}, err
-		}
-
 		return domain.Session{}, err
 	}
 
@@ -96,6 +95,8 @@ func (r *AuthRepository) Touch(
 	ctx context.Context,
 	id uuid.UUID,
 ) error {
+	ctx, cancel := context.WithTimeout(ctx, r.pool.OpTimeout())
+	defer cancel()
 
 	const query = `
 		UPDATE sessions

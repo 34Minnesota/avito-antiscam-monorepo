@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
@@ -81,7 +82,7 @@ func (r *AuthRepository) Get(
 	)
 
 	if err != nil {
-		if err == pgx.ErrNoRows {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return domain.Session{}, err
 		}
 

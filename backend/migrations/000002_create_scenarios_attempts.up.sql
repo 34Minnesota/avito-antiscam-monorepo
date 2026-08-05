@@ -5,9 +5,9 @@ CREATE TABLE IF NOT EXISTS scenarios (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 
-    slug       TEXT GENERATED ALWAYS AS (doc ->> 'slug') STORED,
-    role       TEXT GENERATED ALWAYS AS (doc ->> 'role') STORED,
-    title      TEXT GENERATED ALWAYS AS (doc ->> 'title') STORED,
+    slug       TEXT     GENERATED ALWAYS AS (doc ->> 'slug') STORED,
+    role       TEXT     GENERATED ALWAYS AS (doc ->> 'role') STORED,
+    title      TEXT     GENERATED ALWAYS AS (doc ->> 'title') STORED,
     difficulty SMALLINT GENERATED ALWAYS AS ((doc ->> 'difficulty')::smallint) STORED,
 
     CONSTRAINT scenarios_role_check CHECK (role IN ('buyer', 'seller')),

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"os"
 	"os/signal"
 	"syscall"
 	"time"
@@ -28,6 +29,10 @@ import (
 const (
 	serverAddress   = ":8080"
 	shutdownTimeout = 10 * time.Second
+
+	// Каталог со сценариями, читается на старте. Путь относительно рабочей
+	// директории процесса. Сид идемпотентен: ключ — slug из документа.
+	scenariosDir = "./docs/scenarios"
 )
 
 func main() {
@@ -72,6 +77,14 @@ func main() {
 	// Service
 	authService := authservice.NewService(authRepository, appLogger)
 	trainingService := trainingservice.New(trainingRepository)
+
+	// Сценарии заливаются на старте. Отсутствие каталога не повод не подниматься:
+	// API останется рабочим, просто каталог сценариев будет пустым.
+	if loaded, err := trainingservice.Seed(ctx, trainingRepository, os.DirFS(scenariosDir), "."); err != nil {
+		appLogger.Warn("seed scenarios failed", zap.String("dir", scenariosDir), zap.Error(err))
+	} else {
+		appLogger.Info("scenarios seeded", zap.Int("count", loaded))
+	}
 
 	// users feature
 	userRepository := userstorage.NewRepository(db)

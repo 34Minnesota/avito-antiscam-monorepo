@@ -6,11 +6,8 @@ import (
 	"github.com/google/uuid"
 )
 
-<<<<<<< HEAD
-=======
 type ScenarioRole = Role
 
->>>>>>> origin/develop
 type Version struct {
 	ID          uuid.UUID
 	Number      int

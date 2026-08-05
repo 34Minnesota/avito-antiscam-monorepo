@@ -32,7 +32,8 @@ type Clock interface {
 }
 
 type UsersRepository interface {
-	Create(ctx context.Context, user domain.User) error
+	CreateUser(ctx context.Context, user domain.User) error
+	GetUser(ctx context.Context, userID uuid.UUID) (domain.User, error)
 }
 
 func NewUsersService(

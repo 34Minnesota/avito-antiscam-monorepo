@@ -4,10 +4,10 @@ import (
 	postgrespool "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/storage/postgres/pool"
 )
 
-type Repository struct {
+type UsersRepository struct {
 	pool *postgrespool.Pool
 }
 
-func NewRepository(pool *postgrespool.Pool) *Repository {
-	return &Repository{pool: pool}
+func NewRepository(pool *postgrespool.Pool) *UsersRepository {
+	return &UsersRepository{pool: pool}
 }

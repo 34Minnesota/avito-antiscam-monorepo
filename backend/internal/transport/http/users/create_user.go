@@ -3,10 +3,8 @@ package users_http_transport
 import (
 	"errors"
 	"net/http"
-	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 
 	coreErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/errors"
 )
@@ -17,12 +15,7 @@ type CreateUserRequest struct {
 	Password string `json:"password" binding:"required,min=8,max=72"`
 }
 
-type CreateUserResponse struct {
-	ID        uuid.UUID `json:"id"`
-	Nickname  string    `json:"nickname"`
-	Email     string    `json:"email"`
-	CreatedAt time.Time `json:"created_at"`
-}
+type CreateUserResponse UserDTOResponse
 
 func (h *UsersHandler) CreateUser(c *gin.Context) {
 	var request CreateUserRequest
@@ -56,12 +49,12 @@ func (h *UsersHandler) CreateUser(c *gin.Context) {
 		return
 	}
 
-	response := CreateUserResponse{
+	response := CreateUserResponse(UserDTOResponse{
 		ID:        user.ID,
 		Nickname:  user.Nickname,
 		Email:     user.Email,
 		CreatedAt: user.CreatedAt,
-	}
+	})
 
 	c.JSON(http.StatusCreated, response)
 }

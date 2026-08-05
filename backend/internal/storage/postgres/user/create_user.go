@@ -10,7 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-func (r *Repository) Create(ctx context.Context, user domain.User) error {
+func (r *UsersRepository) CreateUser(ctx context.Context, user domain.User) error {
 	ctx, cancel := context.WithTimeout(ctx, r.pool.OpTimeout())
 	defer cancel()
 

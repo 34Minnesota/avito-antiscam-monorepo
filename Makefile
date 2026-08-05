@@ -3,6 +3,9 @@ export
 
 export PROJECT_ROOT=$(shell pwd)
 
+test:
+	@cd backend && go test ./... -cover
+
 lint:
 	@cd backend && golangci-lint run ./... --fix
 

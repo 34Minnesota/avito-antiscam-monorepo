@@ -16,32 +16,41 @@ type MockRepository struct {
 	err     error
 }
 
-func (m *MockRepository) Create(
+func (m *MockRepository) CreateSession(
 	ctx context.Context,
+	userID uuid.UUID,
 ) (domain.Session, error) {
 	return m.session, m.err
 }
 
-func (m *MockRepository) Get(
+func (m *MockRepository) GetSession(
 	ctx context.Context,
-	id uuid.UUID,
+	sessionID uuid.UUID,
 ) (domain.Session, error) {
 	return m.session, m.err
 }
 
-func (m *MockRepository) Touch(
+func (m *MockRepository) UpdateLastSeen(
 	ctx context.Context,
-	id uuid.UUID,
+	sessionID uuid.UUID,
+) error {
+	return m.err
+}
+
+func (m *MockRepository) DeleteSession(
+	ctx context.Context,
+	sessionID uuid.UUID,
 ) error {
 	return m.err
 }
 
 func TestCreateSession(t *testing.T) {
-
 	expected := domain.Session{
 		ID:         uuid.New(),
-		CreatedAt:  time.Now(),
-		LastSeenAt: time.Now(),
+		UserID:     uuid.New(),
+		CreatedAt:  time.Now().UTC(),
+		LastSeenAt: time.Now().UTC(),
+		ExpiresAt:  time.Now().UTC().Add(30 * 24 * time.Hour),
 	}
 
 	repository := &MockRepository{
@@ -50,7 +59,10 @@ func TestCreateSession(t *testing.T) {
 
 	service := NewService(repository, nil)
 
-	session, err := service.CreateSession(context.Background())
+	session, err := service.CreateSession(
+		context.Background(),
+		expected.UserID,
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -58,14 +70,19 @@ func TestCreateSession(t *testing.T) {
 	if session.ID != expected.ID {
 		t.Fatal("unexpected session id")
 	}
+
+	if session.UserID != expected.UserID {
+		t.Fatal("unexpected user id")
+	}
 }
 
 func TestValidateSessionSuccess(t *testing.T) {
-
 	expected := domain.Session{
 		ID:         uuid.New(),
-		CreatedAt:  time.Now(),
-		LastSeenAt: time.Now(),
+		UserID:     uuid.New(),
+		CreatedAt:  time.Now().UTC(),
+		LastSeenAt: time.Now().UTC(),
+		ExpiresAt:  time.Now().UTC().Add(30 * 24 * time.Hour),
 	}
 
 	repository := &MockRepository{
@@ -85,10 +102,13 @@ func TestValidateSessionSuccess(t *testing.T) {
 	if session.ID != expected.ID {
 		t.Fatal("unexpected session id")
 	}
+
+	if session.UserID != expected.UserID {
+		t.Fatal("unexpected user id")
+	}
 }
 
 func TestValidateSessionFail(t *testing.T) {
-
 	repository := &MockRepository{
 		err: errors.New("session not found"),
 	}
@@ -102,5 +122,20 @@ func TestValidateSessionFail(t *testing.T) {
 
 	if err == nil {
 		t.Fatal("expected error")
+	}
+}
+
+func TestLogout(t *testing.T) {
+	repository := &MockRepository{}
+
+	service := NewService(repository, nil)
+
+	err := service.Logout(
+		context.Background(),
+		uuid.New(),
+	)
+
+	if err != nil {
+		t.Fatal(err)
 	}
 }

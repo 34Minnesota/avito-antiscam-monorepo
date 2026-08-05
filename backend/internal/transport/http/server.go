@@ -43,40 +43,42 @@ func (s *Server) HealthCheck(c *gin.Context) {
 }
 
 func (s *Server) GetAttempt(c *gin.Context, _ openapi.AttemptID) {
-	c.JSON(http.StatusNotImplemented, gin.H{"code": "not_implemented", "message": "attempt API is not implemented"})
+	c.JSON(http.StatusNotImplemented, gin.H{
+		"code":    "not_implemented",
+		"message": "attempt API is not implemented",
+	})
 }
 
 func (s *Server) ExecuteAction(c *gin.Context, _ openapi.AttemptID) {
-	c.JSON(http.StatusNotImplemented, gin.H{"code": "not_implemented", "message": "attempt API is not implemented"})
+	c.JSON(http.StatusNotImplemented, gin.H{
+		"code":    "not_implemented",
+		"message": "attempt API is not implemented",
+	})
 }
 
 func (s *Server) GetProgress(c *gin.Context) {
-	c.JSON(http.StatusNotImplemented, gin.H{"code": "not_implemented", "message": "progress API is not implemented"})
+	c.JSON(http.StatusNotImplemented, gin.H{
+		"code":    "not_implemented",
+		"message": "progress API is not implemented",
+	})
 }
 
 func (s *Server) CreateAttempt(c *gin.Context, _ string) {
-	c.JSON(http.StatusNotImplemented, gin.H{"code": "not_implemented", "message": "attempt API is not implemented"})
+	c.JSON(http.StatusNotImplemented, gin.H{
+		"code":    "not_implemented",
+		"message": "attempt API is not implemented",
+	})
 }
 
 // -----------------------------------------------------
 // Session
 // -----------------------------------------------------
 
+// Пока авторизация пользователей не реализована,
+// создание пользовательской сессии недоступно.
 func (s *Server) CreateSession(c *gin.Context) {
-
-	session, err := s.auth.CreateSession(c.Request.Context())
-	if err != nil {
-		if s.logger != nil {
-			s.logger.Error("create session request failed", zap.Error(err))
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": "failed to create session",
-		})
-		return
-	}
-
-	c.JSON(http.StatusCreated, gin.H{
-		"sessionId": session.ID,
+	c.JSON(http.StatusNotImplemented, gin.H{
+		"message": "authentication is not implemented yet",
 	})
 }
 

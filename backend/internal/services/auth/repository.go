@@ -3,8 +3,9 @@ package auth
 import (
 	"context"
 
-	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
 	"github.com/google/uuid"
+
+	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
 )
 
 // Repository описывает контракт,

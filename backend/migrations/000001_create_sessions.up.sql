@@ -1,0 +1,5 @@
+CREATE TABLE IF NOT EXISTS sessions (
+    id UUID PRIMARY KEY,
+    created_at TIMESTAMPTZ NOT NULL,
+    last_seen_at TIMESTAMPTZ NOT NULL
+);

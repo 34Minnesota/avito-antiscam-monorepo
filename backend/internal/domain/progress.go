@@ -6,14 +6,7 @@ import (
 	"github.com/google/uuid"
 )
 
-type ScenarioRole string
-
-const (
-	RoleBuyer  ScenarioRole = "buyer"
-	RoleSeller ScenarioRole = "seller"
-)
-
-func (r ScenarioRole) IsValid() bool { return r == RoleBuyer || r == RoleSeller }
+type ScenarioRole = Role
 
 type Version struct {
 	ID          uuid.UUID

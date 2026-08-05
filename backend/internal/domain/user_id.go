@@ -2,8 +2,6 @@ package domain
 
 import "github.com/google/uuid"
 
-// UserID нужен чтобы не передавать обычный uuid.UUID без контекста в scoring/progress
-// TODO(owner: auth): надо класть userID в контекст http запросов
 type UserID uuid.UUID
 
 func NewUserID(id uuid.UUID) (UserID, error) {

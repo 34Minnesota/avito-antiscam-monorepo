@@ -13,6 +13,11 @@ type AttemptStep struct {
 	TransitionID   uuid.UUID
 	ClientActionID uuid.UUID
 	ScoreDelta     int
+	SceneID        string
+	OptionID       string
+	Verdict        Verdict
+	Flag           string
+	Weight         float64
 	CreatedAt      time.Time
 }
 

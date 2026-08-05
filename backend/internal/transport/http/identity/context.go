@@ -8,7 +8,6 @@ import (
 
 type userIDKey struct{}
 
-// TODO(owner: auth): провалидировать JWT и вызвать это в ручке
 func WithUserID(ctx context.Context, userID domain.UserID) context.Context {
 	return context.WithValue(ctx, userIDKey{}, userID)
 }

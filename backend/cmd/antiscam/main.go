@@ -12,8 +12,12 @@ import (
 
 	applogger "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/logger"
 	authservice "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/auth"
+	usersservice "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/users"
+	usersutils "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/users/utils"
 	authstorage "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/storage/postgres/auth"
 	postgrespool "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/storage/postgres/pool"
+	userstorage "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/storage/postgres/user"
+	usershttp "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/transport/http/users"
 )
 
 func main() {
@@ -57,9 +61,20 @@ func main() {
 	// Service
 	authService := authservice.NewService(authRepository, appLogger)
 
+	// users feature
+	userRepository := userstorage.NewRepository(db)
+	userService := usersservice.NewUsersService(
+		userRepository,
+		usersutils.BcryptPasswordHasher{},
+		usersutils.UUIDGenerator{},
+		usersutils.RealClock{},
+	)
+	userHandler := usershttp.NewUsersHandler(userService)
+
 	// HTTP
 	server := transport.NewServer(authService, appLogger)
 	router.Use(server.LoggerMiddleware())
+	usershttp.RegisterUsersRoutes(router, userHandler)
 
 	// Временная ручка для проверки middleware.
 	authorized := router.Group("/")

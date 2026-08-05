@@ -10,7 +10,10 @@ const (
 	RoleSeller Role = "seller"
 )
 
+func (r Role) IsValid() bool { return r == RoleBuyer || r == RoleSeller }
+
 // Verdict — оценка отдельного выбора пользователя.
+//
 //	risky — рискованное, но не фатальное: диалог продолжается, признак засчитан как пропущенный;
 //	fatal — точка невозврата, сценарий немедленно завершается провальной концовкой.
 type Verdict string

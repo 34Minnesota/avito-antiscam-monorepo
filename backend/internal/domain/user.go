@@ -1,34 +1,130 @@
 package domain
 
 import (
+	"fmt"
+	"net/mail"
+	"regexp"
+	"strings"
 	"time"
 
-	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
+	core_errors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/errors"
 	"github.com/google/uuid"
 )
 
+const (
+	MinNicknameLength = 3
+	MaxNicknameLength = 30
+	NicknameRegexp    = `^[a-zA-Z0-9_]+$`
+	MinPasswordLength = 8
+	MaxPasswordBytes  = 72
+)
+
+var nicknameRegexp = regexp.MustCompile(NicknameRegexp)
+
 type User struct {
-	ID        uuid.UUID
-	Nickname  string
-	CreatedAt time.Time
+	ID           uuid.UUID
+	Nickname     string
+	Email        string
+	PasswordHash string
+	CreatedAt    time.Time
 }
 
-// UserID нужен чтобы не передавать обычный uuid.UUID без контекста в scoring/progress
-// TODO(owner: auth): надо класть userID в контекст http запросов
-type UserID uuid.UUID
+func NewUser(
+	id uuid.UUID,
+	nickname, email, passwordHash string,
+	createdAt time.Time,
+) User {
+	return User{
+		ID:           id,
+		Nickname:     nickname,
+		Email:        email,
+		PasswordHash: passwordHash,
+		CreatedAt:    createdAt,
+	}
+}
 
-func NewUserID(id uuid.UUID) (UserID, error) {
-	if id == uuid.Nil {
-		return UserID{}, domainErrors.ErrInvalidUserID
+func (u *User) Validate() error {
+	if u.ID == uuid.Nil {
+		return fmt.Errorf(
+			"empty user id: %w",
+			core_errors.ErrEmptyID,
+		)
 	}
 
-	return UserID(id), nil
+	if err := ValidateNickname(u.Nickname); err != nil {
+		return fmt.Errorf("error validating nickname: %w", err)
+	}
+
+	if err := ValidateEmail(u.Email); err != nil {
+		return fmt.Errorf("error validating email: %w", err)
+	}
+
+	if u.PasswordHash == "" {
+		return fmt.Errorf(
+			"empty password hash: %w",
+			core_errors.ErrInvalidArgument,
+		)
+	}
+
+	if u.CreatedAt.IsZero() {
+		return fmt.Errorf(
+			"empty created_at: %w",
+			core_errors.ErrInvalidArgument,
+		)
+	}
+
+	return nil
 }
 
-func (id UserID) UUID() uuid.UUID {
-	return uuid.UUID(id)
+func ValidateNickname(value string) error {
+	nickname := strings.TrimSpace(value)
+	nicknameLen := len([]rune(nickname))
+	if nicknameLen < MinNicknameLength || nicknameLen > MaxNicknameLength {
+		return fmt.Errorf(
+			"invalid nickname len: %d: %w",
+			nicknameLen, core_errors.ErrInvalidArgument,
+		)
+	}
+
+	if !nicknameRegexp.MatchString(value) {
+		return fmt.Errorf(
+			"invalid nickname format: %w",
+			core_errors.ErrInvalidArgument,
+		)
+	}
+
+	return nil
 }
 
-func (id UserID) IsZero() bool {
-	return id.UUID() == uuid.Nil
+func NormalizeEmail(value string) string {
+	return strings.ToLower(strings.TrimSpace(value))
+}
+
+func ValidateEmail(value string) error {
+	email := NormalizeEmail(value)
+
+	if email == "" {
+		return fmt.Errorf(
+			"empty email: %w",
+			core_errors.ErrInvalidArgument,
+		)
+	}
+
+	addr, err := mail.ParseAddress(email)
+	if err != nil {
+		return fmt.Errorf(
+			"error parsing address: %v: %w",
+			err,
+			core_errors.ErrInvalidArgument,
+		)
+	}
+
+	if addr.Address != email {
+		return fmt.Errorf(
+			"invalid email form: %w",
+			core_errors.ErrInvalidArgument,
+		)
+	}
+
+	return nil
 }

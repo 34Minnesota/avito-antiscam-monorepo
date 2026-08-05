@@ -38,12 +38,3 @@ type Attempt struct {
 
 // AttemptStep — зафиксированный выбор пользователя.
 // Полный журнал шагов — источник правды и для оценки, и для разбора.
-type AttemptStep struct {
-	AttemptID uuid.UUID
-	SceneID   string
-	OptionID  string
-	Verdict   Verdict
-	Flag      string
-	Weight    float64
-	CreatedAt time.Time
-}

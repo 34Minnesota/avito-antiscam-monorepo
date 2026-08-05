@@ -117,7 +117,7 @@ func loadVersions(ctx context.Context, tx *sql.Tx, userID domain.UserID) ([]doma
 		if !exists {
 			index = len(scenarios)
 			indexes.byID[scenarioID] = index
-			scenarios = append(scenarios, domain.ScenarioProgress{ID: scenarioID, Slug: slug, Title: title, Role: domain.ScenarioRole(role)})
+			scenarios = append(scenarios, domain.ScenarioProgress{ID: scenarioID, Slug: slug, Title: title, Role: domain.Role(role)})
 		}
 		indexes.versions[version.ID] = version
 		if version.ID == current.ID {

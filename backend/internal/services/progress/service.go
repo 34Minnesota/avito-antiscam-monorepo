@@ -50,7 +50,7 @@ func (s Service) Get(ctx context.Context, userID domain.UserID) (domain.OverallP
 }
 
 func aggregate(snapshot domain.ProgressSnapshot) domain.OverallProgress {
-	roles := map[domain.ScenarioRole]*domain.RoleProgress{
+	roles := map[domain.Role]*domain.RoleProgress{
 		domain.RoleBuyer:  {Role: domain.RoleBuyer},
 		domain.RoleSeller: {Role: domain.RoleSeller},
 	}
@@ -79,7 +79,7 @@ func aggregate(snapshot domain.ProgressSnapshot) domain.OverallProgress {
 	overall.CompletionPercent = percentage(overall.CompletedScenarios, overall.TotalScenarios)
 	overall.PassedPercent = percentage(overall.PassedScenarios, overall.TotalScenarios)
 
-	for _, roleName := range []domain.ScenarioRole{domain.RoleBuyer, domain.RoleSeller} {
+	for _, roleName := range []domain.Role{domain.RoleBuyer, domain.RoleSeller} {
 		role := roles[roleName]
 		role.CompletionPercent = percentage(role.CompletedScenarios, role.TotalScenarios)
 		role.PassedPercent = percentage(role.PassedScenarios, role.TotalScenarios)
@@ -109,7 +109,7 @@ func validate(snapshot domain.ProgressSnapshot) error {
 }
 
 func validateScenario(scenario domain.ScenarioProgress) error {
-	if scenario.ID == uuid.Nil || scenario.Slug == "" || scenario.Title == "" || !scenario.Role.IsValid() {
+	if scenario.ID == uuid.Nil || scenario.Slug == "" || scenario.Title == "" || !(scenario.Role == domain.RoleBuyer || scenario.Role == domain.RoleSeller) {
 		return domain.ErrInvalidProgressData
 	}
 

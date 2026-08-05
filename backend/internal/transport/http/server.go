@@ -19,10 +19,11 @@ type Server struct {
 	logger   *applogger.Logger
 }
 
-func NewServer(auth *authservice.Service, logger *applogger.Logger) *Server {
+func NewServer(auth *authservice.Service, training *training.Service, logger *applogger.Logger) *Server {
 	return &Server{
-		auth:   auth,
-		logger: logger,
+		auth:     auth,
+		training: training,
+		logger:   logger,
 	}
 }
 

@@ -2,22 +2,31 @@ package main
 
 import (
 	"context"
+	"errors"
 	"log"
+	"net/http"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 
-	openapi "github.com/34Minnesota/avito-antiscam-monorepo/backend/generated/openapi"
-	transport "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/transport/http"
-
 	applogger "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/logger"
 	authservice "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/auth"
+	trainingservice "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/training"
 	authstorage "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/storage/postgres/auth"
 	postgrespool "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/storage/postgres/pool"
+	trainingstorage "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/storage/postgres/training"
+	transport "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/transport/http"
+)
+
+const (
+	serverAddress   = ":8080"
+	shutdownTimeout = 10 * time.Second
 )
 
 func main() {
-
 	loggerConfig, err := applogger.NewConfig()
 	if err != nil {
 		log.Fatalf("load logger config: %v", err)
@@ -34,8 +43,9 @@ func main() {
 		appLogger.Close()
 	}()
 
-	router := gin.New()
-	router.Use(gin.Recovery())
+	// Контекст живёт до первого SIGINT/SIGTERM и служит сигналом к остановке.
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
 
 	// PostgreSQL
 	dbConfig, err := postgrespool.NewConfig()
@@ -44,7 +54,7 @@ func main() {
 		return
 	}
 
-	db, err := postgrespool.NewPool(context.Background(), dbConfig)
+	db, err := postgrespool.NewPool(ctx, dbConfig)
 	if err != nil {
 		appLogger.Error("connect to PostgreSQL failed", zap.Error(err))
 		return
@@ -53,30 +63,51 @@ func main() {
 
 	// Repository
 	authRepository := authstorage.NewRepository(db)
+	trainingRepository := trainingstorage.New(db)
 
 	// Service
 	authService := authservice.NewService(authRepository, appLogger)
+	trainingService := trainingservice.New(trainingRepository)
 
 	// HTTP
-	server := transport.NewServer(authService, appLogger)
-	router.Use(server.LoggerMiddleware())
+	server := transport.NewServer(authService, trainingService, appLogger)
 
-	// Временная ручка для проверки middleware.
-	authorized := router.Group("/")
+	router := gin.New()
+	router.Use(gin.Recovery(), server.LoggerMiddleware())
 
-	authorized.Use(server.SessionMiddleware())
+	router.GET("/healthz", server.HealthCheck)
+	router.POST("/v1/sessions", server.CreateSession)
 
-	authorized.GET("/test", func(c *gin.Context) {
-		session, _ := c.Get("session")
-		c.JSON(200, session)
-	})
+	// Всё остальное требует X-Session-ID.
+	v1 := router.Group("/v1", server.SessionMiddleware())
+	v1.GET("/scenarios", server.ListScenarios)
+	v1.POST("/attempts", server.StartAttempt)
+	v1.POST("/attempts/:attemptID/choice", server.SubmitChoice)
+	v1.GET("/attempts/:attemptID/summary", server.GetSummary)
 
-	// OpenAPI
-	openapi.RegisterHandlers(router, server)
+	httpServer := &http.Server{
+		Addr:              serverAddress,
+		Handler:           router,
+		ReadHeaderTimeout: 10 * time.Second,
+	}
 
-	appLogger.Info("AntiScam API started", zap.String("address", ":8080"))
+	go func() {
+		if err := httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			appLogger.Error("HTTP server stopped with error", zap.Error(err))
+			stop()
+		}
+	}()
 
-	if err := router.Run(":8080"); err != nil {
-		appLogger.Error("HTTP server stopped with error", zap.Error(err))
+	appLogger.Info("AntiScam API started", zap.String("address", serverAddress))
+
+	<-ctx.Done()
+	appLogger.Info("shutting down")
+
+	// Отдельный контекст: ctx уже отменён сигналом, по нему Shutdown вернётся сразу.
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
+	defer cancel()
+
+	if err := httpServer.Shutdown(shutdownCtx); err != nil {
+		appLogger.Error("graceful shutdown failed", zap.Error(err))
 	}
 }

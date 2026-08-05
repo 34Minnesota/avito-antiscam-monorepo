@@ -1,20 +1,29 @@
 package httptransport
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 
+	openapi "github.com/34Minnesota/avito-antiscam-monorepo/backend/generated/openapi"
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
 	applogger "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/logger"
 	authservice "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/auth"
 )
 
+type TrainingService interface {
+	Catalog(context.Context, domain.UserID, domain.Role) (any, error)
+	Start(context.Context, domain.UserID, uuid.UUID) (any, error)
+	Choose(context.Context, domain.UserID, uuid.UUID, string, string) (any, error)
+	Summary(context.Context, domain.UserID, uuid.UUID) (any, error)
+}
+
 type Server struct {
 	auth     *authservice.Service
-	training *training.Service
+	training TrainingService
 	logger   *applogger.Logger
 }
 
@@ -31,6 +40,22 @@ func NewServer(auth *authservice.Service, logger *applogger.Logger) *Server {
 
 func (s *Server) HealthCheck(c *gin.Context) {
 	c.Status(http.StatusOK)
+}
+
+func (s *Server) GetAttempt(c *gin.Context, _ openapi.AttemptID) {
+	c.JSON(http.StatusNotImplemented, gin.H{"code": "not_implemented", "message": "attempt API is not implemented"})
+}
+
+func (s *Server) ExecuteAction(c *gin.Context, _ openapi.AttemptID) {
+	c.JSON(http.StatusNotImplemented, gin.H{"code": "not_implemented", "message": "attempt API is not implemented"})
+}
+
+func (s *Server) GetProgress(c *gin.Context) {
+	c.JSON(http.StatusNotImplemented, gin.H{"code": "not_implemented", "message": "progress API is not implemented"})
+}
+
+func (s *Server) CreateAttempt(c *gin.Context, _ string) {
+	c.JSON(http.StatusNotImplemented, gin.H{"code": "not_implemented", "message": "attempt API is not implemented"})
 }
 
 // -----------------------------------------------------
@@ -68,7 +93,7 @@ func (s *Server) ListScenarios(c *gin.Context) {
 	}
 
 	role := domain.Role(c.Query("role"))
-	if role != "" && !(role == domain.RoleBuyer || role == domain.RoleSeller) {
+	if role != "" && (role != domain.RoleBuyer && role != domain.RoleSeller) {
 		c.JSON(http.StatusBadRequest, gin.H{"code": "bad_request", "message": "неизвестная роль: " + string(role)})
 		return
 	}

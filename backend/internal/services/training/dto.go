@@ -48,7 +48,18 @@ type ChoiceResult struct {
 	Reaction  []domain.Message `json:"reaction"`
 	NextScene *ScenePayload    `json:"next_scene"`
 	Finished  bool             `json:"finished"`
-	//Summary   *scoring.Result  `json:"summary,omitempty"`
+	Summary   *SummaryResult   `json:"summary,omitempty"`
+}
+
+// SummaryResult — итог прохождения: балл, концовка и разбор пропущенных признаков.
+type SummaryResult struct {
+	Score           int               `json:"score"`
+	Outcome         domain.Outcome    `json:"outcome"`
+	Ending          domain.Ending     `json:"ending"`
+	MissedFlags     []domain.FlagInfo `json:"missed_flags"`
+	Takeaway        string            `json:"takeaway"`
+	StepsTotal      int               `json:"steps_total"`
+	DeltaVsPrevious *int              `json:"delta_vs_previous,omitempty"`
 }
 
 // Структуры клиентского представления

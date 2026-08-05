@@ -10,6 +10,7 @@ import (
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
 	applogger "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/logger"
 	authservice "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/auth"
+	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/training"
 )
 
 type Server struct {

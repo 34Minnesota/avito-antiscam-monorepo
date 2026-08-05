@@ -44,7 +44,7 @@ func (s *Server) SessionMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		c.Set("session", session)
+		c.Set(sessionContextKey, session)
 
 		c.Next()
 	}

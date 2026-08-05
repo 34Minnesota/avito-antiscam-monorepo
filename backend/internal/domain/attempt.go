@@ -6,53 +6,44 @@ import (
 	"github.com/google/uuid"
 )
 
+// AttemptStatus — состояние попытки прохождения.
 type AttemptStatus string
 
 const (
-	StatusInProgress AttemptStatus = "in_progress"
-	StatusCompleted  AttemptStatus = "completed"
+	AttemptInProgress AttemptStatus = "in_progress"
+	AttemptFinished   AttemptStatus = "finished"
 )
 
-func (s AttemptStatus) IsValid() bool {
-	switch s {
-	case StatusCompleted, StatusInProgress:
-		return true
-	default:
-		return false
-	}
+// State — позиция пользователя внутри сценария.
+// Хранится в attempts.state как JSONB.
+type State struct {
+	SceneIndex int      `json:"scene_index"`
+	Earned     float64  `json:"earned"`
+	Flags      []string `json:"flags"`
 }
 
+// Attempt — одно прохождение сценария пользователем.
 type Attempt struct {
-	ID                uuid.UUID
-	UserID            uuid.UUID
-	ScenarioVersionID uuid.UUID
-	CurrentNodeID     uuid.UUID
-	Status            AttemptStatus
-	ScorePoints       int
-	MaxScorePoints    int
-	Revision          int
-	StartedAt         *time.Time
-	CompletedAt       *time.Time
+	ID           uuid.UUID
+	UserID       uuid.UUID
+	ScenarioID   uuid.UUID
+	Status       AttemptStatus
+	CurrentScene string
+	State        State
+	Score        *int
+	Outcome      *Outcome
+	StartedAt    time.Time
+	FinishedAt   *time.Time
 }
 
-func NewAttempt(
-	id, userID, scenarioVersionID, currentNodeID uuid.UUID,
-	status AttemptStatus,
-	scorePoints, maxScorePoints, revision int,
-	startedAt, completedAt *time.Time,
-) Attempt {
-	// TODO(owner: training-engine): enforce status/timestamp, ownership, score and revision
-	// invariants when the attempt engine replaces this hydration constructor.
-	return Attempt{
-		ID:                id,
-		UserID:            userID,
-		ScenarioVersionID: scenarioVersionID,
-		CurrentNodeID:     currentNodeID,
-		Status:            status,
-		ScorePoints:       scorePoints,
-		MaxScorePoints:    maxScorePoints,
-		Revision:          revision,
-		StartedAt:         startedAt,
-		CompletedAt:       completedAt,
-	}
+// AttemptStep — зафиксированный выбор пользователя.
+// Полный журнал шагов — источник правды и для оценки, и для разбора.
+type AttemptStep struct {
+	AttemptID uuid.UUID
+	SceneID   string
+	OptionID  string
+	Verdict   Verdict
+	Flag      string
+	Weight    float64
+	CreatedAt time.Time
 }

@@ -15,7 +15,7 @@ import (
 func Seed(ctx context.Context, repo Repository, files fs.FS, dir string) (int, error) {
 	entries, err := fs.ReadDir(files, dir)
 	if err != nil {
-		return 0, fmt.Errorf("Reading scenario directory: %w", err)
+		return 0, fmt.Errorf("reading scenario directory: %w", err)
 	}
 
 	loaded := 0
@@ -26,12 +26,12 @@ func Seed(ctx context.Context, repo Repository, files fs.FS, dir string) (int, e
 
 		raw, err := fs.ReadFile(files, path.Join(dir, entry.Name()))
 		if err != nil {
-			return loaded, fmt.Errorf("Reading %s: %w", entry.Name(), err)
+			return loaded, fmt.Errorf("reading %s: %w", entry.Name(), err)
 		}
 
 		var doc domain.ScenarioDoc
 		if err := json.Unmarshal(raw, &doc); err != nil {
-			return loaded, fmt.Errorf("Parsing %s: %w", entry.Name(), err)
+			return loaded, fmt.Errorf("parsing %s: %w", entry.Name(), err)
 		}
 
 		scenario := domain.Scenario{
@@ -40,7 +40,7 @@ func Seed(ctx context.Context, repo Repository, files fs.FS, dir string) (int, e
 			Doc:      doc,
 		}
 		if err := repo.UpsertScenario(ctx, scenario); err != nil {
-			return loaded, fmt.Errorf("Saving %s: %w", doc.Slug, err)
+			return loaded, fmt.Errorf("saving %s: %w", doc.Slug, err)
 		}
 		loaded++
 	}

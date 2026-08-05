@@ -3,6 +3,9 @@ export
 
 export PROJECT_ROOT=$(shell pwd)
 
+lint:
+	@cd backend && golangci-lint run ./... --fix
+
 db-up:
 	@docker compose up -d postgres
 

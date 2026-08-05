@@ -15,10 +15,14 @@ import (
 	applogger "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/logger"
 	authservice "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/auth"
 	trainingservice "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/training"
+	usersservice "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/users"
+	usersutils "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/users/utils"
 	authstorage "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/storage/postgres/auth"
 	postgrespool "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/storage/postgres/pool"
 	trainingstorage "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/storage/postgres/training"
+	userstorage "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/storage/postgres/user"
 	transport "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/transport/http"
+	usershttp "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/transport/http/users"
 )
 
 const (
@@ -69,6 +73,16 @@ func main() {
 	authService := authservice.NewService(authRepository, appLogger)
 	trainingService := trainingservice.New(trainingRepository)
 
+	// users feature
+	userRepository := userstorage.NewRepository(db)
+	userService := usersservice.NewUsersService(
+		userRepository,
+		usersutils.BcryptPasswordHasher{},
+		usersutils.UUIDGenerator{},
+		usersutils.RealClock{},
+	)
+	userHandler := usershttp.NewUsersHandler(userService)
+
 	// HTTP
 	server := transport.NewServer(authService, trainingService, appLogger)
 
@@ -77,6 +91,8 @@ func main() {
 
 	router.GET("/healthz", server.HealthCheck)
 	router.POST("/v1/sessions", server.CreateSession)
+
+	usershttp.RegisterUsersRoutes(router, userHandler)
 
 	// Всё остальное требует X-Session-ID.
 	v1 := router.Group("/v1", server.SessionMiddleware())

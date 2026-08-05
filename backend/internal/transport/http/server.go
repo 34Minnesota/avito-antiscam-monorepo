@@ -93,7 +93,7 @@ func (s *Server) ListScenarios(c *gin.Context) {
 	}
 
 	role := domain.Role(c.Query("role"))
-	if role != "" && !(role == domain.RoleBuyer || role == domain.RoleSeller) {
+	if role != "" && (role != domain.RoleBuyer && role != domain.RoleSeller) {
 		c.JSON(http.StatusBadRequest, gin.H{"code": "bad_request", "message": "неизвестная роль: " + string(role)})
 		return
 	}

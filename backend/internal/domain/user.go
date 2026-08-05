@@ -113,7 +113,7 @@ func ValidateEmail(value string) error {
 	addr, err := mail.ParseAddress(email)
 	if err != nil {
 		return fmt.Errorf(
-			"error parsing address: %v: %w",
+			"error parsing address: %w: %w",
 			err,
 			core_errors.ErrInvalidArgument,
 		)

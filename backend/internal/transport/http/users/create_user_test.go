@@ -33,7 +33,13 @@ func performCreateUserRequest(t *testing.T, service UsersService, body string) *
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
 	RegisterUsersRoutes(router, NewUsersHandler(service))
-	request := httptest.NewRequest(http.MethodPost, "/v1/users", strings.NewReader(body))
+	ctx := context.Background()
+	request := httptest.NewRequestWithContext(
+		ctx,
+		http.MethodPost,
+		"/v1/users",
+		strings.NewReader(body),
+	)
 	request.Header.Set("Content-Type", "application/json")
 	response := httptest.NewRecorder()
 	router.ServeHTTP(response, request)

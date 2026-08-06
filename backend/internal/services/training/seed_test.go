@@ -4,9 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"os"
 	"testing"
 	"testing/fstest"
 
+	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
+	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/training"
 )
 
@@ -45,6 +48,24 @@ func TestSeedLoadsOnlyJSONFiles(t *testing.T) {
 	}
 }
 
+func TestSeedAcceptsBundledScenarios(t *testing.T) {
+	t.Parallel()
+	repo := &repositoryStub{}
+
+	loaded, err := training.Seed(
+		context.Background(),
+		repo,
+		os.DirFS("../../../docs/scenarios"),
+		".",
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if loaded == 0 || loaded != len(repo.upserted) {
+		t.Fatalf("loaded = %d, upserted = %d", loaded, len(repo.upserted))
+	}
+}
+
 func TestSeedRejectsMissingDirectory(t *testing.T) {
 	t.Parallel()
 	if _, err := training.Seed(context.Background(), &repositoryStub{}, fstest.MapFS{}, "nope"); err == nil {
@@ -62,6 +83,29 @@ func TestSeedRejectsBrokenJSON(t *testing.T) {
 	}
 	if loaded != 0 {
 		t.Fatalf("loaded = %d", loaded)
+	}
+}
+
+func TestSeedRejectsInvalidScenarioBeforeSaving(t *testing.T) {
+	t.Parallel()
+	doc := testDoc()
+	doc.Scenes[0].Decision.Options = append(
+		doc.Scenes[0].Decision.Options,
+		domain.Option{ID: "broken", Verdict: domain.VerdictFatal, Ending: "missing"},
+	)
+	raw, err := json.Marshal(doc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	files := fstest.MapFS{"scenarios/invalid.json": {Data: raw}}
+	repo := &repositoryStub{}
+
+	loaded, err := training.Seed(context.Background(), repo, files, "scenarios")
+	if !errors.Is(err, domainErrors.ErrInvalidScenario) {
+		t.Fatalf("got %v", err)
+	}
+	if loaded != 0 || len(repo.upserted) != 0 {
+		t.Fatalf("invalid scenario was saved: loaded=%d, upserted=%d", loaded, len(repo.upserted))
 	}
 }
 

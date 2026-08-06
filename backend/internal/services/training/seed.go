@@ -8,6 +8,7 @@ import (
 	"path"
 
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
+	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
 	"github.com/google/uuid"
 )
 
@@ -32,6 +33,12 @@ func Seed(ctx context.Context, repo Repository, files fs.FS, dir string) (int, e
 		var doc domain.ScenarioDoc
 		if err := json.Unmarshal(raw, &doc); err != nil {
 			return loaded, fmt.Errorf("parsing %s: %w", entry.Name(), err)
+		}
+		if err := doc.Validate(); err != nil {
+			return loaded, fmt.Errorf(
+				"validating %s: %w: %v",
+				entry.Name(), domainErrors.ErrInvalidScenario, err,
+			)
 		}
 
 		scenario := domain.Scenario{

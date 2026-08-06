@@ -19,7 +19,8 @@ CREATE INDEX IF NOT EXISTS idx_scenarios_role ON scenarios (role, difficulty) WH
 
 CREATE TABLE IF NOT EXISTS attempts (
     id          UUID PRIMARY KEY,
-    user_id     UUID NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+    -- TODO: user_id should reference users.
+    user_id     UUID NOT NULL REFERENCES sessions (id) ON DELETE CASCADE,
     scenario_id UUID NOT NULL REFERENCES scenarios (id) ON DELETE CASCADE,
     status      TEXT NOT NULL DEFAULT 'in_progress' CHECK (status IN ('in_progress', 'finished')),
     state       JSONB NOT NULL,

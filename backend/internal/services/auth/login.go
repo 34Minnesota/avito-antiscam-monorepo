@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"errors"
 
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
 )
@@ -32,26 +31,6 @@ func (s *Service) Login(
 		user.ID,
 	)
 	if err != nil {
-		return domain.Session{}, err
-	}
-
-	return session, nil
-}
-
-// Authenticate является алиасом Login.
-// Оставлен для совместимости, если понадобится
-// использовать другое название в transport.
-func (s *Service) Authenticate(
-	ctx context.Context,
-	email string,
-	password string,
-) (domain.Session, error) {
-
-	session, err := s.Login(ctx, email, password)
-	if err != nil {
-		if errors.Is(err, ErrInvalidCredentials) {
-			return domain.Session{}, ErrInvalidCredentials
-		}
 		return domain.Session{}, err
 	}
 

@@ -8,24 +8,29 @@ import (
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
 )
 
-// Repository описывает контракт,
-// который должен реализовать
-// любой источник хранения сессий.
+// Repository описывает контракт хранения пользовательских сессий.
 type Repository interface {
-
-	// Create создает новую сессию.
-	Create(ctx context.Context) (domain.Session, error)
-
-	// Get возвращает сессию по ID.
-	Get(
+	// CreateSession создает новую сессию пользователя.
+	CreateSession(
 		ctx context.Context,
-		id uuid.UUID,
+		userID uuid.UUID,
 	) (domain.Session, error)
 
-	// Touch обновляет время
-	// последней активности.
-	Touch(
+	// GetSession возвращает сессию по ID.
+	GetSession(
 		ctx context.Context,
-		id uuid.UUID,
+		sessionID uuid.UUID,
+	) (domain.Session, error)
+
+	// UpdateLastSeen обновляет время последней активности.
+	UpdateLastSeen(
+		ctx context.Context,
+		sessionID uuid.UUID,
+	) error
+
+	// DeleteSession удаляет сессию (logout).
+	DeleteSession(
+		ctx context.Context,
+		sessionID uuid.UUID,
 	) error
 }

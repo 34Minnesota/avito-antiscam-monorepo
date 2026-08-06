@@ -71,9 +71,7 @@ func main() {
 	trainingRepository := trainingstorage.New(db)
 
 	// Service
-	authService := authservice.NewService(authRepository, appLogger)
 	trainingService := trainingservice.New(trainingRepository)
-
 	if loaded, err := trainingservice.Seed(ctx, trainingRepository, os.DirFS(scenariosDir), "."); err != nil {
 		appLogger.Warn("seed scenarios failed", zap.String("dir", scenariosDir), zap.Error(err))
 	} else {
@@ -82,11 +80,21 @@ func main() {
 
 	// users feature
 	userRepository := userstorage.NewRepository(db)
+
+	// Users service
 	userService := usersservice.NewUsersService(
 		userRepository,
 		usersutils.BcryptPasswordHasher{},
 		usersutils.UUIDGenerator{},
 		usersutils.RealClock{},
+	)
+
+	// Auth service
+	authService := authservice.NewService(
+		authRepository,
+		userRepository,
+		authservice.BcryptPasswordVerifier{},
+		appLogger,
 	)
 	userHandler := usershttp.NewUsersHandler(userService)
 
@@ -97,7 +105,7 @@ func main() {
 	router.Use(gin.Recovery(), server.LoggerMiddleware())
 
 	router.GET("/healthz", server.HealthCheck)
-	router.POST("/v1/sessions", server.CreateSession)
+	router.POST("/v1/auth/login", server.Login)
 
 	usershttp.RegisterUsersRoutes(router, userHandler)
 

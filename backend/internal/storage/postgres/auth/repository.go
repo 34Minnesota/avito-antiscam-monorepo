@@ -20,34 +20,43 @@ func NewRepository(pool *postgrespool.Pool) *AuthRepository {
 	}
 }
 
-func (r *AuthRepository) Create(
+func (r *AuthRepository) CreateSession(
 	ctx context.Context,
+	userID uuid.UUID,
 ) (domain.Session, error) {
+
 	ctx, cancel := context.WithTimeout(ctx, r.pool.OpTimeout())
 	defer cancel()
 
 	now := time.Now().UTC()
+
 	session := domain.Session{
 		ID:         uuid.New(),
+		UserID:     userID,
 		CreatedAt:  now,
 		LastSeenAt: now,
+		ExpiresAt:  now.Add(30 * 24 * time.Hour),
 	}
 
 	const query = `
 		INSERT INTO sessions (
 			id,
+			user_id,
 			created_at,
-			last_seen_at
+			last_seen_at,
+			expires_at
 		)
-		VALUES ($1, $2, $3)
+		VALUES ($1, $2, $3, $4, $5)
 	`
 
 	_, err := r.pool.Exec(
 		ctx,
 		query,
 		session.ID,
+		session.UserID,
 		session.CreatedAt,
 		session.LastSeenAt,
+		session.ExpiresAt,
 	)
 	if err != nil {
 		return domain.Session{}, err
@@ -56,18 +65,21 @@ func (r *AuthRepository) Create(
 	return session, nil
 }
 
-func (r *AuthRepository) Get(
+func (r *AuthRepository) GetSession(
 	ctx context.Context,
-	id uuid.UUID,
+	sessionID uuid.UUID,
 ) (domain.Session, error) {
+
 	ctx, cancel := context.WithTimeout(ctx, r.pool.OpTimeout())
 	defer cancel()
 
 	const query = `
 		SELECT
 			id,
+			user_id,
 			created_at,
-			last_seen_at
+			last_seen_at,
+			expires_at
 		FROM sessions
 		WHERE id = $1
 	`
@@ -77,11 +89,13 @@ func (r *AuthRepository) Get(
 	err := r.pool.QueryRow(
 		ctx,
 		query,
-		id,
+		sessionID,
 	).Scan(
 		&session.ID,
+		&session.UserID,
 		&session.CreatedAt,
 		&session.LastSeenAt,
+		&session.ExpiresAt,
 	)
 
 	if err != nil {
@@ -91,10 +105,11 @@ func (r *AuthRepository) Get(
 	return session, nil
 }
 
-func (r *AuthRepository) Touch(
+func (r *AuthRepository) UpdateLastSeen(
 	ctx context.Context,
-	id uuid.UUID,
+	sessionID uuid.UUID,
 ) error {
+
 	ctx, cancel := context.WithTimeout(ctx, r.pool.OpTimeout())
 	defer cancel()
 
@@ -108,7 +123,29 @@ func (r *AuthRepository) Touch(
 		ctx,
 		query,
 		time.Now().UTC(),
-		id,
+		sessionID,
+	)
+
+	return err
+}
+
+func (r *AuthRepository) DeleteSession(
+	ctx context.Context,
+	sessionID uuid.UUID,
+) error {
+
+	ctx, cancel := context.WithTimeout(ctx, r.pool.OpTimeout())
+	defer cancel()
+
+	const query = `
+		DELETE FROM sessions
+		WHERE id = $1
+	`
+
+	_, err := r.pool.Exec(
+		ctx,
+		query,
+		sessionID,
 	)
 
 	return err

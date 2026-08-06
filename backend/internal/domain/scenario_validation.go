@@ -11,7 +11,7 @@ const (
 	maxScenarioDifficulty = 4
 )
 
-// Validate checks the structural invariants required to load and play a scenario.
+// Validate проверяет структурные инварианты, необходимые для загрузки и прохождения сценария.
 func (d ScenarioDoc) Validate() error {
 	if d.Version < 1 {
 		return fmt.Errorf("version must be positive")

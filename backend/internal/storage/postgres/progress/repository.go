@@ -13,8 +13,9 @@ import (
 	progressservice "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/progress"
 )
 
-// TODO(owner: scenario): provide immutable scenario_versions.pass_percent (1..100).
-// TODO(owner: training-engine): persist max_score_points snapshots and attempt statuses.
+// TODO(owner: scenario): добавить неизменяемое значение
+// scenario_versions.pass_percent (1..100).
+// TODO(owner: training-engine): сохранять снимки max_score_points и статусы попыток.
 
 // тут навайбкожено т.к. нету общего пула постгреса, в другой ветке добавлю и смержу
 

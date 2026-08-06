@@ -7,6 +7,8 @@ import (
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 
+	openapi "github.com/34Minnesota/avito-antiscam-monorepo/backend/generated/openapi"
+
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
 	applogger "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/logger"
 	authservice "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/auth"

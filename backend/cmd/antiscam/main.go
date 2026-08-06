@@ -105,7 +105,7 @@ func main() {
 	router.Use(gin.Recovery(), server.LoggerMiddleware())
 
 	router.GET("/healthz", server.HealthCheck)
-	router.POST("/v1/sessions", server.CreateSession)
+	router.POST("/v1/auth/login", server.Login)
 
 	usershttp.RegisterUsersRoutes(router, userHandler)
 

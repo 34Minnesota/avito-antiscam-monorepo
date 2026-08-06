@@ -7,6 +7,8 @@ import (
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 
+	openapi "github.com/34Minnesota/avito-antiscam-monorepo/backend/generated/openapi"
+
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
 	applogger "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/logger"
 	authservice "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/auth"
@@ -39,21 +41,32 @@ func (s *Server) HealthCheck(c *gin.Context) {
 // Session
 // -----------------------------------------------------
 
-func (s *Server) CreateSession(c *gin.Context) {
+func (s *Server) Login(c *gin.Context) {
+	var req openapi.LoginRequest
 
-	session, err := s.auth.CreateSession(c.Request.Context())
-	if err != nil {
-		if s.logger != nil {
-			s.logger.Error("create session request failed", zap.Error(err))
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": "failed to create session",
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    "bad_request",
+			"message": err.Error(),
 		})
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{
-		"sessionId": session.ID,
+	session, err := s.auth.Login(
+		c.Request.Context(),
+		string(req.Email),
+		req.Password,
+	)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"code":    "unauthorized",
+			"message": "invalid email or password",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, openapi.LoginResponse{
+		SessionId: session.ID,
 	})
 }
 

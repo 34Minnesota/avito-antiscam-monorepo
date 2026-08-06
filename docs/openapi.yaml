@@ -16,6 +16,30 @@ paths:
       responses:
         "200": { description: Сервис доступен }
 
+  /v1/auth/login:
+    post:
+      operationId: login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Успешная авторизация
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "401":
+          description: Неверный email или пароль
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
   /v1/scenarios:
     get:
       operationId: listScenarios
@@ -299,6 +323,26 @@ components:
         outdatedActiveAttempts:
           type: array
           items: { $ref: "#/components/schemas/OutdatedActiveAttempt" }
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    LoginResponse:
+      type: object
+      required:
+        - sessionId
+      properties:
+        sessionId:
+          type: string
+          format: uuid
     Error:
       type: object
       required: [code, message]

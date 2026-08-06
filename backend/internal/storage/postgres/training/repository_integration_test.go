@@ -14,14 +14,25 @@ import (
 
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
 	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
+	authstorage "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/storage/postgres/auth"
 	postgrespool "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/storage/postgres/pool"
 )
 
 const schema = `
+CREATE TABLE IF NOT EXISTS users (
+    id            UUID PRIMARY KEY,
+    nickname      TEXT NOT NULL UNIQUE,
+    email         TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    created_at    TIMESTAMPTZ NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS sessions (
     id           UUID PRIMARY KEY,
+    user_id      UUID NOT NULL REFERENCES users (id) ON DELETE CASCADE,
     created_at   TIMESTAMPTZ NOT NULL,
-    last_seen_at TIMESTAMPTZ NOT NULL
+    last_seen_at TIMESTAMPTZ NOT NULL,
+    expires_at   TIMESTAMPTZ NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS scenarios (
@@ -40,7 +51,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_scenarios_slug ON scenarios (slug);
 
 CREATE TABLE IF NOT EXISTS attempts (
     id          UUID PRIMARY KEY,
-    user_id     UUID NOT NULL REFERENCES sessions (id) ON DELETE CASCADE,
+    user_id     UUID NOT NULL REFERENCES users (id) ON DELETE CASCADE,
     scenario_id UUID NOT NULL REFERENCES scenarios (id) ON DELETE CASCADE,
     status      TEXT NOT NULL DEFAULT 'in_progress' CHECK (status IN ('in_progress', 'finished')),
     state       JSONB NOT NULL,
@@ -63,9 +74,11 @@ CREATE TABLE IF NOT EXISTS attempt_steps (
 
 type repoEnv struct {
 	repo      *Repository
+	auth      *authstorage.AuthRepository
 	pool      *postgrespool.Pool
 	ctx       context.Context
 	userID    domain.UserID
+	sessionID uuid.UUID
 	buyerID   uuid.UUID
 	sellerID  uuid.UUID
 	attemptID uuid.UUID
@@ -141,6 +154,14 @@ func (e *repoEnv) scenarioNotFound(t *testing.T) {
 }
 
 func (e *repoEnv) createAttempt(t *testing.T) {
+	session, err := e.auth.GetSession(e.ctx, e.sessionID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if session.UserID != e.userID.UUID() {
+		t.Fatalf("session user = %s, want %s", session.UserID, e.userID.UUID())
+	}
+
 	if _, err := e.repo.ActiveAttempt(e.ctx, e.userID, e.buyerID); !errors.Is(err, domainErrors.ErrNotFound) {
 		t.Fatalf("no active attempt expected yet: %v", err)
 	}
@@ -351,25 +372,41 @@ func setup(t *testing.T) *repoEnv {
 	if _, err := pool.Exec(ctx, schema); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := pool.Exec(ctx, `TRUNCATE attempt_steps, attempts, scenarios, sessions CASCADE`); err != nil {
+	if _, err := pool.Exec(ctx, `TRUNCATE attempt_steps, attempts, scenarios, sessions, users CASCADE`); err != nil {
 		t.Fatal(err)
 	}
 
-	sessionID := uuid.New()
-	if _, err := pool.Exec(ctx, `INSERT INTO sessions VALUES ($1, $2, $2)`, sessionID, time.Now().UTC()); err != nil {
+	userUUID := uuid.New()
+	if _, err := pool.Exec(
+		ctx,
+		`INSERT INTO users (id, nickname, email, password_hash, created_at) VALUES ($1, $2, $3, $4, $5)`,
+		userUUID,
+		"integration-user",
+		"integration@example.com",
+		"password-hash",
+		time.Now().UTC(),
+	); err != nil {
 		t.Fatal(err)
 	}
 
-	userID, err := domain.NewUserID(sessionID)
+	authRepo := authstorage.NewRepository(pool)
+	session, err := authRepo.CreateSession(ctx, userUUID)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	userID, err := domain.NewUserID(userUUID)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	return &repoEnv{
 		repo:      New(pool),
+		auth:      authRepo,
 		pool:      pool,
 		ctx:       ctx,
 		userID:    userID,
+		sessionID: session.ID,
 		buyerID:   uuid.New(),
 		sellerID:  uuid.New(),
 		attemptID: uuid.New(),

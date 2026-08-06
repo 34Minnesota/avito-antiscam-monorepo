@@ -20,7 +20,7 @@ func CurrentUser(c *gin.Context) (domain.UserID, bool) {
 		return domain.UserID{}, false
 	}
 
-	userID, err := domain.NewUserID(session.ID)
+	userID, err := domain.NewUserID(session.UserID)
 	if err != nil {
 		return domain.UserID{}, false
 	}

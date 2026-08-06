@@ -15,16 +15,22 @@ import (
 // и работы с пользовательскими сессиями.
 type Service struct {
 	repository Repository
+	users      UserProvider
+	verifier   PasswordVerifier
 	logger     *applogger.Logger
 }
 
 // NewService создает сервис авторизации.
 func NewService(
 	repository Repository,
+	users UserProvider,
+	verifier PasswordVerifier,
 	logger *applogger.Logger,
 ) *Service {
 	return &Service{
 		repository: repository,
+		users:      users,
+		verifier:   verifier,
 		logger:     logger,
 	}
 }

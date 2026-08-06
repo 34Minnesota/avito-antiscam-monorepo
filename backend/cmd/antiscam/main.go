@@ -57,17 +57,22 @@ func main() {
 
 	// Repository
 	authRepository := authstorage.NewRepository(db)
-
-	// Service
-	authService := authservice.NewService(authRepository, appLogger)
-
-	// users feature
 	userRepository := userstorage.NewRepository(db)
+
+	// Users service
 	userService := usersservice.NewUsersService(
 		userRepository,
 		usersutils.BcryptPasswordHasher{},
 		usersutils.UUIDGenerator{},
 		usersutils.RealClock{},
+	)
+
+	// Auth service
+	authService := authservice.NewService(
+		authRepository,
+		userRepository,
+		authservice.BcryptPasswordVerifier{},
+		appLogger,
 	)
 	userHandler := usershttp.NewUsersHandler(userService)
 

@@ -4,138 +4,143 @@ import (
 	"context"
 	"errors"
 	"testing"
-	"time"
 
 	"github.com/google/uuid"
 
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
 )
 
-type MockRepository struct {
-	session domain.Session
-	err     error
+type mockUserProvider struct {
+	user domain.User
+	err  error
 }
 
-func (m *MockRepository) CreateSession(
+func (m *mockUserProvider) GetUser(
 	ctx context.Context,
 	userID uuid.UUID,
-) (domain.Session, error) {
-	return m.session, m.err
+) (domain.User, error) {
+	return m.user, m.err
 }
 
-func (m *MockRepository) GetSession(
+func (m *mockUserProvider) GetUserByEmail(
 	ctx context.Context,
-	sessionID uuid.UUID,
-) (domain.Session, error) {
-	return m.session, m.err
+	email string,
+) (domain.User, error) {
+	return m.user, m.err
 }
 
-func (m *MockRepository) UpdateLastSeen(
-	ctx context.Context,
-	sessionID uuid.UUID,
+type mockPasswordVerifier struct {
+	err error
+}
+
+func (m *mockPasswordVerifier) Compare(
+	hash string,
+	password string,
 ) error {
 	return m.err
 }
 
-func (m *MockRepository) DeleteSession(
-	ctx context.Context,
-	sessionID uuid.UUID,
-) error {
-	return m.err
-}
+func TestLoginSuccess(t *testing.T) {
+	user := domain.User{
+		ID:           uuid.New(),
+		Email:        "user@test.ru",
+		PasswordHash: "hash",
+	}
 
-func TestCreateSession(t *testing.T) {
-	expected := domain.Session{
-		ID:         uuid.New(),
-		UserID:     uuid.New(),
-		CreatedAt:  time.Now().UTC(),
-		LastSeenAt: time.Now().UTC(),
-		ExpiresAt:  time.Now().UTC().Add(30 * 24 * time.Hour),
+	session := domain.Session{
+		ID:     uuid.New(),
+		UserID: user.ID,
 	}
 
 	repository := &MockRepository{
-		session: expected,
+		session: session,
 	}
 
-	service := NewService(repository, nil)
+	users := &mockUserProvider{
+		user: user,
+	}
 
-	session, err := service.CreateSession(
+	verifier := &mockPasswordVerifier{}
+
+	service := NewService(
+		repository,
+		users,
+		verifier,
+		nil,
+	)
+
+	result, err := service.Login(
 		context.Background(),
-		expected.UserID,
+		user.Email,
+		"password",
 	)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if session.ID != expected.ID {
+	if result.ID != session.ID {
 		t.Fatal("unexpected session id")
 	}
-
-	if session.UserID != expected.UserID {
-		t.Fatal("unexpected user id")
-	}
 }
 
-func TestValidateSessionSuccess(t *testing.T) {
-	expected := domain.Session{
-		ID:         uuid.New(),
-		UserID:     uuid.New(),
-		CreatedAt:  time.Now().UTC(),
-		LastSeenAt: time.Now().UTC(),
-		ExpiresAt:  time.Now().UTC().Add(30 * 24 * time.Hour),
-	}
-
-	repository := &MockRepository{
-		session: expected,
-	}
-
-	service := NewService(repository, nil)
-
-	session, err := service.ValidateSession(
-		context.Background(),
-		expected.ID,
-	)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if session.ID != expected.ID {
-		t.Fatal("unexpected session id")
-	}
-
-	if session.UserID != expected.UserID {
-		t.Fatal("unexpected user id")
-	}
-}
-
-func TestValidateSessionFail(t *testing.T) {
-	repository := &MockRepository{
-		err: errors.New("session not found"),
-	}
-
-	service := NewService(repository, nil)
-
-	_, err := service.ValidateSession(
-		context.Background(),
-		uuid.New(),
-	)
-
-	if err == nil {
-		t.Fatal("expected error")
-	}
-}
-
-func TestLogout(t *testing.T) {
+func TestLoginUserNotFound(t *testing.T) {
 	repository := &MockRepository{}
 
-	service := NewService(repository, nil)
+	users := &mockUserProvider{
+		err: errors.New("not found"),
+	}
 
-	err := service.Logout(
-		context.Background(),
-		uuid.New(),
+	verifier := &mockPasswordVerifier{}
+
+	service := NewService(
+		repository,
+		users,
+		verifier,
+		nil,
 	)
 
-	if err != nil {
-		t.Fatal(err)
+	_, err := service.Login(
+		context.Background(),
+		"user@test.ru",
+		"password",
+	)
+
+	if !errors.Is(err, ErrInvalidCredentials) {
+		t.Fatal("expected invalid credentials")
+	}
+}
+
+func TestLoginWrongPassword(t *testing.T) {
+	user := domain.User{
+		ID:           uuid.New(),
+		Email:        "user@test.ru",
+		PasswordHash: "hash",
+	}
+
+	repository := &MockRepository{}
+
+	users := &mockUserProvider{
+		user: user,
+	}
+
+	verifier := &mockPasswordVerifier{
+		err: errors.New("wrong password"),
+	}
+
+	service := NewService(
+		repository,
+		users,
+		verifier,
+		nil,
+	)
+
+	_, err := service.Login(
+		context.Background(),
+		user.Email,
+		"password",
+	)
+
+	if !errors.Is(err, ErrInvalidCredentials) {
+		t.Fatal("expected invalid credentials")
 	}
 }

@@ -82,6 +82,35 @@ func (s *Server) CreateSession(c *gin.Context) {
 	})
 }
 
+func (s *Server) Login(c *gin.Context) {
+	var req openapi.LoginRequest
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    "bad_request",
+			"message": err.Error(),
+		})
+		return
+	}
+
+	session, err := s.auth.Login(
+		c.Request.Context(),
+		string(req.Email),
+		req.Password,
+	)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"code":    "unauthorized",
+			"message": "invalid email or password",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, openapi.LoginResponse{
+		SessionId: session.ID,
+	})
+}
+
 // -----------------------------------------------------
 // Остальные endpoint'ы пока заглушки
 // -----------------------------------------------------

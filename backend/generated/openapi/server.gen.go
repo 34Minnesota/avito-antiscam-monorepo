@@ -162,6 +162,17 @@ type HistoricalVersionProgress struct {
 	Version       ScenarioVersion `json:"version"`
 }
 
+// LoginRequest defines model for LoginRequest.
+type LoginRequest struct {
+	Email    openapi_types.Email `json:"email"`
+	Password string              `json:"password"`
+}
+
+// LoginResponse defines model for LoginResponse.
+type LoginResponse struct {
+	SessionId openapi_types.UUID `json:"sessionId"`
+}
+
 // OutdatedActiveAttempt defines model for OutdatedActiveAttempt.
 type OutdatedActiveAttempt struct {
 	AttemptId      openapi_types.UUID `json:"attemptId"`
@@ -286,6 +297,9 @@ type ExecuteActionJSONBody struct {
 // ExecuteActionJSONRequestBody defines body for ExecuteAction for application/json ContentType.
 type ExecuteActionJSONRequestBody ExecuteActionJSONBody
 
+// LoginJSONRequestBody defines body for Login for application/json ContentType.
+type LoginJSONRequestBody = LoginRequest
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 
@@ -297,6 +311,9 @@ type ServerInterface interface {
 
 	// (POST /v1/attempts/{attemptId}/actions)
 	ExecuteAction(c *gin.Context, attemptId AttemptID)
+
+	// (POST /v1/auth/login)
+	Login(c *gin.Context)
 
 	// (GET /v1/progress)
 	GetProgress(c *gin.Context)
@@ -380,6 +397,19 @@ func (siw *ServerInterfaceWrapper) ExecuteAction(c *gin.Context) {
 	siw.Handler.ExecuteAction(c, attemptId)
 }
 
+// Login operation middleware
+func (siw *ServerInterfaceWrapper) Login(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.Login(c)
+}
+
 // GetProgress operation middleware
 func (siw *ServerInterfaceWrapper) GetProgress(c *gin.Context) {
 
@@ -459,6 +489,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	}
 
 	router.GET(options.BaseURL+"/healthz", wrapper.HealthCheck)
+	router.POST(options.BaseURL+"/v1/auth/login", wrapper.Login)
 	router.GET(options.BaseURL+"/v1/scenarios", wrapper.ListScenarios)
 	router.POST(options.BaseURL+"/v1/scenarios/:slug/attempts", wrapper.CreateAttempt)
 	router.GET(options.BaseURL+"/v1/attempts/:attemptId", wrapper.GetAttempt)
@@ -660,6 +691,42 @@ func (response ExecuteAction500JSONResponse) VisitExecuteActionResponse(w http.R
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type LoginRequestObject struct {
+	Body *LoginJSONRequestBody
+}
+
+type LoginResponseObject interface {
+	VisitLoginResponse(w http.ResponseWriter) error
+}
+
+type Login200JSONResponse LoginResponse
+
+func (response Login200JSONResponse) VisitLoginResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type Login401JSONResponse Error
+
+func (response Login401JSONResponse) VisitLoginResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -870,6 +937,9 @@ type StrictServerInterface interface {
 	// (POST /v1/attempts/{attemptId}/actions)
 	ExecuteAction(ctx context.Context, request ExecuteActionRequestObject) (ExecuteActionResponseObject, error)
 
+	// (POST /v1/auth/login)
+	Login(ctx context.Context, request LoginRequestObject) (LoginResponseObject, error)
+
 	// (GET /v1/progress)
 	GetProgress(ctx context.Context, request GetProgressRequestObject) (GetProgressResponseObject, error)
 
@@ -1020,6 +1090,37 @@ func (sh *strictHandler) ExecuteAction(ctx *gin.Context, attemptId AttemptID) {
 	}
 }
 
+// Login operation middleware
+func (sh *strictHandler) Login(ctx *gin.Context) {
+	var request LoginRequestObject
+
+	var body LoginJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(ctx, err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.Login(ctx, request.(LoginRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "Login")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(LoginResponseObject); ok {
+		if err := validResponse.VisitLoginResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetProgress operation middleware
 func (sh *strictHandler) GetProgress(ctx *gin.Context) {
 	var request GetProgressRequestObject
@@ -1099,45 +1200,47 @@ func (sh *strictHandler) CreateAttempt(ctx *gin.Context, slug string) {
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
+	"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",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

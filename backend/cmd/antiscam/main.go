@@ -29,10 +29,7 @@ import (
 const (
 	serverAddress   = ":8080"
 	shutdownTimeout = 10 * time.Second
-
-	// Каталог со сценариями, читается на старте. Путь относительно рабочей
-	// директории процесса. Сид идемпотентен: ключ — slug из документа.
-	scenariosDir = "./docs/scenarios"
+	scenariosDir    = "./docs/scenarios"
 )
 
 func main() {
@@ -52,7 +49,6 @@ func main() {
 		appLogger.Close()
 	}()
 
-	// Контекст живёт до первого SIGINT/SIGTERM и служит сигналом к остановке.
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
@@ -78,8 +74,6 @@ func main() {
 	authService := authservice.NewService(authRepository, appLogger)
 	trainingService := trainingservice.New(trainingRepository)
 
-	// Сценарии заливаются на старте. Отсутствие каталога не повод не подниматься:
-	// API останется рабочим, просто каталог сценариев будет пустым.
 	if loaded, err := trainingservice.Seed(ctx, trainingRepository, os.DirFS(scenariosDir), "."); err != nil {
 		appLogger.Warn("seed scenarios failed", zap.String("dir", scenariosDir), zap.Error(err))
 	} else {
@@ -132,7 +126,6 @@ func main() {
 	<-ctx.Done()
 	appLogger.Info("shutting down")
 
-	// Отдельный контекст: ctx уже отменён сигналом, по нему Shutdown вернётся сразу.
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 	defer cancel()
 

@@ -10,64 +10,113 @@ import (
 
 // Подсчёт итога прохождения.
 
+// stepEffect — вклад одного шага журнала в итог.
+type stepEffect struct {
+	weight    float64
+	flag      string
+	endingKey string
+}
+
 // Evaluate восстанавливает итог попытки из журнала шагов.
 func Evaluate(doc domain.ScenarioDoc, steps []domain.AttemptStep) (SummaryResult, error) {
 	var earned float64
 	var endingKey string
 
-	missed := make([]domain.FlagInfo, 0, len(steps))
+	flags := make([]string, 0, len(steps))
 	seen := make(map[string]struct{}, len(steps))
 
 	for _, step := range steps {
-		scene, ok := doc.SceneByID(step.SceneID)
-		if !ok {
-			return SummaryResult{}, fmt.Errorf(
-				"%w: logged scene %q is missing from scenario", domainErrors.ErrInvalidScenario, step.SceneID)
+		effect, err := resolveStep(doc, step)
+		if err != nil {
+			return SummaryResult{}, err
 		}
 
-		opt, ok := scene.OptionByID(step.OptionID)
-		if !ok {
-			return SummaryResult{}, fmt.Errorf(
-				"%w: %q in scene %q", domainErrors.ErrUnknownOption, step.OptionID, step.SceneID)
+		earned += effect.weight
+		if effect.endingKey != "" {
+			endingKey = effect.endingKey
 		}
 
-		if opt.Verdict == domain.VerdictSafe {
-			earned += scene.Weight
-		} else if opt.Flag != "" {
-			if _, dup := seen[opt.Flag]; !dup {
-				seen[opt.Flag] = struct{}{}
-				if info, found := doc.FlagByID(opt.Flag); found {
-					missed = append(missed, info)
-				}
+		if effect.flag != "" {
+			if _, dup := seen[effect.flag]; !dup {
+				seen[effect.flag] = struct{}{}
+				flags = append(flags, effect.flag)
 			}
 		}
-
-		if opt.Verdict == domain.VerdictFatal {
-			endingKey = opt.Ending
-		}
 	}
 
-	if endingKey == "" {
-		endingKey = endingKeySafe
-		if len(seen) > 0 {
-			endingKey = endingKeyPartial
-		}
-	}
-
-	ending, found := doc.Endings[endingKey]
-	if !found {
-		return SummaryResult{}, fmt.Errorf(
-			"%w: ending %q not found", domainErrors.ErrInvalidScenario, endingKey)
+	ending, err := pickEnding(doc, endingKey, len(flags) > 0)
+	if err != nil {
+		return SummaryResult{}, err
 	}
 
 	return SummaryResult{
 		Score:       scorePercent(earned, doc.TotalWeight()),
 		Outcome:     ending.Outcome,
 		Ending:      ending,
-		MissedFlags: missed,
+		MissedFlags: describeFlags(doc, flags),
 		Takeaway:    doc.Debrief.Takeaway,
 		StepsTotal:  len(steps),
 	}, nil
+}
+
+// resolveStep восстанавливает последствия выбора по документу сценария:
+// в attempt_steps лежит только пара (scene_id, option_id).
+func resolveStep(doc domain.ScenarioDoc, step domain.AttemptStep) (stepEffect, error) {
+	scene, ok := doc.SceneByID(step.SceneID)
+	if !ok {
+		return stepEffect{}, fmt.Errorf(
+			"%w: logged scene %q is missing from scenario", domainErrors.ErrInvalidScenario, step.SceneID)
+	}
+
+	opt, ok := scene.OptionByID(step.OptionID)
+	if !ok {
+		return stepEffect{}, fmt.Errorf(
+			"%w: %q in scene %q", domainErrors.ErrUnknownOption, step.OptionID, step.SceneID)
+	}
+
+	var effect stepEffect
+	if opt.Verdict == domain.VerdictSafe {
+		effect.weight = scene.Weight
+	} else {
+		effect.flag = opt.Flag
+	}
+
+	if opt.Verdict == domain.VerdictFatal {
+		effect.endingKey = opt.Ending
+	}
+
+	return effect, nil
+}
+
+// pickEnding выбирает концовку: fatal задаёт её явно, иначе она следует
+// из того, набрал ли пользователь пропущенные признаки.
+func pickEnding(doc domain.ScenarioDoc, endingKey string, flagged bool) (domain.Ending, error) {
+	if endingKey == "" {
+		endingKey = endingKeySafe
+		if flagged {
+			endingKey = endingKeyPartial
+		}
+	}
+
+	ending, ok := doc.Endings[endingKey]
+	if !ok {
+		return domain.Ending{}, fmt.Errorf(
+			"%w: ending %q not found", domainErrors.ErrInvalidScenario, endingKey)
+	}
+
+	return ending, nil
+}
+
+// describeFlags разворачивает признаки в описания из разбора, сохраняя порядок.
+// Признак без описания в разбор не попадёт, но на выбор концовки уже повлиял.
+func describeFlags(doc domain.ScenarioDoc, flags []string) []domain.FlagInfo {
+	out := make([]domain.FlagInfo, 0, len(flags))
+	for _, id := range flags {
+		if info, ok := doc.FlagByID(id); ok {
+			out = append(out, info)
+		}
+	}
+	return out
 }
 
 // scorePercent переводит накопленный вес в проценты.

@@ -109,7 +109,7 @@ func validate(snapshot domain.ProgressSnapshot) error {
 }
 
 func validateScenario(scenario domain.ScenarioProgress) error {
-	if scenario.ID == uuid.Nil || scenario.Slug == "" || scenario.Title == "" || !(scenario.Role == domain.RoleBuyer || scenario.Role == domain.RoleSeller) {
+	if scenario.ID == uuid.Nil || scenario.Slug == "" || scenario.Title == "" || (scenario.Role != domain.RoleBuyer && scenario.Role != domain.RoleSeller) {
 		return domain.ErrInvalidProgressData
 	}
 

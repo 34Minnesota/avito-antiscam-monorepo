@@ -17,6 +17,7 @@ func mustJSON(t *testing.T, slug string) []byte {
 	t.Helper()
 	doc := testDoc()
 	doc.Slug = slug
+	doc.Debrief.KeyFlags = append(doc.Debrief.KeyFlags, domain.FlagInfo{ID: "ghost"})
 	raw, err := json.Marshal(doc)
 	if err != nil {
 		t.Fatal(err)

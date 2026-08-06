@@ -36,10 +36,15 @@ func (d ScenarioDoc) Validate() error {
 	if err := d.validateEndings(); err != nil {
 		return err
 	}
+	flagIDs, err := d.validateFlags()
+	if err != nil {
+		return err
+	}
 
 	seenScenes := make(map[string]struct{}, len(d.Scenes))
+	seenOptions := make(map[string]struct{})
 	for sceneIndex, scene := range d.Scenes {
-		if err := d.validateScene(scene, sceneIndex, seenScenes); err != nil {
+		if err := d.validateScene(scene, sceneIndex, seenScenes, seenOptions, flagIDs); err != nil {
 			return err
 		}
 	}
@@ -66,10 +71,27 @@ func (d ScenarioDoc) validateEndings() error {
 	return nil
 }
 
+func (d ScenarioDoc) validateFlags() (map[string]struct{}, error) {
+	flagIDs := make(map[string]struct{}, len(d.Debrief.KeyFlags))
+	for flagIndex, flag := range d.Debrief.KeyFlags {
+		if strings.TrimSpace(flag.ID) == "" {
+			return nil, fmt.Errorf("key flag at index %d has an empty id", flagIndex)
+		}
+		if _, duplicate := flagIDs[flag.ID]; duplicate {
+			return nil, fmt.Errorf("key flag id %q is duplicated", flag.ID)
+		}
+		flagIDs[flag.ID] = struct{}{}
+	}
+
+	return flagIDs, nil
+}
+
 func (d ScenarioDoc) validateScene(
 	scene Scene,
 	sceneIndex int,
 	seenScenes map[string]struct{},
+	seenOptions map[string]struct{},
+	flagIDs map[string]struct{},
 ) error {
 	if strings.TrimSpace(scene.ID) == "" {
 		return fmt.Errorf("scene at index %d has an empty id", sceneIndex)
@@ -86,9 +108,8 @@ func (d ScenarioDoc) validateScene(
 		return fmt.Errorf("scene %q has no options", scene.ID)
 	}
 
-	seenOptions := make(map[string]struct{}, len(scene.Decision.Options))
 	for optionIndex, option := range scene.Decision.Options {
-		if err := d.validateOption(scene.ID, option, optionIndex, seenOptions); err != nil {
+		if err := d.validateOption(scene.ID, option, optionIndex, seenOptions, flagIDs); err != nil {
 			return err
 		}
 	}
@@ -101,14 +122,29 @@ func (d ScenarioDoc) validateOption(
 	option Option,
 	optionIndex int,
 	seenOptions map[string]struct{},
+	flagIDs map[string]struct{},
 ) error {
 	if strings.TrimSpace(option.ID) == "" {
 		return fmt.Errorf("option at index %d in scene %q has an empty id", optionIndex, sceneID)
 	}
 	if _, duplicate := seenOptions[option.ID]; duplicate {
-		return fmt.Errorf("option id %q is duplicated in scene %q", option.ID, sceneID)
+		return fmt.Errorf("option id %q is duplicated", option.ID)
 	}
 	seenOptions[option.ID] = struct{}{}
+
+	if option.Flag != "" {
+		if strings.TrimSpace(option.Flag) == "" {
+			return fmt.Errorf("option %q in scene %q has an empty flag id", option.ID, sceneID)
+		}
+		if _, ok := flagIDs[option.Flag]; !ok {
+			return fmt.Errorf(
+				"option %q in scene %q references missing flag %q",
+				option.ID,
+				sceneID,
+				option.Flag,
+			)
+		}
+	}
 
 	if !option.Verdict.isValid() {
 		return fmt.Errorf(

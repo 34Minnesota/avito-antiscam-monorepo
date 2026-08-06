@@ -17,6 +17,7 @@ func validScenarioDoc() domain.ScenarioDoc {
 			Weight: 1,
 			Decision: domain.Decision{Options: []domain.Option{
 				{ID: "safe", Verdict: domain.VerdictSafe},
+				{ID: "risky", Verdict: domain.VerdictRisky, Flag: "payment-outside"},
 				{ID: "fatal", Verdict: domain.VerdictFatal, Ending: "lost"},
 			}},
 		}},
@@ -25,6 +26,7 @@ func validScenarioDoc() domain.ScenarioDoc {
 			"partial": {Outcome: domain.OutcomePartial},
 			"lost":    {Outcome: domain.OutcomeScammed},
 		},
+		Debrief: domain.Debrief{KeyFlags: []domain.FlagInfo{{ID: "payment-outside"}}},
 	}
 }
 
@@ -63,17 +65,39 @@ func TestScenarioDocValidateRejectsBrokenStructure(t *testing.T) {
 		"duplicate option id": func(doc *domain.ScenarioDoc) {
 			doc.Scenes[0].Decision.Options[1].ID = "safe"
 		},
+		"duplicate option id across scenes": func(doc *domain.ScenarioDoc) {
+			doc.Scenes = append(doc.Scenes, domain.Scene{
+				ID:     "scene-2",
+				Weight: 1,
+				Decision: domain.Decision{Options: []domain.Option{{
+					ID:      "safe",
+					Verdict: domain.VerdictSafe,
+				}}},
+			})
+		},
 		"unsupported verdict": func(doc *domain.ScenarioDoc) {
 			doc.Scenes[0].Decision.Options[0].Verdict = "unknown"
+		},
+		"empty key flag id": func(doc *domain.ScenarioDoc) {
+			doc.Debrief.KeyFlags[0].ID = " "
+		},
+		"duplicate key flag id": func(doc *domain.ScenarioDoc) {
+			doc.Debrief.KeyFlags = append(doc.Debrief.KeyFlags, doc.Debrief.KeyFlags[0])
+		},
+		"option references missing flag": func(doc *domain.ScenarioDoc) {
+			doc.Scenes[0].Decision.Options[1].Flag = "missing"
+		},
+		"option has blank flag id": func(doc *domain.ScenarioDoc) {
+			doc.Scenes[0].Decision.Options[1].Flag = " "
 		},
 		"missing required ending": func(doc *domain.ScenarioDoc) {
 			delete(doc.Endings, "safe")
 		},
 		"fatal option without ending": func(doc *domain.ScenarioDoc) {
-			doc.Scenes[0].Decision.Options[1].Ending = ""
+			doc.Scenes[0].Decision.Options[2].Ending = ""
 		},
 		"fatal option references missing ending": func(doc *domain.ScenarioDoc) {
-			doc.Scenes[0].Decision.Options[1].Ending = "missing"
+			doc.Scenes[0].Decision.Options[2].Ending = "missing"
 		},
 	}
 

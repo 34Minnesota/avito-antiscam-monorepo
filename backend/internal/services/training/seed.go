@@ -36,7 +36,7 @@ func Seed(ctx context.Context, repo Repository, files fs.FS, dir string) (int, e
 		}
 		if err := doc.Validate(); err != nil {
 			return loaded, fmt.Errorf(
-				"validating %s: %w: %v",
+				"validating %s: %w: %w",
 				entry.Name(), domainErrors.ErrInvalidScenario, err,
 			)
 		}

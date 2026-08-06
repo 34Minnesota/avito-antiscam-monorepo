@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"strings"
@@ -14,10 +15,10 @@ const (
 // Validate проверяет структурные инварианты, необходимые для загрузки и прохождения сценария.
 func (d ScenarioDoc) Validate() error {
 	if d.Version < 1 {
-		return fmt.Errorf("version must be positive")
+		return errors.New("version must be positive")
 	}
 	if strings.TrimSpace(d.Slug) == "" {
-		return fmt.Errorf("slug must not be empty")
+		return errors.New("slug must not be empty")
 	}
 	if !d.Role.IsValid() {
 		return fmt.Errorf("unsupported role %q", d.Role)
@@ -30,7 +31,7 @@ func (d ScenarioDoc) Validate() error {
 		)
 	}
 	if len(d.Scenes) == 0 {
-		return fmt.Errorf("at least one scene is required")
+		return errors.New("at least one scene is required")
 	}
 
 	if err := d.validateEndings(); err != nil {
@@ -61,7 +62,7 @@ func (d ScenarioDoc) validateEndings() error {
 
 	for key, ending := range d.Endings {
 		if strings.TrimSpace(key) == "" {
-			return fmt.Errorf("ending key must not be empty")
+			return errors.New("ending key must not be empty")
 		}
 		if !ending.Outcome.isValid() {
 			return fmt.Errorf("ending %q has unsupported outcome %q", key, ending.Outcome)

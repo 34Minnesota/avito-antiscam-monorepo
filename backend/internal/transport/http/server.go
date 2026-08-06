@@ -74,14 +74,6 @@ func (s *Server) CreateAttempt(c *gin.Context, _ string) {
 // Session
 // -----------------------------------------------------
 
-// Пока авторизация пользователей не реализована,
-// создание пользовательской сессии недоступно.
-func (s *Server) CreateSession(c *gin.Context) {
-	c.JSON(http.StatusNotImplemented, gin.H{
-		"message": "authentication is not implemented yet",
-	})
-}
-
 func (s *Server) Login(c *gin.Context) {
 	var req openapi.LoginRequest
 

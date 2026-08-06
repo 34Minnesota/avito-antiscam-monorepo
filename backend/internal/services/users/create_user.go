@@ -41,7 +41,7 @@ func (s *UsersService) CreateUser(
 		return domain.User{}, err
 	}
 
-	if err := s.usersRepository.Create(ctx, user); err != nil {
+	if err := s.usersRepository.CreateUser(ctx, user); err != nil {
 		if errors.Is(err, coreErrors.ErrConflict) {
 			return domain.User{}, fmt.Errorf("create user: %w", coreErrors.ErrConflict)
 		}

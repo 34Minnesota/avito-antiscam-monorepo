@@ -15,15 +15,22 @@ import (
 )
 
 type repositoryStub struct {
-	user  domain.User
-	err   error
-	calls int
+	user   domain.User
+	err    error
+	userID uuid.UUID
+	calls  int
 }
 
-func (r *repositoryStub) Create(_ context.Context, user domain.User) error {
+func (r *repositoryStub) CreateUser(_ context.Context, user domain.User) error {
 	r.calls++
 	r.user = user
 	return r.err
+}
+
+func (r *repositoryStub) GetUser(_ context.Context, userID uuid.UUID) (domain.User, error) {
+	r.calls++
+	r.userID = userID
+	return r.user, r.err
 }
 
 type passwordHasherStub struct {

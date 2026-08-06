@@ -28,6 +28,11 @@ func (s *serviceStub) CreateUser(_ context.Context, _ CreateUserInput) (domain.U
 	return s.user, s.err
 }
 
+func (s *serviceStub) GetUser(_ context.Context, _ uuid.UUID) (domain.User, error) {
+	s.calls++
+	return s.user, s.err
+}
+
 func performCreateUserRequest(t *testing.T, service UsersService, body string) *httptest.ResponseRecorder {
 	t.Helper()
 	gin.SetMode(gin.TestMode)

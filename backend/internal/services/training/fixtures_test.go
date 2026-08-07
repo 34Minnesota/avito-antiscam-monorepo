@@ -8,7 +8,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
-	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
+	coreerrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/errors"
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/training"
 )
 
@@ -145,7 +145,7 @@ func (r *repositoryStub) ScenarioByID(_ context.Context, id uuid.UUID) (domain.S
 	if s, ok := r.byID[id]; ok {
 		return s, nil
 	}
-	return domain.Scenario{}, domainErrors.ErrNotFound
+	return domain.Scenario{}, coreerrors.ErrNotFound
 }
 
 func (r *repositoryStub) ScenarioStats(_ context.Context, _ domain.UserID) (map[uuid.UUID]training.ScenarioStats, error) {
@@ -165,7 +165,7 @@ func (r *repositoryStub) AttemptByID(_ context.Context, _ uuid.UUID) (domain.Att
 		return domain.Attempt{}, r.attemptErr
 	}
 	if r.attempt == nil {
-		return domain.Attempt{}, domainErrors.ErrNotFound
+		return domain.Attempt{}, coreerrors.ErrNotFound
 	}
 	return *r.attempt, nil
 }
@@ -175,7 +175,7 @@ func (r *repositoryStub) ActiveAttempt(_ context.Context, _ domain.UserID, _ uui
 		return domain.Attempt{}, r.activeErr
 	}
 	if r.active == nil {
-		return domain.Attempt{}, domainErrors.ErrNotFound
+		return domain.Attempt{}, coreerrors.ErrNotFound
 	}
 	return *r.active, nil
 }

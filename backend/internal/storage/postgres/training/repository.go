@@ -60,7 +60,7 @@ func (r *Repository) UpsertScenario(ctx context.Context, s domain.Scenario) erro
 	var same bool
 	err = r.pool.QueryRow(ctx, sameDocument, s.Doc.Slug, doc).Scan(&same)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return fmt.Errorf("reading existing scenario %s: %w", s.Doc.Slug, domainErrors.ErrNotFound)
+		return fmt.Errorf("reading existing scenario %s: %w", s.Doc.Slug, coreerrors.ErrNotFound)
 	}
 	if err != nil {
 		return fmt.Errorf("reading existing scenario %s: %w", s.Doc.Slug, err)
@@ -112,7 +112,7 @@ func (r *Repository) ScenarioByID(ctx context.Context, id uuid.UUID) (domain.Sce
 
 	s, err := scanScenario(r.pool.QueryRow(ctx, q, id))
 	if errors.Is(err, pgx.ErrNoRows) {
-		return domain.Scenario{}, fmt.Errorf("scenario %s: %w", id, domainErrors.ErrNotFound)
+		return domain.Scenario{}, fmt.Errorf("scenario %s: %w", id, coreerrors.ErrNotFound)
 	}
 	if err != nil {
 		return domain.Scenario{}, err
@@ -190,7 +190,7 @@ func (r *Repository) AttemptByID(ctx context.Context, id uuid.UUID) (domain.Atte
 
 	a, err := scanAttempt(r.pool.QueryRow(ctx, q, id))
 	if errors.Is(err, pgx.ErrNoRows) {
-		return domain.Attempt{}, fmt.Errorf("attempt %s: %w", id, domainErrors.ErrNotFound)
+		return domain.Attempt{}, fmt.Errorf("attempt %s: %w", id, coreerrors.ErrNotFound)
 	}
 	if err != nil {
 		return domain.Attempt{}, err
@@ -214,7 +214,7 @@ func (r *Repository) ActiveAttempt(
 
 	a, err := scanAttempt(r.pool.QueryRow(ctx, q, userID.UUID(), scenarioID))
 	if errors.Is(err, pgx.ErrNoRows) {
-		return domain.Attempt{}, domainErrors.ErrNotFound
+		return domain.Attempt{}, coreerrors.ErrNotFound
 	}
 	if err != nil {
 		return domain.Attempt{}, err

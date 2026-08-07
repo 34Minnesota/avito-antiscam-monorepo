@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
+	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
 )
 
 const HistoryLimit = 20
@@ -30,7 +31,7 @@ func New(repository Repository) Service {
 
 func (s Service) Get(ctx context.Context, userID domain.UserID) (domain.OverallProgress, error) {
 	if userID.IsZero() {
-		return domain.OverallProgress{}, domain.ErrInvalidUserID
+		return domain.OverallProgress{}, domainErrors.ErrInvalidUserID
 	}
 
 	if s.repository == nil {
@@ -110,7 +111,7 @@ func validate(snapshot domain.ProgressSnapshot) error {
 
 func validateScenario(scenario domain.ScenarioProgress) error {
 	if scenario.ID == uuid.Nil || scenario.Slug == "" || scenario.Title == "" || (scenario.Role != domain.RoleBuyer && scenario.Role != domain.RoleSeller) {
-		return domain.ErrInvalidProgressData
+		return domainErrors.ErrInvalidProgressData
 	}
 
 	if err := validateVersionProgress(scenario.Current); err != nil {
@@ -124,7 +125,7 @@ func validateScenario(scenario domain.ScenarioProgress) error {
 	}
 
 	if len(scenario.RecentAttempts) > HistoryLimit {
-		return domain.ErrInvalidProgressData
+		return domainErrors.ErrInvalidProgressData
 	}
 
 	return validateAttempts(scenario.RecentAttempts)
@@ -133,11 +134,11 @@ func validateScenario(scenario domain.ScenarioProgress) error {
 func validateAttempts(attempts []domain.AttemptResult) error {
 	for index, attempt := range attempts {
 		if attempt.ID == uuid.Nil || attempt.CompletedAt.IsZero() || attempt.Score.MaxPoints() != attempt.Version.MaxPoints {
-			return domain.ErrInvalidProgressData
+			return domainErrors.ErrInvalidProgressData
 		}
 
 		if index > 0 && attempt.CompletedAt.After(attempts[index-1].CompletedAt) {
-			return domain.ErrInvalidProgressData
+			return domainErrors.ErrInvalidProgressData
 		}
 	}
 
@@ -148,15 +149,15 @@ func validateVersionProgress(progress domain.VersionProgress) error {
 	v := progress.Version
 
 	if v.ID == uuid.Nil || v.Number < 1 || v.MaxPoints < 1 || v.PassPercent < 1 || v.PassPercent > 100 || v.PublishedAt.IsZero() {
-		return domain.ErrInvalidProgressData
+		return domainErrors.ErrInvalidProgressData
 	}
 
 	if progress.AttemptsCount < 0 || progress.Passed && !progress.Completed || progress.BestScore != nil && !progress.Completed {
-		return domain.ErrInvalidProgressData
+		return domainErrors.ErrInvalidProgressData
 	}
 
 	if progress.BestScore != nil && progress.BestScore.MaxPoints() != v.MaxPoints {
-		return domain.ErrInvalidProgressData
+		return domainErrors.ErrInvalidProgressData
 	}
 
 	return nil

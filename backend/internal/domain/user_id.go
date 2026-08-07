@@ -1,12 +1,15 @@
 package domain
 
-import "github.com/google/uuid"
+import (
+	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
+	"github.com/google/uuid"
+)
 
 type UserID uuid.UUID
 
 func NewUserID(id uuid.UUID) (UserID, error) {
 	if id == uuid.Nil {
-		return UserID{}, ErrInvalidUserID
+		return UserID{}, domainErrors.ErrInvalidUserID
 	}
 
 	return UserID(id), nil

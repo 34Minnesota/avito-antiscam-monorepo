@@ -175,7 +175,7 @@ func (e *repoEnv) listFiltersByRole(t *testing.T) {
 }
 
 func (e *repoEnv) scenarioNotFound(t *testing.T) {
-	if _, err := e.repo.ScenarioByID(e.ctx, uuid.New()); !errors.Is(err, domainErrors.ErrNotFound) {
+	if _, err := e.repo.ScenarioByID(e.ctx, uuid.New()); !errors.Is(err, coreerrors.ErrNotFound) {
 		t.Fatalf("got %v", err)
 	}
 }
@@ -189,10 +189,10 @@ func (e *repoEnv) createAttempt(t *testing.T) {
 		t.Fatalf("session user = %s, want %s", session.UserID, e.userID.UUID())
 	}
 
-	if _, err := e.repo.ActiveAttempt(e.ctx, e.userID, e.buyerID); !errors.Is(err, domainErrors.ErrNotFound) {
+	if _, err := e.repo.ActiveAttempt(e.ctx, e.userID, e.buyerID); !errors.Is(err, coreerrors.ErrNotFound) {
 		t.Fatalf("no active attempt expected yet: %v", err)
 	}
-	if _, err := e.repo.AttemptByID(e.ctx, e.attemptID); !errors.Is(err, domainErrors.ErrNotFound) {
+	if _, err := e.repo.AttemptByID(e.ctx, e.attemptID); !errors.Is(err, coreerrors.ErrNotFound) {
 		t.Fatalf("attempt must not exist yet: %v", err)
 	}
 

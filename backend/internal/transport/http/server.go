@@ -1,7 +1,6 @@
 package httptransport
 
 import (
-	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -10,7 +9,6 @@ import (
 
 	openapi "github.com/34Minnesota/avito-antiscam-monorepo/backend/generated/openapi"
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
-	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
 	applogger "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/logger"
 	authservice "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/auth"
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/training"
@@ -199,7 +197,7 @@ func (s *Server) StartAttempt(c *gin.Context) {
 		if s.logger != nil {
 			s.logger.Error("start attempt failed", zap.Error(err))
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "failed to start attempt"})
+		writeTrainingError(c, err)
 		return
 	}
 	c.JSON(http.StatusCreated, result)
@@ -227,14 +225,10 @@ func (s *Server) SubmitChoice(c *gin.Context) {
 
 	result, err := s.training.Choose(c.Request.Context(), userID, attemptID, req.SceneID, req.OptionID, *req.ExpectedRevision)
 	if err != nil {
-		if errors.Is(err, domainErrors.ErrConflict) {
-			c.JSON(http.StatusConflict, gin.H{"code": "conflict", "message": "attempt state has changed"})
-			return
-		}
 		if s.logger != nil {
 			s.logger.Error("submit choice failed", zap.Error(err))
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "failed to submit choice"})
+		writeTrainingError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, result)
@@ -259,7 +253,7 @@ func (s *Server) GetSummary(c *gin.Context) {
 		if s.logger != nil {
 			s.logger.Error("get summary failed", zap.Error(err))
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "failed to get summary"})
+		writeTrainingError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, summary)

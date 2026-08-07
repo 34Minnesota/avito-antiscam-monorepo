@@ -13,6 +13,7 @@ type StartAttemptRequest struct {
 }
 
 type ChoiceRequest struct {
-	SceneID  string `json:"scene_id" binding:"required"`
-	OptionID string `json:"option_id" binding:"required"`
+	SceneID          string `json:"scene_id" binding:"required"`
+	OptionID         string `json:"option_id" binding:"required"`
+	ExpectedRevision *int   `json:"expected_revision" binding:"required,gte=0"`
 }

@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
-	coreErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/errors"
+	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
 )
 
 type CreateUserInput struct {
@@ -42,8 +42,8 @@ func (s *UsersService) CreateUser(
 	}
 
 	if err := s.usersRepository.CreateUser(ctx, user); err != nil {
-		if errors.Is(err, coreErrors.ErrConflict) {
-			return domain.User{}, fmt.Errorf("create user: %w", coreErrors.ErrConflict)
+		if errors.Is(err, domainErrors.ErrConflict) {
+			return domain.User{}, fmt.Errorf("create user: %w", domainErrors.ErrConflict)
 		}
 		return domain.User{}, fmt.Errorf("create user: %w", err)
 	}

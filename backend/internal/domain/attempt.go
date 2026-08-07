@@ -25,7 +25,7 @@ type State struct {
 // Attempt — одно прохождение сценария пользователем.
 type Attempt struct {
 	ID           uuid.UUID
-	UserID       uuid.UUID
+	UserID       UserID
 	ScenarioID   uuid.UUID
 	Status       AttemptStatus
 	CurrentScene string
@@ -34,6 +34,7 @@ type Attempt struct {
 	Outcome      *Outcome
 	StartedAt    time.Time
 	FinishedAt   *time.Time
+	Revision     int
 }
 
 // AttemptStep — зафиксированный выбор пользователя.

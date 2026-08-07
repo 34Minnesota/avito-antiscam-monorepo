@@ -9,12 +9,13 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
-	progressservice "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/progress"
+	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/storage/postgres/pool"
 )
 
-// TODO(owner: scenario): provide immutable scenario_versions.pass_percent (1..100).
-// TODO(owner: training-engine): persist max_score_points snapshots and attempt statuses.
+// TODO(owner: scenario): добавить неизменяемое значение
+// scenario_versions.pass_percent (1..100).
+// TODO(owner: training-engine): сохранять снимки max_score_points и статусы попыток.
 
 // тут навайбкожено т.к. нету общего пула постгреса, в другой ветке добавлю и смержу
 
@@ -36,7 +37,7 @@ func (r *Repository) Load(
 	if r == nil || r.pool == nil {
 		return domain.ProgressSnapshot{}, fmt.Errorf(
 			"%w: postgres is not configured",
-			progressservice.ErrDependencyUnavailable,
+			domainErrors.ErrDependencyUnavailable,
 		)
 	}
 
@@ -134,7 +135,7 @@ func loadVersions(ctx context.Context, tx pgx.Tx, userID domain.UserID) ([]domai
 		if !exists {
 			index = len(scenarios)
 			indexes.byID[scenarioID] = index
-			scenarios = append(scenarios, domain.ScenarioProgress{ID: scenarioID, Slug: slug, Title: title, Role: domain.ScenarioRole(role)})
+			scenarios = append(scenarios, domain.ScenarioProgress{ID: scenarioID, Slug: slug, Title: title, Role: domain.Role(role)})
 		}
 
 		indexes.versions[version.ID] = version
@@ -278,9 +279,9 @@ func loadOutdatedAttempts(ctx context.Context, tx pgx.Tx, userID domain.UserID) 
 }
 
 func dependencyError(err error) error {
-	return fmt.Errorf("%w: %w", progressservice.ErrDependencyUnavailable, err)
+	return fmt.Errorf("%w: %w", domainErrors.ErrDependencyUnavailable, err)
 }
 
 func inconsistentError(message string) error {
-	return fmt.Errorf("%w: %s", progressservice.ErrDataInconsistent, message)
+	return fmt.Errorf("%w: %s", domainErrors.ErrDataInconsistent, message)
 }

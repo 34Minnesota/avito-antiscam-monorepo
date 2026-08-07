@@ -9,7 +9,7 @@ import (
 
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/generated/openapi"
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
-	progressservice "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/progress"
+	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/transport/http/identity"
 )
 
@@ -27,8 +27,8 @@ func NewProgressHandler(service ProgressGetter) *ProgressHandler {
 	return &ProgressHandler{service: service}
 }
 
-// RegisterProgressRoutes expects a router protected by Auth middleware.
-// TODO(owner: auth): attach JWT middleware to this router group in application wiring.
+// RegisterProgressRoutes ожидает маршрутизатор, защищённый middleware авторизации.
+// TODO(owner: auth): подключить JWT-middleware к этой группе маршрутов при настройке приложения.
 func RegisterProgressRoutes(router gin.IRoutes, handler *ProgressHandler) {
 	router.GET("/v1/progress", handler.Get)
 }
@@ -46,7 +46,7 @@ func (h *ProgressHandler) Get(c *gin.Context) {
 	result, err := h.service.Get(c.Request.Context(), userID)
 	if err != nil {
 		switch {
-		case errors.Is(err, progressservice.ErrDependencyUnavailable):
+		case errors.Is(err, domainErrors.ErrDependencyUnavailable):
 			c.JSON(http.StatusServiceUnavailable, openapi.Error{Code: "dependency_unavailable", Message: "progress dependency is unavailable"})
 		default:
 			c.JSON(http.StatusInternalServerError, openapi.Error{Code: "internal_error", Message: "internal server error"})

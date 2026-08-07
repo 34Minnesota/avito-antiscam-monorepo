@@ -37,14 +37,14 @@ type ScenarioProgress struct {
 	ID             uuid.UUID
 	Slug           string
 	Title          string
-	Role           ScenarioRole
+	Role           Role
 	Current        VersionProgress
 	History        []VersionProgress
 	RecentAttempts []AttemptResult
 }
 
 type RoleProgress struct {
-	Role               ScenarioRole
+	Role               Role
 	TotalScenarios     int
 	CompletedScenarios int
 	PassedScenarios    int

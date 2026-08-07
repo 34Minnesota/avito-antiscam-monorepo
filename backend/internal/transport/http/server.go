@@ -1,7 +1,7 @@
 package httptransport
 
 import (
-	"context"
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -10,27 +10,31 @@ import (
 
 	openapi "github.com/34Minnesota/avito-antiscam-monorepo/backend/generated/openapi"
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
+	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
 	applogger "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/logger"
 	authservice "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/auth"
+	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/training"
+	usersservice "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/users"
 )
-
-type TrainingService interface {
-	Catalog(context.Context, domain.UserID, domain.Role) (any, error)
-	Start(context.Context, domain.UserID, uuid.UUID) (any, error)
-	Choose(context.Context, domain.UserID, uuid.UUID, string, string) (any, error)
-	Summary(context.Context, domain.UserID, uuid.UUID) (any, error)
-}
 
 type Server struct {
 	auth     *authservice.Service
-	training TrainingService
+	users    *usersservice.UsersService
+	training *training.Service
 	logger   *applogger.Logger
 }
 
-func NewServer(auth *authservice.Service, logger *applogger.Logger) *Server {
+func NewServer(
+	auth *authservice.Service,
+	users *usersservice.UsersService,
+	training *training.Service,
+	logger *applogger.Logger,
+) *Server {
 	return &Server{
-		auth:   auth,
-		logger: logger,
+		auth:     auth,
+		users:    users,
+		training: training,
+		logger:   logger,
 	}
 }
 
@@ -42,41 +46,108 @@ func (s *Server) HealthCheck(c *gin.Context) {
 	c.Status(http.StatusOK)
 }
 
-func (s *Server) GetAttempt(c *gin.Context, _ openapi.AttemptID) {
-	c.JSON(http.StatusNotImplemented, gin.H{"code": "not_implemented", "message": "attempt API is not implemented"})
-}
-
-func (s *Server) ExecuteAction(c *gin.Context, _ openapi.AttemptID) {
-	c.JSON(http.StatusNotImplemented, gin.H{"code": "not_implemented", "message": "attempt API is not implemented"})
-}
-
-func (s *Server) GetProgress(c *gin.Context) {
-	c.JSON(http.StatusNotImplemented, gin.H{"code": "not_implemented", "message": "progress API is not implemented"})
-}
-
-func (s *Server) CreateAttempt(c *gin.Context, _ string) {
-	c.JSON(http.StatusNotImplemented, gin.H{"code": "not_implemented", "message": "attempt API is not implemented"})
-}
-
 // -----------------------------------------------------
 // Session
 // -----------------------------------------------------
 
-func (s *Server) CreateSession(c *gin.Context) {
+func (s *Server) Login(c *gin.Context) {
+	var req openapi.LoginRequest
 
-	session, err := s.auth.CreateSession(c.Request.Context())
-	if err != nil {
-		if s.logger != nil {
-			s.logger.Error("create session request failed", zap.Error(err))
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": "failed to create session",
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    "bad_request",
+			"message": err.Error(),
 		})
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{
-		"sessionId": session.ID,
+	session, err := s.auth.Login(
+		c.Request.Context(),
+		string(req.Email),
+		req.Password,
+	)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"code":    "unauthorized",
+			"message": "invalid email or password",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, openapi.LoginResponse{
+		SessionId: session.ID,
+	})
+}
+
+func (s *Server) Logout(c *gin.Context) {
+	value, exists := c.Get(sessionContextKey)
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"code":    "unauthorized",
+			"message": "unauthorized",
+		})
+		return
+	}
+
+	session, ok := value.(domain.Session)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"code":    "unauthorized",
+			"message": "unauthorized",
+		})
+		return
+	}
+
+	if err := s.auth.Logout(
+		c.Request.Context(),
+		session.ID,
+	); err != nil {
+
+		if s.logger != nil {
+			s.logger.Error("logout failed", zap.Error(err))
+		}
+
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    "internal_error",
+			"message": "logout failed",
+		})
+		return
+	}
+
+	c.Status(http.StatusNoContent)
+}
+func (s *Server) GetCurrentUser(c *gin.Context) {
+
+	userID, ok := CurrentUser(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"code":    "unauthorized",
+			"message": "unauthorized",
+		})
+		return
+	}
+
+	user, err := s.users.GetUser(
+		c.Request.Context(),
+		userID.UUID(),
+	)
+	if err != nil {
+		if s.logger != nil {
+			s.logger.Error("get current user failed", zap.Error(err))
+		}
+
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    "internal_error",
+			"message": "failed to get current user",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"id":         user.ID,
+		"nickname":   user.Nickname,
+		"email":      user.Email,
+		"created_at": user.CreatedAt,
 	})
 }
 
@@ -154,8 +225,12 @@ func (s *Server) SubmitChoice(c *gin.Context) {
 		return
 	}
 
-	result, err := s.training.Choose(c.Request.Context(), userID, attemptID, req.SceneID, req.OptionID)
+	result, err := s.training.Choose(c.Request.Context(), userID, attemptID, req.SceneID, req.OptionID, *req.ExpectedRevision)
 	if err != nil {
+		if errors.Is(err, domainErrors.ErrConflict) {
+			c.JSON(http.StatusConflict, gin.H{"code": "conflict", "message": "attempt state has changed"})
+			return
+		}
 		if s.logger != nil {
 			s.logger.Error("submit choice failed", zap.Error(err))
 		}

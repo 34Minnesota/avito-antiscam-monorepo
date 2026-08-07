@@ -4,7 +4,7 @@ import (
 	"math/big"
 
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
-	core_errors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/errors"
+	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
 )
 
 // Это по идее должно попадать в движок попытки
@@ -56,7 +56,7 @@ func result(score domain.Score, passPercent int) Result {
 
 func validatePassPercent(passPercent int) error {
 	if passPercent < 1 || passPercent > 100 {
-		return core_errors.ErrInvalidPassRate
+		return domainErrors.ErrInvalidPassRate
 	}
 
 	return nil

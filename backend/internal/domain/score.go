@@ -3,7 +3,7 @@ package domain
 import (
 	"math"
 
-	core_errors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/errors"
+	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
 )
 
 type Score struct {
@@ -13,15 +13,15 @@ type Score struct {
 
 func NewScore(points, maxPoints int) (Score, error) {
 	if maxPoints <= 0 {
-		return Score{}, core_errors.ErrInvalidMaxPoints
+		return Score{}, domainErrors.ErrInvalidMaxPoints
 	}
 
 	if points < 0 {
-		return Score{}, core_errors.ErrNegativePoints
+		return Score{}, domainErrors.ErrNegativePoints
 	}
 
 	if points > maxPoints {
-		return Score{}, core_errors.ErrScoreOverflow
+		return Score{}, domainErrors.ErrScoreOverflow
 	}
 
 	return Score{
@@ -44,11 +44,11 @@ func (s Score) Percent() int {
 
 func (s Score) Apply(scoreDelta int) (Score, error) {
 	if scoreDelta < 0 {
-		return Score{}, core_errors.ErrNegativeDelta
+		return Score{}, domainErrors.ErrNegativeDelta
 	}
 
 	if scoreDelta > s.maxPoints-s.points {
-		return Score{}, core_errors.ErrScoreOverflow
+		return Score{}, domainErrors.ErrScoreOverflow
 	}
 
 	return NewScore(s.points+scoreDelta, s.maxPoints)

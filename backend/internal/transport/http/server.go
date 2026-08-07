@@ -1,6 +1,7 @@
 package httptransport
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -9,6 +10,7 @@ import (
 
 	openapi "github.com/34Minnesota/avito-antiscam-monorepo/backend/generated/openapi"
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
+	coreerrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/errors"
 	applogger "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/logger"
 	authservice "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/auth"
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/training"
@@ -223,8 +225,12 @@ func (s *Server) SubmitChoice(c *gin.Context) {
 		return
 	}
 
-	result, err := s.training.Choose(c.Request.Context(), userID, attemptID, req.SceneID, req.OptionID)
+	result, err := s.training.Choose(c.Request.Context(), userID, attemptID, req.SceneID, req.OptionID, *req.ExpectedRevision)
 	if err != nil {
+		if errors.Is(err, coreerrors.ErrConflict) {
+			c.JSON(http.StatusConflict, gin.H{"code": "conflict", "message": "attempt state has changed"})
+			return
+		}
 		if s.logger != nil {
 			s.logger.Error("submit choice failed", zap.Error(err))
 		}

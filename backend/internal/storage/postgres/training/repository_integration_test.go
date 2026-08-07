@@ -14,6 +14,7 @@ import (
 
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
 	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
+	coreerrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/errors"
 	authstorage "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/storage/postgres/auth"
 	postgrespool "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/storage/postgres/pool"
 )
@@ -59,6 +60,7 @@ CREATE TABLE IF NOT EXISTS attempts (
     outcome     TEXT CHECK (outcome IN ('safe', 'partial', 'scammed')),
     started_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
     finished_at TIMESTAMPTZ
+    ,revision    INTEGER NOT NULL DEFAULT 0 CHECK (revision >= 0)
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_attempts_active
     ON attempts (user_id, scenario_id) WHERE status = 'in_progress';
@@ -87,7 +89,8 @@ type repoEnv struct {
 func TestRepositoryPostgres(t *testing.T) {
 	env := setup(t)
 
-	t.Run("UpsertScenario is idempotent by slug", env.upsertIsIdempotent)
+	t.Run("UpsertScenario accepts a repeated identical document", env.upsertIsIdempotent)
+	t.Run("UpsertScenario rejects a changed document", env.upsertRejectsChangedDocument)
 	t.Run("ListScenarios filters by role", env.listFiltersByRole)
 	t.Run("ScenarioByID reports missing scenario", env.scenarioNotFound)
 	t.Run("CreateAttempt stores a fresh attempt", env.createAttempt)
@@ -100,13 +103,13 @@ func TestRepositoryPostgres(t *testing.T) {
 }
 
 func (e *repoEnv) upsertIsIdempotent(t *testing.T) {
-	if err := e.repo.UpsertScenario(e.ctx, scenario(e.buyerID, "buyer-one", domain.RoleBuyer, 1)); err != nil {
+	original := scenario(e.buyerID, "buyer-one", domain.RoleBuyer, 1)
+	if err := e.repo.UpsertScenario(e.ctx, original); err != nil {
 		t.Fatal(err)
 	}
 
-	updated := scenario(uuid.New(), "buyer-one", domain.RoleBuyer, 2)
-	updated.Doc.Title = "Обновлённый"
-	if err := e.repo.UpsertScenario(e.ctx, updated); err != nil {
+	repeated := scenario(uuid.New(), "buyer-one", domain.RoleBuyer, 1)
+	if err := e.repo.UpsertScenario(e.ctx, repeated); err != nil {
 		t.Fatal(err)
 	}
 
@@ -114,11 +117,35 @@ func (e *repoEnv) upsertIsIdempotent(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if stored.Doc.Title != "Обновлённый" {
-		t.Fatalf("title = %q", stored.Doc.Title)
+	if stored.ID != original.ID {
+		t.Fatalf("scenario id = %s, want %s", stored.ID, original.ID)
 	}
-	if stored.Doc.Difficulty != 2 {
+	if stored.Doc.Difficulty != original.Doc.Difficulty {
 		t.Fatalf("difficulty = %d", stored.Doc.Difficulty)
+	}
+}
+
+func (e *repoEnv) upsertRejectsChangedDocument(t *testing.T) {
+	changed := scenario(uuid.New(), "buyer-one", domain.RoleBuyer, 2)
+	changed.Doc.Title = "Changed scenario"
+
+	err := e.repo.UpsertScenario(e.ctx, changed)
+	if err == nil {
+		t.Fatal("expected an error for a changed scenario document")
+	}
+	if !strings.Contains(err.Error(), "already exists with different document") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	stored, err := e.repo.ScenarioByID(e.ctx, e.buyerID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if stored.Doc.Title == changed.Doc.Title {
+		t.Fatalf("title was changed: %q", stored.Doc.Title)
+	}
+	if stored.Doc.Difficulty == changed.Doc.Difficulty {
+		t.Fatalf("difficulty was changed: %d", stored.Doc.Difficulty)
 	}
 }
 
@@ -222,8 +249,12 @@ func (e *repoEnv) saveStepKeepsStatus(t *testing.T) {
 		OptionID:  "a1",
 		CreatedAt: time.Now().UTC().Truncate(time.Microsecond),
 	}
-	if err := e.repo.SaveStep(e.ctx, step, attempt); err != nil {
+	newRevision, err := e.repo.SaveStep(e.ctx, step, attempt, e.userID, attempt.Revision)
+	if err != nil {
 		t.Fatal(err)
+	}
+	if newRevision != 1 {
+		t.Fatalf("revision = %d, want 1", newRevision)
 	}
 
 	stored, err := e.repo.AttemptByID(e.ctx, e.attemptID)
@@ -236,6 +267,20 @@ func (e *repoEnv) saveStepKeepsStatus(t *testing.T) {
 	if stored.State.SceneIndex != 1 || stored.State.Earned != 1 {
 		t.Fatalf("state was not persisted: %+v", stored.State)
 	}
+	if stored.Revision != 1 {
+		t.Fatalf("revision = %d, want 1", stored.Revision)
+	}
+
+	if _, err := e.repo.SaveStep(e.ctx, step, attempt, e.userID, 0); !errors.Is(err, coreerrors.ErrConflict) {
+		t.Fatalf("stale revision error = %v, want conflict", err)
+	}
+	journal, err := e.repo.Steps(e.ctx, e.attemptID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(journal) != 1 {
+		t.Fatalf("stale revision added a step: %d", len(journal))
+	}
 }
 
 func (e *repoEnv) stepsInPlayOrder(t *testing.T) {
@@ -247,7 +292,7 @@ func (e *repoEnv) stepsInPlayOrder(t *testing.T) {
 		AttemptID: e.attemptID, SceneID: "s2", OptionID: "b1",
 		CreatedAt: time.Now().UTC().Truncate(time.Microsecond),
 	}
-	if err := e.repo.SaveStep(e.ctx, second, attempt); err != nil {
+	if _, err := e.repo.SaveStep(e.ctx, second, attempt, e.userID, attempt.Revision); err != nil {
 		t.Fatal(err)
 	}
 
@@ -430,7 +475,8 @@ func TestRepositoryReportsQueryFailures(t *testing.T) {
 		"AttemptByID":   func() error { _, err := repo.AttemptByID(ctx, uuid.New()); return err },
 		"ActiveAttempt": func() error { _, err := repo.ActiveAttempt(ctx, env.userID, uuid.New()); return err },
 		"SaveStep": func() error {
-			return repo.SaveStep(ctx, domain.AttemptStep{}, domain.Attempt{ID: uuid.New()})
+			_, err := repo.SaveStep(ctx, domain.AttemptStep{}, domain.Attempt{ID: uuid.New()}, env.userID, 0)
+			return err
 		},
 		"FinishAttempt": func() error {
 			return repo.FinishAttempt(ctx, uuid.New(), 10, domain.OutcomeSafe, time.Now())
@@ -480,7 +526,7 @@ func TestSaveStepRejectsUnknownAttempt(t *testing.T) {
 	env := setup(t)
 
 	step := domain.AttemptStep{AttemptID: uuid.New(), SceneID: "s1", OptionID: "a1", CreatedAt: time.Now().UTC()}
-	err := env.repo.SaveStep(env.ctx, step, domain.Attempt{ID: uuid.New(), State: domain.State{}})
+	_, err := env.repo.SaveStep(env.ctx, step, domain.Attempt{ID: uuid.New(), State: domain.State{}}, env.userID, 0)
 	if err == nil {
 		t.Fatal("expected a foreign key violation")
 	}

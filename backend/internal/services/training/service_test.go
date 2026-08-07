@@ -159,7 +159,7 @@ func TestChooseSavesStepAndReturnsNextScene(t *testing.T) {
 		attempt: &domain.Attempt{ID: attemptID, UserID: userID, ScenarioID: scenarioID, Status: domain.AttemptInProgress},
 	}
 
-	result, err := training.New(repo).Choose(context.Background(), userID, attemptID, "s1", "a1")
+	result, err := training.New(repo).Choose(context.Background(), userID, attemptID, "s1", "a1", 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -168,6 +168,9 @@ func TestChooseSavesStepAndReturnsNextScene(t *testing.T) {
 	}
 	if result.Summary != nil {
 		t.Fatalf("unfinished attempt must not carry a summary")
+	}
+	if result.Revision != 1 {
+		t.Fatalf("revision = %d, want 1", result.Revision)
 	}
 	if len(repo.savedSteps) != 1 || repo.savedSteps[0].AttemptID != attemptID {
 		t.Fatalf("unexpected saved step: %+v", repo.savedSteps)
@@ -195,7 +198,7 @@ func TestChooseFinishesAttemptAndAttachesSummary(t *testing.T) {
 		best:    &best,
 	}
 
-	result, err := training.New(repo).Choose(context.Background(), userID, attemptID, "s3", "c1")
+	result, err := training.New(repo).Choose(context.Background(), userID, attemptID, "s3", "c1", 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -225,7 +228,7 @@ func TestChooseRejectsForeignAndFinishedAttempts(t *testing.T) {
 		byID:    map[uuid.UUID]domain.Scenario{scenarioID: testScenario(scenarioID)},
 		attempt: &domain.Attempt{ID: attemptID, UserID: mustUserID(t), ScenarioID: scenarioID},
 	}
-	_, err := training.New(foreign).Choose(context.Background(), userID, attemptID, "s1", "a1")
+	_, err := training.New(foreign).Choose(context.Background(), userID, attemptID, "s1", "a1", 0)
 	if !errors.Is(err, domainErrors.ErrForbidden) {
 		t.Fatalf("foreign attempt: got %v", err)
 	}
@@ -234,7 +237,7 @@ func TestChooseRejectsForeignAndFinishedAttempts(t *testing.T) {
 		byID:    map[uuid.UUID]domain.Scenario{scenarioID: testScenario(scenarioID)},
 		attempt: &domain.Attempt{ID: attemptID, UserID: userID, ScenarioID: scenarioID, Status: domain.AttemptFinished},
 	}
-	_, err = training.New(finished).Choose(context.Background(), userID, attemptID, "s1", "a1")
+	_, err = training.New(finished).Choose(context.Background(), userID, attemptID, "s1", "a1", 0)
 	if !errors.Is(err, domainErrors.ErrAttemptFinished) {
 		t.Fatalf("finished attempt: got %v", err)
 	}
@@ -279,7 +282,7 @@ func TestChoosePropagatesErrors(t *testing.T) {
 	}
 
 	for name, tc := range cases {
-		if _, err := training.New(tc.repo).Choose(context.Background(), userID, attemptID, tc.scene, tc.opt); err == nil {
+		if _, err := training.New(tc.repo).Choose(context.Background(), userID, attemptID, tc.scene, tc.opt, 0); err == nil {
 			t.Fatalf("%s: expected error", name)
 		}
 	}

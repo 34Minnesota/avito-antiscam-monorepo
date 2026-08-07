@@ -12,6 +12,7 @@ import (
 
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
 	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
+	coreerrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/errors"
 	trainingservice "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/training"
 	postgrespool "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/storage/postgres/pool"
 )
@@ -24,7 +25,9 @@ func New(pool *postgrespool.Pool) *Repository {
 	return &Repository{pool: pool}
 }
 
-// UpsertScenario вставляет или обновляет сценарий
+// UpsertScenario создаёт сценарий либо подтверждает, что существующий сценарий
+// с тем же slug содержит идентичный документ. Изменять опубликованный сценарий
+// через seed запрещено.
 func (r *Repository) UpsertScenario(ctx context.Context, s domain.Scenario) error {
 	ctx, cancel := context.WithTimeout(ctx, r.pool.OpTimeout())
 	defer cancel()
@@ -34,17 +37,38 @@ func (r *Repository) UpsertScenario(ctx context.Context, s domain.Scenario) erro
 		return fmt.Errorf("scenario serializing %s: %w", s.Doc.Slug, err)
 	}
 
-	const q = `
+	const insert = `
 		INSERT INTO scenarios (id, doc)
 		VALUES ($1, $2)
-		ON CONFLICT (slug) DO UPDATE SET
-			doc        = EXCLUDED.doc,
-			is_active  = true,
-			updated_at = now()`
+		ON CONFLICT (slug) DO NOTHING
+		RETURNING id`
 
-	if _, err := r.pool.Exec(ctx, q, s.ID, doc); err != nil {
-		return fmt.Errorf("upsert scenario %s: %w", s.Doc.Slug, err)
+	var id uuid.UUID
+	err = r.pool.QueryRow(ctx, insert, s.ID, doc).Scan(&id)
+	if err == nil {
+		return nil
 	}
+	if !errors.Is(err, pgx.ErrNoRows) {
+		return fmt.Errorf("creating scenario %s: %w", s.Doc.Slug, err)
+	}
+
+	const sameDocument = `
+		SELECT doc = $2::jsonb
+		FROM scenarios
+		WHERE slug = $1`
+
+	var same bool
+	err = r.pool.QueryRow(ctx, sameDocument, s.Doc.Slug, doc).Scan(&same)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return fmt.Errorf("reading existing scenario %s: %w", s.Doc.Slug, domainErrors.ErrNotFound)
+	}
+	if err != nil {
+		return fmt.Errorf("reading existing scenario %s: %w", s.Doc.Slug, err)
+	}
+	if !same {
+		return fmt.Errorf("scenario %q already exists with different document", s.Doc.Slug)
+	}
+
 	return nil
 }
 
@@ -161,7 +185,7 @@ func (r *Repository) AttemptByID(ctx context.Context, id uuid.UUID) (domain.Atte
 	defer cancel()
 
 	const q = `
-		SELECT id, user_id, scenario_id, status, state, score, outcome, started_at, finished_at
+		SELECT id, user_id, scenario_id, status, state, score, outcome, started_at, finished_at, revision
 		FROM attempts WHERE id = $1`
 
 	a, err := scanAttempt(r.pool.QueryRow(ctx, q, id))
@@ -184,7 +208,7 @@ func (r *Repository) ActiveAttempt(
 	defer cancel()
 
 	const q = `
-		SELECT id, user_id, scenario_id, status, state, score, outcome, started_at, finished_at
+		SELECT id, user_id, scenario_id, status, state, score, outcome, started_at, finished_at, revision
 		FROM attempts
 		WHERE user_id = $1 AND scenario_id = $2 AND status = 'in_progress'`
 
@@ -199,38 +223,69 @@ func (r *Repository) ActiveAttempt(
 }
 
 // SaveStep фиксирует шаг и новую позицию попытки одной транзакцией.
-func (r *Repository) SaveStep(ctx context.Context, step domain.AttemptStep, a domain.Attempt) error {
+func (r *Repository) SaveStep(
+	ctx context.Context,
+	step domain.AttemptStep,
+	a domain.Attempt,
+	userID domain.UserID,
+	expectedRevision int,
+) (int, error) {
 	ctx, cancel := context.WithTimeout(ctx, r.pool.OpTimeout())
 	defer cancel()
 
 	state, err := json.Marshal(a.State)
 	if err != nil {
-		return fmt.Errorf("serializing state: %w", err)
+		return 0, fmt.Errorf("serializing state: %w", err)
 	}
 
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
-		return fmt.Errorf("beginning transaction: %w", err)
+		return 0, fmt.Errorf("beginning transaction: %w", err)
 	}
 	//nolint:errcheck
 	defer tx.Rollback(ctx)
+
+	const updateAttempt = `
+		UPDATE attempts
+		SET state = $4,
+			revision = revision + 1
+		WHERE id = $1
+			AND user_id = $2
+			AND revision = $3
+			AND status = 'in_progress'
+		RETURNING revision;
+	`
+
+	var newRevision int
+
+	err = tx.QueryRow(
+		ctx,
+		updateAttempt,
+		a.ID,
+		userID,
+		expectedRevision,
+		state,
+	).Scan(&newRevision)
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return 0, coreerrors.ErrConflict
+	}
+	if err != nil {
+		return 0, fmt.Errorf("updating attempt: %w", err)
+	}
 
 	const insertStep = `
 		INSERT INTO attempt_steps (attempt_id, scene_id, option_id, created_at)
 		VALUES ($1, $2, $3, $4)`
 	if _, err := tx.Exec(ctx, insertStep, step.AttemptID, step.SceneID, step.OptionID, step.CreatedAt); err != nil {
-		return fmt.Errorf("saving step: %w", err)
-	}
-
-	const updateAttempt = `UPDATE attempts SET state = $2 WHERE id = $1`
-	if _, err := tx.Exec(ctx, updateAttempt, a.ID, state); err != nil {
-		return fmt.Errorf("updating attempt: %w", err)
+		return 0, fmt.Errorf("saving step: %w", err)
 	}
 
 	if err := tx.Commit(ctx); err != nil {
-		return fmt.Errorf("committing step: %w", err)
+		return 0, fmt.Errorf("committing step: %w", err)
 	}
-	return nil
+
+	return newRevision, nil
 }
 
 // FinishAttempt проставляет итог попытки одним оператором.
@@ -336,7 +391,7 @@ func scanAttempt(r row) (domain.Attempt, error) {
 		userID uuid.UUID
 	)
 	err := r.Scan(&a.ID, &userID, &a.ScenarioID, &a.Status, &state,
-		&a.Score, &a.Outcome, &a.StartedAt, &a.FinishedAt)
+		&a.Score, &a.Outcome, &a.StartedAt, &a.FinishedAt, &a.Revision)
 	if err != nil {
 		return domain.Attempt{}, err
 	}

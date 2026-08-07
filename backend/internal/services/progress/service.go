@@ -50,7 +50,7 @@ func aggregate(snapshot domain.ProgressSnapshot) domain.OverallProgress {
 		domain.RoleSeller: {Role: domain.RoleSeller},
 	}
 
-	overall := domain.OverallProgress{OutdatedActiveAttempts: snapshot.OutdatedActiveAttempts}
+	overall := domain.OverallProgress{}
 
 	for _, scenario := range snapshot.Scenarios {
 		role := roles[scenario.Role]
@@ -60,12 +60,12 @@ func aggregate(snapshot domain.ProgressSnapshot) domain.OverallProgress {
 		role.TotalScenarios++
 		overall.TotalScenarios++
 
-		if scenario.Current.Completed {
+		if scenario.Completed {
 			role.CompletedScenarios++
 			overall.CompletedScenarios++
 		}
 
-		if scenario.Current.Passed {
+		if scenario.Passed {
 			role.PassedScenarios++
 			overall.PassedScenarios++
 		}
@@ -108,14 +108,12 @@ func validateScenario(scenario domain.ScenarioProgress) error {
 		return domainErrors.ErrInvalidProgressData
 	}
 
-	if err := validateVersionProgress(scenario.Current); err != nil {
-		return err
+	if scenario.AttemptsCount < 0 || scenario.Passed && !scenario.Completed || scenario.BestScore != nil && !scenario.Completed {
+		return domainErrors.ErrInvalidProgressData
 	}
 
-	for _, version := range scenario.History {
-		if err := validateVersionProgress(version); err != nil {
-			return err
-		}
+	if scenario.BestScore != nil && scenario.BestScore.MaxPoints() != 100 {
+		return domainErrors.ErrInvalidProgressData
 	}
 
 	if len(scenario.RecentAttempts) > HistoryLimit {
@@ -127,7 +125,7 @@ func validateScenario(scenario domain.ScenarioProgress) error {
 
 func validateAttempts(attempts []domain.AttemptResult) error {
 	for index, attempt := range attempts {
-		if attempt.ID == uuid.Nil || attempt.CompletedAt.IsZero() || attempt.Score.MaxPoints() != attempt.Version.MaxPoints {
+		if attempt.ID == uuid.Nil || attempt.CompletedAt.IsZero() || attempt.Score.MaxPoints() != 100 || !validOutcome(attempt.Outcome) {
 			return domainErrors.ErrInvalidProgressData
 		}
 
@@ -139,20 +137,6 @@ func validateAttempts(attempts []domain.AttemptResult) error {
 	return nil
 }
 
-func validateVersionProgress(progress domain.VersionProgress) error {
-	v := progress.Version
-
-	if v.ID == uuid.Nil || v.Number < 1 || v.MaxPoints < 1 || v.PassPercent < 1 || v.PassPercent > 100 || v.PublishedAt.IsZero() {
-		return domainErrors.ErrInvalidProgressData
-	}
-
-	if progress.AttemptsCount < 0 || progress.Passed && !progress.Completed || progress.BestScore != nil && !progress.Completed {
-		return domainErrors.ErrInvalidProgressData
-	}
-
-	if progress.BestScore != nil && progress.BestScore.MaxPoints() != v.MaxPoints {
-		return domainErrors.ErrInvalidProgressData
-	}
-
-	return nil
+func validOutcome(outcome domain.Outcome) bool {
+	return outcome == domain.OutcomeSafe || outcome == domain.OutcomePartial || outcome == domain.OutcomeScammed
 }

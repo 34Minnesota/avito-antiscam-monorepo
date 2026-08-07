@@ -13,7 +13,6 @@ import (
 
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
 	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
-	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/transport/http/identity"
 )
 
 type progressStub struct {
@@ -43,7 +42,7 @@ func TestProgressHandlerMapsSuccess(t *testing.T) {
 	if err := json.Unmarshal(response.Body.Bytes(), &body); err != nil {
 		t.Fatal(err)
 	}
-	if body.TotalScenarios != 0 || body.Roles == nil || body.OutdatedActiveAttempts == nil {
+	if body.TotalScenarios != 0 || body.Roles == nil {
 		t.Fatalf("unexpected body: %+v", body)
 	}
 }
@@ -74,15 +73,17 @@ func performRequest(t *testing.T, service ProgressGetter, authenticated bool) *h
 	t.Helper()
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
-	RegisterProgressRoutes(router, NewProgressHandler(service))
-	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/v1/progress", nil)
 	if authenticated {
 		userID, err := domain.NewUserID(uuid.New())
 		if err != nil {
 			t.Fatal(err)
 		}
-		request = request.WithContext(identity.WithUserID(request.Context(), userID))
+		router.Use(func(c *gin.Context) {
+			c.Set(sessionContextKey, domain.Session{ID: uuid.New(), UserID: userID.UUID()})
+		})
 	}
+	RegisterProgressRoutes(router, NewProgressHandler(service))
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/v1/progress", nil)
 	response := httptest.NewRecorder()
 	router.ServeHTTP(response, request)
 	return response

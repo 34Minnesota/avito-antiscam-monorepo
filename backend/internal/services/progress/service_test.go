@@ -1,4 +1,4 @@
-package progress_test
+package progress_service_test
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
 	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
-	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/progress"
+	progress_service "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/progress"
 )
 
 type repositoryStub struct {
@@ -36,11 +36,11 @@ func TestGetAggregatesCurrentProgress(t *testing.T) {
 		{ID: uuid.New(), Slug: "seller-one", Title: "Seller", Role: domain.RoleSeller,
 			AttemptsCount: 2, Completed: true, Passed: false, BestScore: &failedScore},
 	}}}
-	result, err := progress.New(repo).Get(context.Background(), mustUserID(t))
+	result, err := progress_service.NewService(repo).Get(context.Background(), mustUserID(t))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if repo.limit != progress.HistoryLimit {
+	if repo.limit != progress_service.HistoryLimit {
 		t.Fatalf("limit = %d", repo.limit)
 	}
 	if result.TotalScenarios != 2 || result.CompletedScenarios != 2 || result.PassedScenarios != 1 {
@@ -56,7 +56,7 @@ func TestGetAggregatesCurrentProgress(t *testing.T) {
 
 func TestGetEmptyCatalogReturnsZeroPercentages(t *testing.T) {
 	t.Parallel()
-	result, err := progress.New(&repositoryStub{}).Get(context.Background(), mustUserID(t))
+	result, err := progress_service.NewService(&repositoryStub{}).Get(context.Background(), mustUserID(t))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -67,12 +67,12 @@ func TestGetEmptyCatalogReturnsZeroPercentages(t *testing.T) {
 
 func TestGetRejectsInvalidSnapshotAndMissingDependency(t *testing.T) {
 	t.Parallel()
-	_, err := progress.New(nil).Get(context.Background(), mustUserID(t))
+	_, err := progress_service.NewService(nil).Get(context.Background(), mustUserID(t))
 	if !errors.Is(err, domainErrors.ErrDependencyUnavailable) {
 		t.Fatalf("got %v", err)
 	}
 	invalid := domain.ScenarioProgress{ID: uuid.New(), Slug: "broken", Title: "Broken", Role: domain.RoleBuyer, Passed: true}
-	_, err = progress.New(&repositoryStub{snapshot: domain.ProgressSnapshot{Scenarios: []domain.ScenarioProgress{invalid}}}).Get(context.Background(), mustUserID(t))
+	_, err = progress_service.NewService(&repositoryStub{snapshot: domain.ProgressSnapshot{Scenarios: []domain.ScenarioProgress{invalid}}}).Get(context.Background(), mustUserID(t))
 	if !errors.Is(err, domainErrors.ErrDataInconsistent) {
 		t.Fatalf("got %v", err)
 	}
@@ -82,7 +82,7 @@ func TestGetRejectsOversizedOrUnorderedHistory(t *testing.T) {
 	t.Parallel()
 	now := time.Now().UTC()
 	score := mustScore(t, 80, 100)
-	attempts := make([]domain.AttemptResult, progress.HistoryLimit+1)
+	attempts := make([]domain.AttemptResult, progress_service.HistoryLimit+1)
 	for index := range attempts {
 		attempts[index] = domain.AttemptResult{ID: uuid.New(), Score: score, Outcome: domain.OutcomeSafe, CompletedAt: now.Add(-time.Duration(index) * time.Minute)}
 	}
@@ -90,7 +90,7 @@ func TestGetRejectsOversizedOrUnorderedHistory(t *testing.T) {
 		ID: uuid.New(), Slug: "scenario", Title: "Scenario", Role: domain.RoleBuyer,
 		RecentAttempts: attempts,
 	}}}
-	_, err := progress.New(&repositoryStub{snapshot: snapshot}).Get(context.Background(), mustUserID(t))
+	_, err := progress_service.NewService(&repositoryStub{snapshot: snapshot}).Get(context.Background(), mustUserID(t))
 	if !errors.Is(err, domainErrors.ErrDataInconsistent) {
 		t.Fatalf("got %v", err)
 	}

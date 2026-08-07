@@ -15,11 +15,13 @@ import (
 
 	applogger "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/logger"
 	authservice "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/auth"
+	progress_service "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/progress"
 	trainingservice "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/training"
 	usersservice "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/users"
 	usersutils "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/users/utils"
 	authstorage "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/storage/postgres/auth"
 	postgrespool "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/storage/postgres/pool"
+	progress_repository "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/storage/postgres/progress"
 	trainingstorage "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/storage/postgres/training"
 	userstorage "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/storage/postgres/user"
 	transport "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/transport/http"
@@ -69,6 +71,7 @@ func main() {
 	// Repository
 	authRepository := authstorage.NewRepository(db)
 	trainingRepository := trainingstorage.New(db)
+	progressRepository := progress_repository.NewRepository(db)
 
 	// Service
 	trainingService := trainingservice.New(trainingRepository)
@@ -77,6 +80,8 @@ func main() {
 	} else {
 		appLogger.Info("scenarios seeded", zap.Int("count", loaded))
 	}
+
+	progressService := progress_service.NewService(progressRepository)
 
 	// users feature
 	userRepository := userstorage.NewRepository(db)
@@ -97,6 +102,7 @@ func main() {
 		appLogger,
 	)
 	userHandler := usershttp.NewUsersHandler(userService)
+	progressHandler := transport.NewProgressHandler(progressService)
 
 	// HTTP
 	server := transport.NewServer(
@@ -122,6 +128,7 @@ func main() {
 	v1.POST("/attempts", server.StartAttempt)
 	v1.POST("/attempts/:attemptID/choice", server.SubmitChoice)
 	v1.GET("/attempts/:attemptID/summary", server.GetSummary)
+	transport.RegisterProgressRoutes(v1, progressHandler)
 	httpServer := &http.Server{
 		Addr:              serverAddress,
 		Handler:           router,

@@ -82,7 +82,7 @@ func performRequest(t *testing.T, service ProgressGetter, authenticated bool) *h
 			c.Set(sessionContextKey, domain.Session{ID: uuid.New(), UserID: userID.UUID()})
 		})
 	}
-	RegisterProgressRoutes(router, NewProgressHandler(service))
+	RegisterProgressRoutes(router.Group("/v1"), NewProgressHandler(service))
 	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/v1/progress", nil)
 	response := httptest.NewRecorder()
 	router.ServeHTTP(response, request)

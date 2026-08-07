@@ -1,4 +1,4 @@
-package progress
+package progress_service
 
 import (
 	"context"
@@ -19,7 +19,7 @@ type Repository interface {
 
 type Service struct{ repository Repository }
 
-func New(repository Repository) Service {
+func NewService(repository Repository) Service {
 	return Service{repository: repository}
 }
 

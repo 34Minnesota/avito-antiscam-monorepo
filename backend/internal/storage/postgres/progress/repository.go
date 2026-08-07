@@ -1,4 +1,4 @@
-package progress
+package progress_repository
 
 import (
 	"context"
@@ -17,7 +17,7 @@ type Repository struct {
 	pool *pool.Pool
 }
 
-func New(pool *pool.Pool) *Repository {
+func NewRepository(pool *pool.Pool) *Repository {
 	return &Repository{pool: pool}
 }
 

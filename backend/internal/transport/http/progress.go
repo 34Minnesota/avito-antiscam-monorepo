@@ -27,7 +27,7 @@ func NewProgressHandler(service ProgressGetter) *ProgressHandler {
 
 // RegisterProgressRoutes ожидает маршрутизатор, защищённый middleware авторизации.
 func RegisterProgressRoutes(router gin.IRoutes, handler *ProgressHandler) {
-	router.GET("/v1/progress", handler.Get)
+	router.GET("/progress", handler.Get)
 }
 
 func (h *ProgressHandler) Get(c *gin.Context) {

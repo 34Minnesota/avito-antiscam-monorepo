@@ -9,6 +9,27 @@ security:
   - bearerAuth: []
 
 paths:
+  /v1/auth/register:
+    post:
+      operationId: register
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateUserRequest"
+      responses:
+        "201":
+          description: Пользователь успешно зарегистрирован
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
   /v1/auth/login:
     post:
       operationId: login
@@ -348,7 +369,25 @@ components:
           format: email
         password:
           type: string
-
+    CreateUserRequest:
+      type: object
+      required:
+        - nickname
+        - email
+        - password
+      properties:
+        nickname:
+          type: string
+          minLength: 3
+          maxLength: 30
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        password:
+          type: string
+          minLength: 8
+          maxLength: 72
     LoginResponse:
       type: object
       required:

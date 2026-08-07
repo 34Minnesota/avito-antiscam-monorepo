@@ -34,6 +34,5 @@ func NewUsersHandler(usersService UsersService) *UsersHandler {
 }
 
 func RegisterUsersRoutes(router gin.IRoutes, handler *UsersHandler) {
-	router.POST("/v1/users", handler.CreateUser)
-	router.GET("/v1/user/:id", handler.GetUser)
+	// Старые публичные endpoints отключены.
 }

@@ -1,8 +1,10 @@
 package httptransport
 
 import (
+	"errors"
 	"net/http"
 
+	coreErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/errors"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
@@ -73,6 +75,67 @@ func (s *Server) Login(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, openapi.LoginResponse{
+		SessionId: session.ID,
+	})
+}
+
+func (s *Server) Register(c *gin.Context) {
+	var req openapi.CreateUserRequest
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    "bad_request",
+			"message": "invalid request",
+		})
+		return
+	}
+
+	user, err := s.users.CreateUser(
+		c.Request.Context(),
+		usersservice.CreateUserInput{
+			Nickname: req.Nickname,
+			Email:    string(req.Email),
+			Password: req.Password,
+		},
+	)
+	if err != nil {
+		switch {
+		case errors.Is(err, coreErrors.ErrInvalidArgument):
+			c.JSON(http.StatusBadRequest, gin.H{
+				"code":    "bad_request",
+				"message": "invalid request",
+			})
+		case errors.Is(err, coreErrors.ErrConflict):
+			c.JSON(http.StatusConflict, gin.H{
+				"code":    "conflict",
+				"message": "user already exists",
+			})
+		default:
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"code":    "internal_error",
+				"message": "internal server error",
+			})
+		}
+		return
+	}
+
+	session, err := s.auth.CreateSession(
+		c.Request.Context(),
+		user.ID,
+	)
+	if err != nil {
+		if s.logger != nil {
+			s.logger.Error("create session failed", zap.Error(err))
+		}
+
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    "internal_error",
+			"message": "failed to create session",
+		})
+		return
+	}
+
+	c.JSON(http.StatusCreated, openapi.LoginResponse{
 		SessionId: session.ID,
 	})
 }

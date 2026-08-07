@@ -110,7 +110,7 @@ func main() {
 
 	router.GET("/healthz", server.HealthCheck)
 	router.POST("/v1/auth/login", server.Login)
-
+	router.POST("/v1/auth/register", server.Register)
 	usershttp.RegisterUsersRoutes(router, userHandler)
 
 	// Всё остальное требует X-Session-ID.

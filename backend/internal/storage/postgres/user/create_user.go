@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
-	core_errors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/errors"
+	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
@@ -32,7 +32,7 @@ func (r *UsersRepository) CreateUser(ctx context.Context, user domain.User) erro
 
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) && pgErr.Code == "23505" {
-		return fmt.Errorf("%w: %s", core_errors.ErrConflict, pgErr.ConstraintName)
+		return fmt.Errorf("%w: %s", domainErrors.ErrConflict, pgErr.ConstraintName)
 	}
 
 	return err

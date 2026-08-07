@@ -9,7 +9,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
-	progressservice "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/progress"
+	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/storage/postgres/pool"
 )
 
@@ -37,7 +37,7 @@ func (r *Repository) Load(
 	if r == nil || r.pool == nil {
 		return domain.ProgressSnapshot{}, fmt.Errorf(
 			"%w: postgres is not configured",
-			progressservice.ErrDependencyUnavailable,
+			domainErrors.ErrDependencyUnavailable,
 		)
 	}
 
@@ -279,9 +279,9 @@ func loadOutdatedAttempts(ctx context.Context, tx pgx.Tx, userID domain.UserID) 
 }
 
 func dependencyError(err error) error {
-	return fmt.Errorf("%w: %w", progressservice.ErrDependencyUnavailable, err)
+	return fmt.Errorf("%w: %w", domainErrors.ErrDependencyUnavailable, err)
 }
 
 func inconsistentError(message string) error {
-	return fmt.Errorf("%w: %s", progressservice.ErrDataInconsistent, message)
+	return fmt.Errorf("%w: %s", domainErrors.ErrDataInconsistent, message)
 }

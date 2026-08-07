@@ -13,7 +13,7 @@ import (
 
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/generated/openapi"
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
-	progressservice "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/progress"
+	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/transport/http/identity"
 )
 
@@ -56,8 +56,8 @@ func TestProgressHandlerMapsErrors(t *testing.T) {
 		err    error
 		status int
 	}{
-		{name: "dependency", err: progressservice.ErrDependencyUnavailable, status: http.StatusServiceUnavailable},
-		{name: "inconsistent", err: progressservice.ErrDataInconsistent, status: http.StatusInternalServerError},
+		{name: "dependency", err: domainErrors.ErrDependencyUnavailable, status: http.StatusServiceUnavailable},
+		{name: "inconsistent", err: domainErrors.ErrDataInconsistent, status: http.StatusInternalServerError},
 		{name: "unknown", err: errors.New("boom"), status: http.StatusInternalServerError},
 	}
 	for _, tt := range tests {

@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
-	coreerrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/errors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -18,14 +17,14 @@ type errorResponse struct {
 // Ошибки, вызванные некорректным сценарием или неожиданной зависимостью, остаются с кодом 500.
 func writeTrainingError(c *gin.Context, err error) {
 	switch {
-	case errors.Is(err, coreerrors.ErrNotFound),
+	case errors.Is(err, domainErrors.ErrNotFound),
 		errors.Is(err, domainErrors.ErrForbidden):
 		c.JSON(http.StatusNotFound, errorResponse{
 			Code:    "not_found",
 			Message: "resource not found",
 		})
 
-	case errors.Is(err, coreerrors.ErrConflict),
+	case errors.Is(err, domainErrors.ErrConflict),
 		errors.Is(err, domainErrors.ErrAttemptFinished):
 		c.JSON(http.StatusConflict, errorResponse{
 			Code:    "conflict",

@@ -14,7 +14,6 @@ import (
 
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
 	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
-	coreerrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/errors"
 	authstorage "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/storage/postgres/auth"
 	postgrespool "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/storage/postgres/pool"
 )
@@ -175,7 +174,7 @@ func (e *repoEnv) listFiltersByRole(t *testing.T) {
 }
 
 func (e *repoEnv) scenarioNotFound(t *testing.T) {
-	if _, err := e.repo.ScenarioByID(e.ctx, uuid.New()); !errors.Is(err, coreerrors.ErrNotFound) {
+	if _, err := e.repo.ScenarioByID(e.ctx, uuid.New()); !errors.Is(err, domainErrors.ErrNotFound) {
 		t.Fatalf("got %v", err)
 	}
 }
@@ -189,10 +188,10 @@ func (e *repoEnv) createAttempt(t *testing.T) {
 		t.Fatalf("session user = %s, want %s", session.UserID, e.userID.UUID())
 	}
 
-	if _, err := e.repo.ActiveAttempt(e.ctx, e.userID, e.buyerID); !errors.Is(err, coreerrors.ErrNotFound) {
+	if _, err := e.repo.ActiveAttempt(e.ctx, e.userID, e.buyerID); !errors.Is(err, domainErrors.ErrNotFound) {
 		t.Fatalf("no active attempt expected yet: %v", err)
 	}
-	if _, err := e.repo.AttemptByID(e.ctx, e.attemptID); !errors.Is(err, coreerrors.ErrNotFound) {
+	if _, err := e.repo.AttemptByID(e.ctx, e.attemptID); !errors.Is(err, domainErrors.ErrNotFound) {
 		t.Fatalf("attempt must not exist yet: %v", err)
 	}
 
@@ -271,7 +270,7 @@ func (e *repoEnv) saveStepKeepsStatus(t *testing.T) {
 		t.Fatalf("revision = %d, want 1", stored.Revision)
 	}
 
-	if _, err := e.repo.SaveStep(e.ctx, step, attempt, e.userID, 0); !errors.Is(err, coreerrors.ErrConflict) {
+	if _, err := e.repo.SaveStep(e.ctx, step, attempt, e.userID, 0); !errors.Is(err, domainErrors.ErrConflict) {
 		t.Fatalf("stale revision error = %v, want conflict", err)
 	}
 	journal, err := e.repo.Steps(e.ctx, e.attemptID)

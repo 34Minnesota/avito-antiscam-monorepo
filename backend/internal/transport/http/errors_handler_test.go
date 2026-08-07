@@ -10,7 +10,6 @@ import (
 	"github.com/gin-gonic/gin"
 
 	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
-	coreerrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/errors"
 )
 
 func TestWriteTrainingError(t *testing.T) {
@@ -22,9 +21,9 @@ func TestWriteTrainingError(t *testing.T) {
 		wantStatus int
 		wantCode   string
 	}{
-		{name: "not found", err: coreerrors.ErrNotFound, wantStatus: http.StatusNotFound, wantCode: "not_found"},
+		{name: "not found", err: domainErrors.ErrNotFound, wantStatus: http.StatusNotFound, wantCode: "not_found"},
 		{name: "forbidden", err: domainErrors.ErrForbidden, wantStatus: http.StatusNotFound, wantCode: "not_found"},
-		{name: "revision conflict", err: coreerrors.ErrConflict, wantStatus: http.StatusConflict, wantCode: "conflict"},
+		{name: "revision conflict", err: domainErrors.ErrConflict, wantStatus: http.StatusConflict, wantCode: "conflict"},
 		{name: "finished attempt", err: domainErrors.ErrAttemptFinished, wantStatus: http.StatusConflict, wantCode: "conflict"},
 		{name: "out of order", err: domainErrors.ErrOutOfOrder, wantStatus: http.StatusUnprocessableEntity, wantCode: "out_of_order"},
 		{name: "unknown option", err: domainErrors.ErrUnknownOption, wantStatus: http.StatusUnprocessableEntity, wantCode: "unknown_option"},

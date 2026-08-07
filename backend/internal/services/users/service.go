@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
-	coreErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/errors"
+	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
 )
 
 type UsersService struct {
@@ -61,7 +61,7 @@ func validateCreateUserInput(input CreateUserInput) error {
 
 	if len([]rune(input.Password)) < domain.MinPasswordLength ||
 		len([]byte(input.Password)) > domain.MaxPasswordBytes {
-		return fmt.Errorf("invalid password length: %w", coreErrors.ErrInvalidArgument)
+		return fmt.Errorf("invalid password length: %w", domainErrors.ErrInvalidArgument)
 	}
 
 	return nil

@@ -8,7 +8,6 @@ import (
 
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
 	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
-	coreerrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/errors"
 	"github.com/google/uuid"
 )
 
@@ -88,7 +87,7 @@ func (s *Service) Start(ctx context.Context, userID domain.UserID, scenarioID uu
 		}
 		return buildStartResult(existing.ID, sc, BuildScene(scene)), nil
 
-	case errors.Is(err, coreerrors.ErrNotFound):
+	case errors.Is(err, domainErrors.ErrNotFound):
 
 	default:
 		return StartResult{}, err

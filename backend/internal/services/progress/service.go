@@ -2,7 +2,6 @@ package progress
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"sort"
 
@@ -13,11 +12,6 @@ import (
 )
 
 const HistoryLimit = 20
-
-var (
-	ErrDependencyUnavailable = errors.New("progress dependency unavailable")
-	ErrDataInconsistent      = errors.New("progress data is inconsistent")
-)
 
 type Repository interface {
 	Load(context.Context, domain.UserID, int) (domain.ProgressSnapshot, error)
@@ -35,7 +29,7 @@ func (s Service) Get(ctx context.Context, userID domain.UserID) (domain.OverallP
 	}
 
 	if s.repository == nil {
-		return domain.OverallProgress{}, fmt.Errorf("%w: repository is not configured", ErrDependencyUnavailable)
+		return domain.OverallProgress{}, fmt.Errorf("%w: repository is not configured", domainErrors.ErrDependencyUnavailable)
 	}
 
 	snapshot, err := s.repository.Load(ctx, userID, HistoryLimit)
@@ -44,7 +38,7 @@ func (s Service) Get(ctx context.Context, userID domain.UserID) (domain.OverallP
 	}
 
 	if err := validate(snapshot); err != nil {
-		return domain.OverallProgress{}, fmt.Errorf("%w: %w", ErrDataInconsistent, err)
+		return domain.OverallProgress{}, fmt.Errorf("%w: %w", domainErrors.ErrDataInconsistent, err)
 	}
 
 	return aggregate(snapshot), nil

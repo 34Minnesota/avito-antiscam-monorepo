@@ -12,7 +12,6 @@ import (
 
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
 	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
-	coreerrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/errors"
 	trainingservice "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/training"
 	postgrespool "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/storage/postgres/pool"
 )
@@ -60,7 +59,7 @@ func (r *Repository) UpsertScenario(ctx context.Context, s domain.Scenario) erro
 	var same bool
 	err = r.pool.QueryRow(ctx, sameDocument, s.Doc.Slug, doc).Scan(&same)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return fmt.Errorf("reading existing scenario %s: %w", s.Doc.Slug, coreerrors.ErrNotFound)
+		return fmt.Errorf("reading existing scenario %s: %w", s.Doc.Slug, domainErrors.ErrNotFound)
 	}
 	if err != nil {
 		return fmt.Errorf("reading existing scenario %s: %w", s.Doc.Slug, err)
@@ -112,7 +111,7 @@ func (r *Repository) ScenarioByID(ctx context.Context, id uuid.UUID) (domain.Sce
 
 	s, err := scanScenario(r.pool.QueryRow(ctx, q, id))
 	if errors.Is(err, pgx.ErrNoRows) {
-		return domain.Scenario{}, fmt.Errorf("scenario %s: %w", id, coreerrors.ErrNotFound)
+		return domain.Scenario{}, fmt.Errorf("scenario %s: %w", id, domainErrors.ErrNotFound)
 	}
 	if err != nil {
 		return domain.Scenario{}, err
@@ -190,7 +189,7 @@ func (r *Repository) AttemptByID(ctx context.Context, id uuid.UUID) (domain.Atte
 
 	a, err := scanAttempt(r.pool.QueryRow(ctx, q, id))
 	if errors.Is(err, pgx.ErrNoRows) {
-		return domain.Attempt{}, fmt.Errorf("attempt %s: %w", id, coreerrors.ErrNotFound)
+		return domain.Attempt{}, fmt.Errorf("attempt %s: %w", id, domainErrors.ErrNotFound)
 	}
 	if err != nil {
 		return domain.Attempt{}, err
@@ -214,7 +213,7 @@ func (r *Repository) ActiveAttempt(
 
 	a, err := scanAttempt(r.pool.QueryRow(ctx, q, userID.UUID(), scenarioID))
 	if errors.Is(err, pgx.ErrNoRows) {
-		return domain.Attempt{}, coreerrors.ErrNotFound
+		return domain.Attempt{}, domainErrors.ErrNotFound
 	}
 	if err != nil {
 		return domain.Attempt{}, err
@@ -268,7 +267,7 @@ func (r *Repository) SaveStep(
 	).Scan(&newRevision)
 
 	if errors.Is(err, pgx.ErrNoRows) {
-		return 0, coreerrors.ErrConflict
+		return 0, domainErrors.ErrConflict
 	}
 	if err != nil {
 		return 0, fmt.Errorf("updating attempt: %w", err)

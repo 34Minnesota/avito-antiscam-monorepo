@@ -27,8 +27,8 @@ func NewProgressHandler(service ProgressGetter) *ProgressHandler {
 	return &ProgressHandler{service: service}
 }
 
-// RegisterProgressRoutes expects a router protected by Auth middleware.
-// TODO(owner: auth): attach JWT middleware to this router group in application wiring.
+// RegisterProgressRoutes ожидает маршрутизатор, защищённый middleware авторизации.
+// TODO(owner: auth): подключить JWT-middleware к этой группе маршрутов при настройке приложения.
 func RegisterProgressRoutes(router gin.IRoutes, handler *ProgressHandler) {
 	router.GET("/v1/progress", handler.Get)
 }

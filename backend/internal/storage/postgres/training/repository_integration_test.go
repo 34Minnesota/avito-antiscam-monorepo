@@ -14,7 +14,6 @@ import (
 
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
 	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
-	coreerrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/errors"
 	authstorage "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/storage/postgres/auth"
 	postgrespool "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/storage/postgres/pool"
 )
@@ -271,7 +270,7 @@ func (e *repoEnv) saveStepKeepsStatus(t *testing.T) {
 		t.Fatalf("revision = %d, want 1", stored.Revision)
 	}
 
-	if _, err := e.repo.SaveStep(e.ctx, step, attempt, e.userID, 0); !errors.Is(err, coreerrors.ErrConflict) {
+	if _, err := e.repo.SaveStep(e.ctx, step, attempt, e.userID, 0); !errors.Is(err, domainErrors.ErrConflict) {
 		t.Fatalf("stale revision error = %v, want conflict", err)
 	}
 	journal, err := e.repo.Steps(e.ctx, e.attemptID)

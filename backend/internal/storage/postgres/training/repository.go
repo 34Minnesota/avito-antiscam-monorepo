@@ -12,7 +12,6 @@ import (
 
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
 	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
-	coreerrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/errors"
 	trainingservice "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/training"
 	postgrespool "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/storage/postgres/pool"
 )
@@ -268,7 +267,7 @@ func (r *Repository) SaveStep(
 	).Scan(&newRevision)
 
 	if errors.Is(err, pgx.ErrNoRows) {
-		return 0, coreerrors.ErrConflict
+		return 0, domainErrors.ErrConflict
 	}
 	if err != nil {
 		return 0, fmt.Errorf("updating attempt: %w", err)

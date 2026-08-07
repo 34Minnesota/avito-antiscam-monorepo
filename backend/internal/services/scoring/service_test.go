@@ -5,7 +5,7 @@ import (
 	"math"
 	"testing"
 
-	coreerrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/errors"
+	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/scoring"
 )
 
@@ -42,7 +42,7 @@ func TestEvaluateDoesNotOverflow(t *testing.T) {
 func TestEvaluateValidatesPassPercent(t *testing.T) {
 	t.Parallel()
 	_, err := scoring.New().Evaluate(1, 1, 0)
-	if !errors.Is(err, coreerrors.ErrInvalidPassRate) {
+	if !errors.Is(err, domainErrors.ErrInvalidPassRate) {
 		t.Fatalf("got %v", err)
 	}
 }

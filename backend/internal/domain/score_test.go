@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
-	coreerrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/errors"
+	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
 )
 
 func TestNewScoreValidation(t *testing.T) {
@@ -16,9 +16,9 @@ func TestNewScoreValidation(t *testing.T) {
 		points, max int
 		want        error
 	}{
-		{name: "zero max", points: 0, max: 0, want: coreerrors.ErrInvalidMaxPoints},
-		{name: "negative points", points: -1, max: 10, want: coreerrors.ErrNegativePoints},
-		{name: "overflow", points: 11, max: 10, want: coreerrors.ErrScoreOverflow},
+		{name: "zero max", points: 0, max: 0, want: domainErrors.ErrInvalidMaxPoints},
+		{name: "negative points", points: -1, max: 10, want: domainErrors.ErrNegativePoints},
+		{name: "overflow", points: 11, max: 10, want: domainErrors.ErrScoreOverflow},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -58,10 +58,10 @@ func TestScoreApplyAndPercent(t *testing.T) {
 	if updated.Points() != 696 || updated.Percent() != 70 {
 		t.Fatalf("unexpected score: %d/%d%%", updated.Points(), updated.Percent())
 	}
-	if _, err := updated.Apply(305); !errors.Is(err, coreerrors.ErrScoreOverflow) {
+	if _, err := updated.Apply(305); !errors.Is(err, domainErrors.ErrScoreOverflow) {
 		t.Fatalf("got %v", err)
 	}
-	if _, err := updated.Apply(-1); !errors.Is(err, coreerrors.ErrNegativeDelta) {
+	if _, err := updated.Apply(-1); !errors.Is(err, domainErrors.ErrNegativeDelta) {
 		t.Fatalf("got %v", err)
 	}
 }

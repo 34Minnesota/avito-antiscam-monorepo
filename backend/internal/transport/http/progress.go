@@ -9,7 +9,7 @@ import (
 
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/generated/openapi"
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
-	progressservice "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/progress"
+	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/transport/http/identity"
 )
 
@@ -46,7 +46,7 @@ func (h *ProgressHandler) Get(c *gin.Context) {
 	result, err := h.service.Get(c.Request.Context(), userID)
 	if err != nil {
 		switch {
-		case errors.Is(err, progressservice.ErrDependencyUnavailable):
+		case errors.Is(err, domainErrors.ErrDependencyUnavailable):
 			c.JSON(http.StatusServiceUnavailable, openapi.Error{Code: "dependency_unavailable", Message: "progress dependency is unavailable"})
 		default:
 			c.JSON(http.StatusInternalServerError, openapi.Error{Code: "internal_error", Message: "internal server error"})

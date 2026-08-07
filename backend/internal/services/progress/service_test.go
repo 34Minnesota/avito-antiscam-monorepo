@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
+	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/progress"
 )
 
@@ -71,12 +72,12 @@ func TestGetEmptyCatalogReturnsZeroPercentages(t *testing.T) {
 func TestGetRejectsInvalidSnapshotAndMissingDependency(t *testing.T) {
 	t.Parallel()
 	_, err := progress.New(nil).Get(context.Background(), mustUserID(t))
-	if !errors.Is(err, progress.ErrDependencyUnavailable) {
+	if !errors.Is(err, domainErrors.ErrDependencyUnavailable) {
 		t.Fatalf("got %v", err)
 	}
 	invalid := domain.ScenarioProgress{ID: uuid.New(), Slug: "broken", Title: "Broken", Role: domain.RoleBuyer}
 	_, err = progress.New(&repositoryStub{snapshot: domain.ProgressSnapshot{Scenarios: []domain.ScenarioProgress{invalid}}}).Get(context.Background(), mustUserID(t))
-	if !errors.Is(err, progress.ErrDataInconsistent) {
+	if !errors.Is(err, domainErrors.ErrDataInconsistent) {
 		t.Fatalf("got %v", err)
 	}
 }
@@ -95,7 +96,7 @@ func TestGetRejectsOversizedOrUnorderedHistory(t *testing.T) {
 		Current: domain.VersionProgress{Version: v}, RecentAttempts: attempts,
 	}}}
 	_, err := progress.New(&repositoryStub{snapshot: snapshot}).Get(context.Background(), mustUserID(t))
-	if !errors.Is(err, progress.ErrDataInconsistent) {
+	if !errors.Is(err, domainErrors.ErrDataInconsistent) {
 		t.Fatalf("got %v", err)
 	}
 }

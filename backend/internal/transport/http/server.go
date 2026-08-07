@@ -10,7 +10,7 @@ import (
 
 	openapi "github.com/34Minnesota/avito-antiscam-monorepo/backend/generated/openapi"
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
-	coreerrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/errors"
+	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
 	applogger "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/logger"
 	authservice "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/auth"
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/training"
@@ -227,7 +227,7 @@ func (s *Server) SubmitChoice(c *gin.Context) {
 
 	result, err := s.training.Choose(c.Request.Context(), userID, attemptID, req.SceneID, req.OptionID, *req.ExpectedRevision)
 	if err != nil {
-		if errors.Is(err, coreerrors.ErrConflict) {
+		if errors.Is(err, domainErrors.ErrConflict) {
 			c.JSON(http.StatusConflict, gin.H{"code": "conflict", "message": "attempt state has changed"})
 			return
 		}

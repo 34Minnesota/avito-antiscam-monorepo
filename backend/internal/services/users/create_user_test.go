@@ -10,7 +10,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
-	coreErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/errors"
+	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
 	usersutils "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/users/utils"
 )
 
@@ -108,7 +108,7 @@ func TestCreateUserRejectsInvalidInputBeforeHashing(t *testing.T) {
 		Email:    "not-an-email",
 		Password: "short",
 	})
-	if !errors.Is(err, coreErrors.ErrInvalidArgument) {
+	if !errors.Is(err, domainErrors.ErrInvalidArgument) {
 		t.Fatalf("error = %v, want invalid argument", err)
 	}
 	if hasher.calls != 0 || repository.calls != 0 {
@@ -128,7 +128,7 @@ func TestCreateUserRejectsInvalidEmailBeforeHashing(t *testing.T) {
 		Email:    "not-an-email",
 		Password: "password123",
 	})
-	if !errors.Is(err, coreErrors.ErrInvalidArgument) {
+	if !errors.Is(err, domainErrors.ErrInvalidArgument) {
 		t.Fatalf("error = %v, want invalid argument", err)
 	}
 	if hasher.calls != 0 || repository.calls != 0 {
@@ -177,7 +177,7 @@ func TestCreateUserValidatesDomainUserBeforeRepository(t *testing.T) {
 		Email:    "alice@example.com",
 		Password: "password123",
 	})
-	if !errors.Is(err, coreErrors.ErrEmptyID) {
+	if !errors.Is(err, domainErrors.ErrEmptyID) {
 		t.Fatalf("error = %v, want empty id", err)
 	}
 	if repository.calls != 0 {
@@ -188,7 +188,7 @@ func TestCreateUserValidatesDomainUserBeforeRepository(t *testing.T) {
 func TestCreateUserMapsRepositoryConflict(t *testing.T) {
 	t.Parallel()
 
-	repository := &repositoryStub{err: coreErrors.ErrConflict}
+	repository := &repositoryStub{err: domainErrors.ErrConflict}
 	service := NewUsersService(
 		repository,
 		&passwordHasherStub{hash: "hash"},
@@ -201,7 +201,7 @@ func TestCreateUserMapsRepositoryConflict(t *testing.T) {
 		Email:    "alice@example.com",
 		Password: "password123",
 	})
-	if !errors.Is(err, coreErrors.ErrConflict) {
+	if !errors.Is(err, domainErrors.ErrConflict) {
 		t.Fatalf("error = %v, want conflict", err)
 	}
 }

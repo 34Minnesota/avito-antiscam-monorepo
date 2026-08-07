@@ -3,7 +3,7 @@ package core_utils
 import (
 	"fmt"
 
-	core_errors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/errors"
+	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
@@ -13,7 +13,7 @@ func GetUUIDPathVal(c *gin.Context, key string) (uuid.UUID, error) {
 	if pathValue == "" {
 		return uuid.UUID{}, fmt.Errorf(
 			"no key %s in path values: %w",
-			key, core_errors.ErrInvalidArgument,
+			key, domainErrors.ErrInvalidArgument,
 		)
 	}
 
@@ -21,7 +21,7 @@ func GetUUIDPathVal(c *gin.Context, key string) (uuid.UUID, error) {
 	if err != nil {
 		return uuid.UUID{}, fmt.Errorf(
 			"path value %s by key %s not a valid uuid: %w: %w",
-			pathValue, key, err, core_errors.ErrInvalidArgument,
+			pathValue, key, err, domainErrors.ErrInvalidArgument,
 		)
 	}
 

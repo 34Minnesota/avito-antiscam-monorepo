@@ -20,7 +20,7 @@ type Repository interface {
 	CreateAttempt(ctx context.Context, a domain.Attempt) error
 	AttemptByID(ctx context.Context, id uuid.UUID) (domain.Attempt, error)
 	ActiveAttempt(ctx context.Context, userID domain.UserID, scenarioID uuid.UUID) (domain.Attempt, error)
-	SaveStep(ctx context.Context, step domain.AttemptStep, a domain.Attempt) error
+	SaveStep(ctx context.Context, step domain.AttemptStep, a domain.Attempt, userID domain.UserID, expectedRevision int) (int, error)
 	FinishAttempt(ctx context.Context, id uuid.UUID, score int, outcome domain.Outcome, at time.Time) error
 	Steps(ctx context.Context, attemptID uuid.UUID) ([]domain.AttemptStep, error)
 	BestScore(ctx context.Context, userID domain.UserID, scenarioID, exclude uuid.UUID) (*int, error)
@@ -126,7 +126,13 @@ func buildStartResult(attemptID uuid.UUID, sc domain.Scenario, scene ScenePayloa
 }
 
 // Choose обрабатывает выбор пользователя на развилке.
-func (s *Service) Choose(ctx context.Context, userID domain.UserID, attemptID uuid.UUID, sceneID, optionID string) (ChoiceResult, error) {
+func (s *Service) Choose(
+	ctx context.Context,
+	userID domain.UserID,
+	attemptID uuid.UUID,
+	sceneID, optionID string,
+	expectedRevision int,
+) (ChoiceResult, error) {
 	attempt, sc, err := s.loadAttempt(ctx, userID, attemptID)
 	if err != nil {
 		return ChoiceResult{}, err
@@ -149,7 +155,14 @@ func (s *Service) Choose(ctx context.Context, userID domain.UserID, attemptID uu
 		attempt.Status = domain.AttemptFinished
 	}
 
-	if err := s.repo.SaveStep(ctx, step, attempt); err != nil {
+	newRevision, err := s.repo.SaveStep(
+		ctx,
+		step,
+		attempt,
+		userID,
+		expectedRevision,
+	)
+	if err != nil {
 		return ChoiceResult{}, err
 	}
 
@@ -158,6 +171,7 @@ func (s *Service) Choose(ctx context.Context, userID domain.UserID, attemptID uu
 		Reaction:  tr.Reaction,
 		NextScene: tr.NextScene,
 		Finished:  tr.Finished,
+		Revision:  newRevision,
 	}
 	if !tr.Finished {
 		return result, nil

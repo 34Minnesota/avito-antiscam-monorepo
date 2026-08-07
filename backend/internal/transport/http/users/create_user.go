@@ -6,7 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	coreErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/errors"
+	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
 )
 
 type CreateUserRequest struct {
@@ -39,9 +39,9 @@ func (h *UsersHandler) CreateUser(c *gin.Context) {
 	)
 	if err != nil {
 		switch {
-		case errors.Is(err, coreErrors.ErrInvalidArgument):
+		case errors.Is(err, domainErrors.ErrInvalidArgument):
 			c.JSON(http.StatusBadRequest, gin.H{"code": "bad_request", "message": "invalid request"})
-		case errors.Is(err, coreErrors.ErrConflict):
+		case errors.Is(err, domainErrors.ErrConflict):
 			c.JSON(http.StatusConflict, gin.H{"code": "conflict", "message": "user already exists"})
 		default:
 			c.JSON(http.StatusInternalServerError, gin.H{"code": "internal_error", "message": "internal server error"})

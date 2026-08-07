@@ -14,7 +14,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
-	coreErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/errors"
+	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
 )
 
 type serviceStub struct {
@@ -103,8 +103,8 @@ func TestCreateUserMapsServiceErrors(t *testing.T) {
 		err    error
 		status int
 	}{
-		{name: "invalid argument", err: coreErrors.ErrInvalidArgument, status: http.StatusBadRequest},
-		{name: "conflict", err: coreErrors.ErrConflict, status: http.StatusConflict},
+		{name: "invalid argument", err: domainErrors.ErrInvalidArgument, status: http.StatusBadRequest},
+		{name: "conflict", err: domainErrors.ErrConflict, status: http.StatusConflict},
 		{name: "internal", err: errors.New("boom"), status: http.StatusInternalServerError},
 	} {
 		t.Run(test.name, func(t *testing.T) {

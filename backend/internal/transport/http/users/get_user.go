@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net/http"
 
-	core_errors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/errors"
+	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
 	core_utils "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/utils"
 	"github.com/gin-gonic/gin"
 )
@@ -21,7 +21,7 @@ func (h *UsersHandler) GetUser(c *gin.Context) {
 	user, err := h.usersService.GetUser(c.Request.Context(), userID)
 	if err != nil {
 		switch {
-		case errors.Is(err, core_errors.ErrInvalidArgument):
+		case errors.Is(err, domainErrors.ErrInvalidArgument):
 			c.JSON(http.StatusBadRequest, gin.H{"code": "bad_request", "message": "invalid request"})
 		default:
 			c.JSON(http.StatusInternalServerError, gin.H{"code": "internal_error", "message": "internal server error"})

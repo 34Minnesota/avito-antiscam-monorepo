@@ -180,13 +180,19 @@ func (r *repositoryStub) ActiveAttempt(_ context.Context, _ domain.UserID, _ uui
 	return *r.active, nil
 }
 
-func (r *repositoryStub) SaveStep(_ context.Context, step domain.AttemptStep, a domain.Attempt) error {
+func (r *repositoryStub) SaveStep(
+	_ context.Context,
+	step domain.AttemptStep,
+	a domain.Attempt,
+	_ domain.UserID,
+	expectedRevision int,
+) (int, error) {
 	if r.saveErr != nil {
-		return r.saveErr
+		return 0, r.saveErr
 	}
 	r.savedSteps = append(r.savedSteps, step)
 	r.savedAttempts = append(r.savedAttempts, a)
-	return nil
+	return expectedRevision + 1, nil
 }
 
 func (r *repositoryStub) FinishAttempt(

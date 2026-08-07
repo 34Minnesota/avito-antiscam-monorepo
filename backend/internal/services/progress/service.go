@@ -1,22 +1,17 @@
-package progress
+package progress_service
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"sort"
 
 	"github.com/google/uuid"
 
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
+	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
 )
 
 const HistoryLimit = 20
-
-var (
-	ErrDependencyUnavailable = errors.New("progress dependency unavailable")
-	ErrDataInconsistent      = errors.New("progress data is inconsistent")
-)
 
 type Repository interface {
 	Load(context.Context, domain.UserID, int) (domain.ProgressSnapshot, error)
@@ -24,17 +19,17 @@ type Repository interface {
 
 type Service struct{ repository Repository }
 
-func New(repository Repository) Service {
+func NewService(repository Repository) Service {
 	return Service{repository: repository}
 }
 
 func (s Service) Get(ctx context.Context, userID domain.UserID) (domain.OverallProgress, error) {
 	if userID.IsZero() {
-		return domain.OverallProgress{}, domain.ErrInvalidUserID
+		return domain.OverallProgress{}, domainErrors.ErrInvalidUserID
 	}
 
 	if s.repository == nil {
-		return domain.OverallProgress{}, fmt.Errorf("%w: repository is not configured", ErrDependencyUnavailable)
+		return domain.OverallProgress{}, fmt.Errorf("%w: repository is not configured", domainErrors.ErrDependencyUnavailable)
 	}
 
 	snapshot, err := s.repository.Load(ctx, userID, HistoryLimit)
@@ -43,7 +38,7 @@ func (s Service) Get(ctx context.Context, userID domain.UserID) (domain.OverallP
 	}
 
 	if err := validate(snapshot); err != nil {
-		return domain.OverallProgress{}, fmt.Errorf("%w: %w", ErrDataInconsistent, err)
+		return domain.OverallProgress{}, fmt.Errorf("%w: %w", domainErrors.ErrDataInconsistent, err)
 	}
 
 	return aggregate(snapshot), nil
@@ -55,7 +50,7 @@ func aggregate(snapshot domain.ProgressSnapshot) domain.OverallProgress {
 		domain.RoleSeller: {Role: domain.RoleSeller},
 	}
 
-	overall := domain.OverallProgress{OutdatedActiveAttempts: snapshot.OutdatedActiveAttempts}
+	overall := domain.OverallProgress{}
 
 	for _, scenario := range snapshot.Scenarios {
 		role := roles[scenario.Role]
@@ -65,12 +60,12 @@ func aggregate(snapshot domain.ProgressSnapshot) domain.OverallProgress {
 		role.TotalScenarios++
 		overall.TotalScenarios++
 
-		if scenario.Current.Completed {
+		if scenario.Completed {
 			role.CompletedScenarios++
 			overall.CompletedScenarios++
 		}
 
-		if scenario.Current.Passed {
+		if scenario.Passed {
 			role.PassedScenarios++
 			overall.PassedScenarios++
 		}
@@ -110,21 +105,19 @@ func validate(snapshot domain.ProgressSnapshot) error {
 
 func validateScenario(scenario domain.ScenarioProgress) error {
 	if scenario.ID == uuid.Nil || scenario.Slug == "" || scenario.Title == "" || (scenario.Role != domain.RoleBuyer && scenario.Role != domain.RoleSeller) {
-		return domain.ErrInvalidProgressData
+		return domainErrors.ErrInvalidProgressData
 	}
 
-	if err := validateVersionProgress(scenario.Current); err != nil {
-		return err
+	if scenario.AttemptsCount < 0 || scenario.Passed && !scenario.Completed || scenario.BestScore != nil && !scenario.Completed {
+		return domainErrors.ErrInvalidProgressData
 	}
 
-	for _, version := range scenario.History {
-		if err := validateVersionProgress(version); err != nil {
-			return err
-		}
+	if scenario.BestScore != nil && scenario.BestScore.MaxPoints() != 100 {
+		return domainErrors.ErrInvalidProgressData
 	}
 
 	if len(scenario.RecentAttempts) > HistoryLimit {
-		return domain.ErrInvalidProgressData
+		return domainErrors.ErrInvalidProgressData
 	}
 
 	return validateAttempts(scenario.RecentAttempts)
@@ -132,32 +125,18 @@ func validateScenario(scenario domain.ScenarioProgress) error {
 
 func validateAttempts(attempts []domain.AttemptResult) error {
 	for index, attempt := range attempts {
-		if attempt.ID == uuid.Nil || attempt.CompletedAt.IsZero() || attempt.Score.MaxPoints() != attempt.Version.MaxPoints {
-			return domain.ErrInvalidProgressData
+		if attempt.ID == uuid.Nil || attempt.CompletedAt.IsZero() || attempt.Score.MaxPoints() != 100 || !validOutcome(attempt.Outcome) {
+			return domainErrors.ErrInvalidProgressData
 		}
 
 		if index > 0 && attempt.CompletedAt.After(attempts[index-1].CompletedAt) {
-			return domain.ErrInvalidProgressData
+			return domainErrors.ErrInvalidProgressData
 		}
 	}
 
 	return nil
 }
 
-func validateVersionProgress(progress domain.VersionProgress) error {
-	v := progress.Version
-
-	if v.ID == uuid.Nil || v.Number < 1 || v.MaxPoints < 1 || v.PassPercent < 1 || v.PassPercent > 100 || v.PublishedAt.IsZero() {
-		return domain.ErrInvalidProgressData
-	}
-
-	if progress.AttemptsCount < 0 || progress.Passed && !progress.Completed || progress.BestScore != nil && !progress.Completed {
-		return domain.ErrInvalidProgressData
-	}
-
-	if progress.BestScore != nil && progress.BestScore.MaxPoints() != v.MaxPoints {
-		return domain.ErrInvalidProgressData
-	}
-
-	return nil
+func validOutcome(outcome domain.Outcome) bool {
+	return outcome == domain.OutcomeSafe || outcome == domain.OutcomePartial || outcome == domain.OutcomeScammed
 }

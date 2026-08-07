@@ -99,8 +99,12 @@ func main() {
 	userHandler := usershttp.NewUsersHandler(userService)
 
 	// HTTP
-	server := transport.NewServer(authService, trainingService, appLogger)
-
+	server := transport.NewServer(
+		authService,
+		userService,
+		trainingService,
+		appLogger,
+	)
 	router := gin.New()
 	router.Use(gin.Recovery(), server.LoggerMiddleware())
 
@@ -111,11 +115,13 @@ func main() {
 
 	// Всё остальное требует X-Session-ID.
 	v1 := router.Group("/v1", server.SessionMiddleware())
+
+	v1.POST("/auth/logout", server.Logout)
+	v1.GET("/users/me", server.GetCurrentUser)
 	v1.GET("/scenarios", server.ListScenarios)
 	v1.POST("/attempts", server.StartAttempt)
 	v1.POST("/attempts/:attemptID/choice", server.SubmitChoice)
 	v1.GET("/attempts/:attemptID/summary", server.GetSummary)
-
 	httpServer := &http.Server{
 		Addr:              serverAddress,
 		Handler:           router,

@@ -8,22 +8,29 @@ import (
 	"go.uber.org/zap"
 
 	openapi "github.com/34Minnesota/avito-antiscam-monorepo/backend/generated/openapi"
-
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
 	applogger "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/logger"
 	authservice "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/auth"
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/training"
+	usersservice "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/users"
 )
 
 type Server struct {
 	auth     *authservice.Service
+	users    *usersservice.UsersService
 	training *training.Service
 	logger   *applogger.Logger
 }
 
-func NewServer(auth *authservice.Service, training *training.Service, logger *applogger.Logger) *Server {
+func NewServer(
+	auth *authservice.Service,
+	users *usersservice.UsersService,
+	training *training.Service,
+	logger *applogger.Logger,
+) *Server {
 	return &Server{
 		auth:     auth,
+		users:    users,
 		training: training,
 		logger:   logger,
 	}
@@ -67,6 +74,78 @@ func (s *Server) Login(c *gin.Context) {
 
 	c.JSON(http.StatusOK, openapi.LoginResponse{
 		SessionId: session.ID,
+	})
+}
+
+func (s *Server) Logout(c *gin.Context) {
+	value, exists := c.Get(sessionContextKey)
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"code":    "unauthorized",
+			"message": "unauthorized",
+		})
+		return
+	}
+
+	session, ok := value.(domain.Session)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"code":    "unauthorized",
+			"message": "unauthorized",
+		})
+		return
+	}
+
+	if err := s.auth.Logout(
+		c.Request.Context(),
+		session.ID,
+	); err != nil {
+
+		if s.logger != nil {
+			s.logger.Error("logout failed", zap.Error(err))
+		}
+
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    "internal_error",
+			"message": "logout failed",
+		})
+		return
+	}
+
+	c.Status(http.StatusNoContent)
+}
+func (s *Server) GetCurrentUser(c *gin.Context) {
+
+	userID, ok := CurrentUser(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"code":    "unauthorized",
+			"message": "unauthorized",
+		})
+		return
+	}
+
+	user, err := s.users.GetUser(
+		c.Request.Context(),
+		userID.UUID(),
+	)
+	if err != nil {
+		if s.logger != nil {
+			s.logger.Error("get current user failed", zap.Error(err))
+		}
+
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    "internal_error",
+			"message": "failed to get current user",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"id":         user.ID,
+		"nickname":   user.Nickname,
+		"email":      user.Email,
+		"created_at": user.CreatedAt,
 	})
 }
 

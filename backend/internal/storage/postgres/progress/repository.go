@@ -33,7 +33,7 @@ func (r *Repository) Load(ctx context.Context, userID domain.UserID, historyLimi
 	if err != nil {
 		return domain.ProgressSnapshot{}, dependencyError(err)
 	}
-	defer func() { _ = tx.Rollback(ctx) }()
+	defer func() { _ = tx.Rollback(ctx) }() //nolint:errcheck
 
 	scenarios, indexes, err := loadScenarios(ctx, tx, userID)
 	if err != nil {
@@ -60,7 +60,11 @@ const scenariosQuery = `
 	GROUP BY s.id, s.slug, s.title, s.role
 	ORDER BY s.slug`
 
-func loadScenarios(ctx context.Context, tx pgx.Tx, userID domain.UserID) ([]domain.ScenarioProgress, map[uuid.UUID]int, error) {
+func loadScenarios(
+	ctx context.Context,
+	tx pgx.Tx,
+	userID domain.UserID,
+) ([]domain.ScenarioProgress, map[uuid.UUID]int, error) {
 	rows, err := tx.Query(ctx, scenariosQuery, userID.UUID())
 	if err != nil {
 		return nil, nil, dependencyError(err)
@@ -69,37 +73,55 @@ func loadScenarios(ctx context.Context, tx pgx.Tx, userID domain.UserID) ([]doma
 
 	scenarios := make([]domain.ScenarioProgress, 0)
 	indexes := make(map[uuid.UUID]int)
+
 	for rows.Next() {
-		var scenario domain.ScenarioProgress
-		var completed, active int
-		var best sql.NullInt64
-		var activeID uuid.NullUUID
-		if err := rows.Scan(&scenario.ID, &scenario.Slug, &scenario.Title, &scenario.Role,
-			&scenario.AttemptsCount, &completed, &scenario.Passed, &best, &active, &activeID); err != nil {
-			return nil, nil, dependencyError(err)
+		scenario, err := scanProgressScenario(rows)
+		if err != nil {
+			return nil, nil, err
 		}
-		if active > 1 || scenario.Passed && completed == 0 {
-			return nil, nil, inconsistentError("attempt snapshot violates progress invariants")
-		}
-		scenario.Completed = completed > 0
-		if best.Valid {
-			score, err := domain.NewScore(int(best.Int64), 100)
-			if err != nil {
-				return nil, nil, inconsistentError(err.Error())
-			}
-			scenario.BestScore = &score
-		}
-		if activeID.Valid {
-			id := activeID.UUID
-			scenario.ActiveAttemptID = &id
-		}
+
 		indexes[scenario.ID] = len(scenarios)
 		scenarios = append(scenarios, scenario)
 	}
+
 	if err := rows.Err(); err != nil {
 		return nil, nil, dependencyError(err)
 	}
+
 	return scenarios, indexes, nil
+}
+
+func scanProgressScenario(rows pgx.Rows) (domain.ScenarioProgress, error) {
+	var scenario domain.ScenarioProgress
+	var completed, active int
+	var best sql.NullInt64
+	var activeID uuid.NullUUID
+
+	if err := rows.Scan(&scenario.ID, &scenario.Slug, &scenario.Title, &scenario.Role,
+		&scenario.AttemptsCount, &completed, &scenario.Passed, &best, &active, &activeID); err != nil {
+		return domain.ScenarioProgress{}, dependencyError(err)
+	}
+
+	if active > 1 || scenario.Passed && completed == 0 {
+		return domain.ScenarioProgress{}, inconsistentError("attempt snapshot violates progress invariants")
+	}
+
+	scenario.Completed = completed > 0
+
+	if best.Valid {
+		score, err := domain.NewScore(int(best.Int64), 100)
+		if err != nil {
+			return domain.ScenarioProgress{}, inconsistentError(err.Error())
+		}
+		scenario.BestScore = &score
+	}
+
+	if activeID.Valid {
+		id := activeID.UUID
+		scenario.ActiveAttemptID = &id
+	}
+
+	return scenario, nil
 }
 
 const recentAttemptsQuery = `

@@ -15,13 +15,13 @@ import (
 
 	applogger "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/logger"
 	authservice "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/auth"
-	progress_service "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/progress"
+	progressservice "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/progress"
 	trainingservice "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/training"
 	usersservice "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/users"
 	usersutils "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/users/utils"
 	authstorage "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/storage/postgres/auth"
 	postgrespool "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/storage/postgres/pool"
-	progress_repository "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/storage/postgres/progress"
+	progressstorage "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/storage/postgres/progress"
 	trainingstorage "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/storage/postgres/training"
 	userstorage "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/storage/postgres/user"
 	transport "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/transport/http"
@@ -67,40 +67,35 @@ func main() {
 	}
 	defer db.Close()
 
-	// Repository
+	// Repositories
 	authRepository := authstorage.NewRepository(db)
-	trainingRepository := trainingstorage.New(db)
-	progressRepository := progress_repository.NewRepository(db)
-
-	// Service
-	trainingService := trainingservice.New(trainingRepository)
-	if loaded, err := trainingservice.Seed(ctx, trainingRepository, os.DirFS(scenariosDir), "."); err != nil {
-		appLogger.Warn("seed scenarios failed", zap.String("dir", scenariosDir), zap.Error(err))
-	} else {
-		appLogger.Info("scenarios seeded", zap.Int("count", loaded))
-	}
-
-	progressService := progress_service.NewService(progressRepository)
-
-	// users feature
 	userRepository := userstorage.NewRepository(db)
+	trainingRepository := trainingstorage.New(db)
+	progressRepository := progressstorage.NewRepository(db)
 
-	// Users service
-	userService := usersservice.NewUsersService(
-		userRepository,
-		usersutils.BcryptPasswordHasher{},
-		usersutils.UUIDGenerator{},
-		usersutils.RealClock{},
-	)
-
-	// Auth service
+	// Services
 	authService := authservice.NewService(
 		authRepository,
 		userRepository,
 		authservice.BcryptPasswordVerifier{},
 		appLogger,
 	)
-	progressHandler := transport.NewProgressHandler(progressService)
+	userService := usersservice.NewUsersService(
+		userRepository,
+		usersutils.BcryptPasswordHasher{},
+		usersutils.UUIDGenerator{},
+		usersutils.RealClock{},
+	)
+	trainingService := trainingservice.New(trainingRepository)
+	progressService := progressservice.NewService(progressRepository)
+
+	// Scenarios loading
+	if loaded, err := trainingservice.Seed(ctx, trainingRepository, os.DirFS(scenariosDir), "."); err != nil {
+		appLogger.Warn("seed scenarios failed", zap.String("dir", scenariosDir), zap.Error(err))
+	} else {
+		appLogger.Info("scenarios seeded", zap.Int("count", loaded))
+	}
+
 	// HTTP
 	server := transport.NewServer(
 		authService,
@@ -108,6 +103,8 @@ func main() {
 		trainingService,
 		appLogger,
 	)
+	progressHandler := transport.NewProgressHandler(progressService)
+
 	router := gin.New()
 	router.Use(gin.Recovery(), server.LoggerMiddleware())
 
@@ -125,6 +122,7 @@ func main() {
 	v1.POST("/attempts/:attemptID/choice", server.SubmitChoice)
 	v1.GET("/attempts/:attemptID/summary", server.GetSummary)
 	transport.RegisterProgressRoutes(v1, progressHandler)
+
 	httpServer := &http.Server{
 		Addr:              serverAddress,
 		Handler:           router,

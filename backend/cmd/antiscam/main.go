@@ -10,9 +10,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/gin-gonic/gin"
-	"go.uber.org/zap"
-
+	_ "github.com/34Minnesota/avito-antiscam-monorepo/backend/docs"
 	applogger "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/logger"
 	authservice "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/auth"
 	progressservice "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/progress"
@@ -25,6 +23,10 @@ import (
 	trainingstorage "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/storage/postgres/training"
 	userstorage "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/storage/postgres/user"
 	transport "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/transport/http"
+	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
+	"go.uber.org/zap"
 )
 
 const (
@@ -32,6 +34,17 @@ const (
 	shutdownTimeout = 10 * time.Second
 	scenariosDir    = "./docs/scenarios"
 )
+
+//	@title						AntiScam API
+//	@version					1.0
+//	@description				API сервиса AntiScam.
+//	@host						localhost:8080
+//	@BasePath					/
+//	@schemes					http
+//
+//	@securityDefinitions.apikey	SessionID
+//	@in							header
+//	@name						X-Session-ID
 
 func main() {
 	loggerConfig, err := applogger.NewConfig()
@@ -111,7 +124,7 @@ func main() {
 	router.GET("/healthz", server.HealthCheck)
 	router.POST("/v1/auth/login", server.Login)
 	router.POST("/v1/auth/register", server.Register)
-
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	// Всё остальное требует X-Session-ID.
 	v1 := router.Group("/v1", server.SessionMiddleware())
 

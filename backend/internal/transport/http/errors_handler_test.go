@@ -41,7 +41,7 @@ func TestWriteTrainingError(t *testing.T) {
 				t.Fatalf("status = %d, want %d", recorder.Code, test.wantStatus)
 			}
 
-			var response errorResponse
+			var response ErrorResponse
 			if err := json.Unmarshal(recorder.Body.Bytes(), &response); err != nil {
 				t.Fatal(err)
 			}

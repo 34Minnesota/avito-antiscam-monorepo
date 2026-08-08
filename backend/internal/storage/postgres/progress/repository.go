@@ -111,33 +111,26 @@ func scanProgressScenario(rows pgx.Rows) (domain.ScenarioProgress, error) {
 		return domain.ScenarioProgress{}, dependencyError(err)
 	}
 
-	if active > 1 || scenario.Passed && completed == 0 {
-		return domain.ScenarioProgress{}, inconsistentError("attempt snapshot violates progress invariants")
+	if err := validateProgressSnapshot(scenario.Passed, completed, active); err != nil {
+		return domain.ScenarioProgress{}, err
 	}
 
 	scenario.Completed = completed > 0
 
-	if best.Valid {
-		score, err := domain.NewScore(int(best.Int64), 100)
-		if err != nil {
-			return domain.ScenarioProgress{}, inconsistentError(err.Error())
-		}
-		scenario.BestScore = &score
+	var err error
+
+	if scenario.BestScore, err = scoreFromNull(best); err != nil {
+		return domain.ScenarioProgress{}, err
 	}
-	if initial.Valid {
-		score, err := domain.NewScore(int(initial.Int64), 100)
-		if err != nil {
-			return domain.ScenarioProgress{}, inconsistentError(err.Error())
-		}
-		scenario.InitialScore = &score
+
+	if scenario.InitialScore, err = scoreFromNull(initial); err != nil {
+		return domain.ScenarioProgress{}, err
 	}
-	if latest.Valid {
-		score, err := domain.NewScore(int(latest.Int64), 100)
-		if err != nil {
-			return domain.ScenarioProgress{}, inconsistentError(err.Error())
-		}
-		scenario.LatestScore = &score
+
+	if scenario.LatestScore, err = scoreFromNull(latest); err != nil {
+		return domain.ScenarioProgress{}, err
 	}
+
 	if firstSafeID.Valid || firstSafeScore.Valid || firstSafeAt.Valid {
 		if !firstSafeID.Valid || !firstSafeScore.Valid || !firstSafeAt.Valid {
 			return domain.ScenarioProgress{}, inconsistentError("first safe attempt has an invalid progress snapshot")
@@ -158,6 +151,27 @@ func scanProgressScenario(rows pgx.Rows) (domain.ScenarioProgress, error) {
 	}
 
 	return scenario, nil
+}
+
+func validateProgressSnapshot(passed bool, completed, active int) error {
+	if active > 1 || passed && completed == 0 {
+		return inconsistentError("attempt snapshot violates progress invariants")
+	}
+
+	return nil
+}
+
+func scoreFromNull(value sql.NullInt64) (*domain.Score, error) {
+	if !value.Valid {
+		return nil, nil
+	}
+
+	score, err := domain.NewScore(int(value.Int64), 100)
+	if err != nil {
+		return nil, inconsistentError(err.Error())
+	}
+
+	return &score, nil
 }
 
 const recentAttemptsQuery = `

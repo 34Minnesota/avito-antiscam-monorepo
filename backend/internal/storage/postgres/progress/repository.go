@@ -49,9 +49,9 @@ func (r *Repository) Load(ctx context.Context, userID domain.UserID, historyLimi
 const scenariosQuery = `
 	SELECT s.id, s.slug, s.title, s.role,
 		COUNT(a.id),
-		COUNT(a.id) FILTER (WHERE a.status = 'finished'),
+		COUNT(a.id) FILTER (WHERE a.status = 'finished' AND a.finished_at IS NOT NULL),
 		COALESCE(BOOL_OR(a.status = 'finished' AND a.outcome = 'safe'), false),
-		MAX(a.score) FILTER (WHERE a.status = 'finished'),
+		MAX(a.score) FILTER (WHERE a.status = 'finished' AND a.finished_at IS NOT NULL),
 		(ARRAY_AGG(a.score ORDER BY a.finished_at, a.id) FILTER (WHERE a.status = 'finished'))[1],
 		(ARRAY_AGG(a.score ORDER BY a.finished_at DESC, a.id DESC) FILTER (WHERE a.status = 'finished'))[1],
 		COUNT(a.id) FILTER (WHERE a.status = 'in_progress'),

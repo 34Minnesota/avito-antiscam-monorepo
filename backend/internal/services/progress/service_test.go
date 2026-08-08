@@ -69,17 +69,48 @@ func TestGetCalculatesScenarioDynamics(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name      string
-		initial   *domain.Score
-		latest    *domain.Score
-		wantDelta *int
-		wantTrend *domain.ProgressTrend
+		name          string
+		attemptsCount int
+		initial       *domain.Score
+		latest        *domain.Score
+		wantDelta     *int
+		wantTrend     *domain.ProgressTrend
 	}{
-		{name: "no completed attempts"},
-		{name: "one attempt", initial: scorePointer(mustScore(t, 42, 100)), latest: scorePointer(mustScore(t, 42, 100)), wantDelta: intPointer(0), wantTrend: trendPointer(domain.ProgressTrendStable)},
-		{name: "improving", initial: scorePointer(mustScore(t, 42, 100)), latest: scorePointer(mustScore(t, 78, 100)), wantDelta: intPointer(36), wantTrend: trendPointer(domain.ProgressTrendImproving)},
-		{name: "declining", initial: scorePointer(mustScore(t, 78, 100)), latest: scorePointer(mustScore(t, 42, 100)), wantDelta: intPointer(-36), wantTrend: trendPointer(domain.ProgressTrendDeclining)},
-		{name: "stable", initial: scorePointer(mustScore(t, 60, 100)), latest: scorePointer(mustScore(t, 60, 100)), wantDelta: intPointer(0), wantTrend: trendPointer(domain.ProgressTrendStable)},
+		{
+			name: "no completed attempts",
+		},
+		{
+			name:          "one attempt",
+			attemptsCount: 1,
+			initial:       scorePointer(mustScore(t, 42, 100)),
+			latest:        scorePointer(mustScore(t, 42, 100)),
+			wantDelta:     intPointer(0),
+			wantTrend:     trendPointer(domain.ProgressTrendStable),
+		},
+		{
+			name:          "improving",
+			attemptsCount: 2,
+			initial:       scorePointer(mustScore(t, 42, 100)),
+			latest:        scorePointer(mustScore(t, 78, 100)),
+			wantDelta:     intPointer(36),
+			wantTrend:     trendPointer(domain.ProgressTrendImproving),
+		},
+		{
+			name:          "declining",
+			attemptsCount: 2,
+			initial:       scorePointer(mustScore(t, 78, 100)),
+			latest:        scorePointer(mustScore(t, 42, 100)),
+			wantDelta:     intPointer(-36),
+			wantTrend:     trendPointer(domain.ProgressTrendDeclining),
+		},
+		{
+			name:          "stable",
+			attemptsCount: 2,
+			initial:       scorePointer(mustScore(t, 60, 100)),
+			latest:        scorePointer(mustScore(t, 60, 100)),
+			wantDelta:     intPointer(0),
+			wantTrend:     trendPointer(domain.ProgressTrendStable),
+		},
 	}
 
 	for _, tt := range tests {
@@ -88,7 +119,8 @@ func TestGetCalculatesScenarioDynamics(t *testing.T) {
 			t.Parallel()
 			repo := &repositoryStub{snapshot: domain.ProgressSnapshot{Scenarios: []domain.ScenarioProgress{{
 				ID: uuid.New(), Slug: "scenario", Title: "Scenario", Role: domain.RoleBuyer,
-				InitialScore: tt.initial, LatestScore: tt.latest,
+				AttemptsCount: tt.attemptsCount,
+				InitialScore:  tt.initial, LatestScore: tt.latest,
 			}}}}
 
 			result, err := progress_service.NewService(repo).Get(context.Background(), mustUserID(t))

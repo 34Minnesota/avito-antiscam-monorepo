@@ -65,6 +65,47 @@ func TestGetEmptyCatalogReturnsZeroPercentages(t *testing.T) {
 	}
 }
 
+func TestGetCalculatesScenarioDynamics(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name      string
+		initial   *domain.Score
+		latest    *domain.Score
+		wantDelta *int
+		wantTrend *domain.ProgressTrend
+	}{
+		{name: "no completed attempts"},
+		{name: "one attempt", initial: scorePointer(mustScore(t, 42, 100)), latest: scorePointer(mustScore(t, 42, 100)), wantDelta: intPointer(0), wantTrend: trendPointer(domain.ProgressTrendStable)},
+		{name: "improving", initial: scorePointer(mustScore(t, 42, 100)), latest: scorePointer(mustScore(t, 78, 100)), wantDelta: intPointer(36), wantTrend: trendPointer(domain.ProgressTrendImproving)},
+		{name: "declining", initial: scorePointer(mustScore(t, 78, 100)), latest: scorePointer(mustScore(t, 42, 100)), wantDelta: intPointer(-36), wantTrend: trendPointer(domain.ProgressTrendDeclining)},
+		{name: "stable", initial: scorePointer(mustScore(t, 60, 100)), latest: scorePointer(mustScore(t, 60, 100)), wantDelta: intPointer(0), wantTrend: trendPointer(domain.ProgressTrendStable)},
+	}
+
+	for _, tt := range tests {
+
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			repo := &repositoryStub{snapshot: domain.ProgressSnapshot{Scenarios: []domain.ScenarioProgress{{
+				ID: uuid.New(), Slug: "scenario", Title: "Scenario", Role: domain.RoleBuyer,
+				InitialScore: tt.initial, LatestScore: tt.latest,
+			}}}}
+
+			result, err := progress_service.NewService(repo).Get(context.Background(), mustUserID(t))
+			if err != nil {
+				t.Fatal(err)
+			}
+			scenario := result.Roles[0].Scenarios[0]
+			if !equalIntPointers(scenario.ImprovementPercentPoints, tt.wantDelta) {
+				t.Fatalf("improvement = %v, want %v", scenario.ImprovementPercentPoints, tt.wantDelta)
+			}
+			if !equalTrendPointers(scenario.Trend, tt.wantTrend) {
+				t.Fatalf("trend = %v, want %v", scenario.Trend, tt.wantTrend)
+			}
+		})
+	}
+}
+
 func TestGetRejectsInvalidSnapshotAndMissingDependency(t *testing.T) {
 	t.Parallel()
 	_, err := progress_service.NewService(nil).Get(context.Background(), mustUserID(t))
@@ -112,4 +153,18 @@ func mustUserID(t *testing.T) domain.UserID {
 		t.Fatal(err)
 	}
 	return id
+}
+
+func scorePointer(score domain.Score) *domain.Score { return &score }
+
+func intPointer(value int) *int { return &value }
+
+func trendPointer(trend domain.ProgressTrend) *domain.ProgressTrend { return &trend }
+
+func equalIntPointers(actual, expected *int) bool {
+	return actual == nil && expected == nil || actual != nil && expected != nil && *actual == *expected
+}
+
+func equalTrendPointers(actual, expected *domain.ProgressTrend) bool {
+	return actual == nil && expected == nil || actual != nil && expected != nil && *actual == *expected
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
+	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
 )
 
 type mockUserProvider struct {
@@ -105,7 +106,7 @@ func TestLoginUserNotFound(t *testing.T) {
 		"password",
 	)
 
-	if !errors.Is(err, ErrInvalidCredentials) {
+	if !errors.Is(err, domainErrors.ErrInvalidCredentials) {
 		t.Fatal("expected invalid credentials")
 	}
 }
@@ -140,7 +141,7 @@ func TestLoginWrongPassword(t *testing.T) {
 		"password",
 	)
 
-	if !errors.Is(err, ErrInvalidCredentials) {
+	if !errors.Is(err, domainErrors.ErrInvalidCredentials) {
 		t.Fatal("expected invalid credentials")
 	}
 }

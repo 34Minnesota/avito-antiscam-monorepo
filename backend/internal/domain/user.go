@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	core_errors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/errors"
+	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
 	"github.com/google/uuid"
 )
 
@@ -47,7 +47,7 @@ func (u *User) Validate() error {
 	if u.ID == uuid.Nil {
 		return fmt.Errorf(
 			"empty user id: %w",
-			core_errors.ErrEmptyID,
+			domainErrors.ErrEmptyID,
 		)
 	}
 
@@ -62,14 +62,14 @@ func (u *User) Validate() error {
 	if u.PasswordHash == "" {
 		return fmt.Errorf(
 			"empty password hash: %w",
-			core_errors.ErrInvalidArgument,
+			domainErrors.ErrInvalidArgument,
 		)
 	}
 
 	if u.CreatedAt.IsZero() {
 		return fmt.Errorf(
 			"empty created_at: %w",
-			core_errors.ErrInvalidArgument,
+			domainErrors.ErrInvalidArgument,
 		)
 	}
 
@@ -82,14 +82,14 @@ func ValidateNickname(value string) error {
 	if nicknameLen < MinNicknameLength || nicknameLen > MaxNicknameLength {
 		return fmt.Errorf(
 			"invalid nickname len: %d: %w",
-			nicknameLen, core_errors.ErrInvalidArgument,
+			nicknameLen, domainErrors.ErrInvalidArgument,
 		)
 	}
 
 	if !nicknameRegexp.MatchString(value) {
 		return fmt.Errorf(
 			"invalid nickname format: %w",
-			core_errors.ErrInvalidArgument,
+			domainErrors.ErrInvalidArgument,
 		)
 	}
 
@@ -106,7 +106,7 @@ func ValidateEmail(value string) error {
 	if email == "" {
 		return fmt.Errorf(
 			"empty email: %w",
-			core_errors.ErrInvalidArgument,
+			domainErrors.ErrInvalidArgument,
 		)
 	}
 
@@ -115,14 +115,14 @@ func ValidateEmail(value string) error {
 		return fmt.Errorf(
 			"error parsing address: %w: %w",
 			err,
-			core_errors.ErrInvalidArgument,
+			domainErrors.ErrInvalidArgument,
 		)
 	}
 
 	if addr.Address != email {
 		return fmt.Errorf(
 			"invalid email form: %w",
-			core_errors.ErrInvalidArgument,
+			domainErrors.ErrInvalidArgument,
 		)
 	}
 

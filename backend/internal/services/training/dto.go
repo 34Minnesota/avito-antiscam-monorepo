@@ -49,6 +49,7 @@ type ChoiceResult struct {
 	NextScene *ScenePayload    `json:"next_scene"`
 	Finished  bool             `json:"finished"`
 	Summary   *SummaryResult   `json:"summary,omitempty"`
+	Revision  int              `json:"revision"`
 }
 
 // SummaryResult — итог прохождения: балл, концовка и разбор пропущенных признаков.

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net/http"
 
-	coreErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/errors"
+	coreErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
@@ -258,7 +258,7 @@ func (s *Server) StartAttempt(c *gin.Context) {
 		if s.logger != nil {
 			s.logger.Error("start attempt failed", zap.Error(err))
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "failed to start attempt"})
+		writeTrainingError(c, err)
 		return
 	}
 	c.JSON(http.StatusCreated, result)
@@ -284,12 +284,12 @@ func (s *Server) SubmitChoice(c *gin.Context) {
 		return
 	}
 
-	result, err := s.training.Choose(c.Request.Context(), userID, attemptID, req.SceneID, req.OptionID)
+	result, err := s.training.Choose(c.Request.Context(), userID, attemptID, req.SceneID, req.OptionID, *req.ExpectedRevision)
 	if err != nil {
 		if s.logger != nil {
 			s.logger.Error("submit choice failed", zap.Error(err))
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "failed to submit choice"})
+		writeTrainingError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, result)
@@ -314,7 +314,7 @@ func (s *Server) GetSummary(c *gin.Context) {
 		if s.logger != nil {
 			s.logger.Error("get summary failed", zap.Error(err))
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "failed to get summary"})
+		writeTrainingError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, summary)

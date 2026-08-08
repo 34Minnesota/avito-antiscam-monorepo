@@ -34,6 +34,7 @@ type Attempt struct {
 	Outcome      *Outcome
 	StartedAt    time.Time
 	FinishedAt   *time.Time
+	Revision     int
 }
 
 // AttemptStep — зафиксированный выбор пользователя.

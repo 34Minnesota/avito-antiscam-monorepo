@@ -11,10 +11,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"github.com/34Minnesota/avito-antiscam-monorepo/backend/generated/openapi"
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
-	progressservice "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/progress"
-	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/transport/http/identity"
+	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
 )
 
 type progressStub struct {
@@ -40,11 +38,11 @@ func TestProgressHandlerMapsSuccess(t *testing.T) {
 	if response.Code != http.StatusOK {
 		t.Fatalf("status = %d, body = %s", response.Code, response.Body.String())
 	}
-	var body openapi.ProgressResponse
+	var body progressResponse
 	if err := json.Unmarshal(response.Body.Bytes(), &body); err != nil {
 		t.Fatal(err)
 	}
-	if body.TotalScenarios != 0 || body.Roles == nil || body.OutdatedActiveAttempts == nil {
+	if body.TotalScenarios != 0 || body.Roles == nil {
 		t.Fatalf("unexpected body: %+v", body)
 	}
 }
@@ -56,8 +54,8 @@ func TestProgressHandlerMapsErrors(t *testing.T) {
 		err    error
 		status int
 	}{
-		{name: "dependency", err: progressservice.ErrDependencyUnavailable, status: http.StatusServiceUnavailable},
-		{name: "inconsistent", err: progressservice.ErrDataInconsistent, status: http.StatusInternalServerError},
+		{name: "dependency", err: domainErrors.ErrDependencyUnavailable, status: http.StatusServiceUnavailable},
+		{name: "inconsistent", err: domainErrors.ErrDataInconsistent, status: http.StatusInternalServerError},
 		{name: "unknown", err: errors.New("boom"), status: http.StatusInternalServerError},
 	}
 	for _, tt := range tests {
@@ -75,15 +73,17 @@ func performRequest(t *testing.T, service ProgressGetter, authenticated bool) *h
 	t.Helper()
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
-	RegisterProgressRoutes(router, NewProgressHandler(service))
-	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/v1/progress", nil)
 	if authenticated {
 		userID, err := domain.NewUserID(uuid.New())
 		if err != nil {
 			t.Fatal(err)
 		}
-		request = request.WithContext(identity.WithUserID(request.Context(), userID))
+		router.Use(func(c *gin.Context) {
+			c.Set(sessionContextKey, domain.Session{ID: uuid.New(), UserID: userID.UUID()})
+		})
 	}
+	RegisterProgressRoutes(router.Group("/v1"), NewProgressHandler(service))
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/v1/progress", nil)
 	response := httptest.NewRecorder()
 	router.ServeHTTP(response, request)
 	return response

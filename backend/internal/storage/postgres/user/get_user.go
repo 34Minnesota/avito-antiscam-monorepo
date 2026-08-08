@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
-	core_errors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/errors"
+	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 )
@@ -38,7 +38,7 @@ func (r *UsersRepository) GetUser(
 		if errors.Is(err, pgx.ErrNoRows) {
 			return domain.User{}, fmt.Errorf(
 				"user with id %d not found: %w",
-				userID, core_errors.ErrNotFound,
+				userID, domainErrors.ErrNotFound,
 			)
 		}
 
@@ -77,7 +77,7 @@ func (r *UsersRepository) GetUserByEmail(
 		if errors.Is(err, pgx.ErrNoRows) {
 			return domain.User{}, fmt.Errorf(
 				"user with email %s not found: %w",
-				email, core_errors.ErrNotFound,
+				email, domainErrors.ErrNotFound,
 			)
 		}
 

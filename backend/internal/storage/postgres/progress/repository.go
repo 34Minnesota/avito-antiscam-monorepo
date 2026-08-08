@@ -52,8 +52,11 @@ const scenariosQuery = `
 		COUNT(a.id) FILTER (WHERE a.status = 'finished' AND a.finished_at IS NOT NULL),
 		COALESCE(BOOL_OR(a.status = 'finished' AND a.outcome = 'safe'), false),
 		MAX(a.score) FILTER (WHERE a.status = 'finished' AND a.finished_at IS NOT NULL),
-		(ARRAY_AGG(a.score ORDER BY a.finished_at, a.id) FILTER (WHERE a.status = 'finished'))[1],
-		(ARRAY_AGG(a.score ORDER BY a.finished_at DESC, a.id DESC) FILTER (WHERE a.status = 'finished'))[1],
+		(ARRAY_AGG(a.score ORDER BY a.finished_at, a.id) FILTER (WHERE a.status = 'finished' AND a.finished_at IS NOT NULL))[1],
+		(ARRAY_AGG(a.score ORDER BY a.finished_at DESC, a.id DESC) FILTER (WHERE a.status = 'finished' AND a.finished_at IS NOT NULL))[1],
+		(ARRAY_AGG(a.id ORDER BY a.finished_at, a.id) FILTER (WHERE a.status = 'finished' AND a.outcome = 'safe' AND a.finished_at IS NOT NULL))[1],
+		(ARRAY_AGG(a.score ORDER BY a.finished_at, a.id) FILTER (WHERE a.status = 'finished' AND a.outcome = 'safe' AND a.finished_at IS NOT NULL))[1],
+		(ARRAY_AGG(a.finished_at ORDER BY a.finished_at, a.id) FILTER (WHERE a.status = 'finished' AND a.outcome = 'safe' AND a.finished_at IS NOT NULL))[1],
 		COUNT(a.id) FILTER (WHERE a.status = 'in_progress'),
 		(MIN(a.id::text) FILTER (WHERE a.status = 'in_progress'))::uuid
 	FROM scenarios s
@@ -97,10 +100,14 @@ func scanProgressScenario(rows pgx.Rows) (domain.ScenarioProgress, error) {
 	var scenario domain.ScenarioProgress
 	var completed, active int
 	var best, initial, latest sql.NullInt64
+	var firstSafeID uuid.NullUUID
+	var firstSafeScore sql.NullInt64
+	var firstSafeAt sql.NullTime
 	var activeID uuid.NullUUID
 
 	if err := rows.Scan(&scenario.ID, &scenario.Slug, &scenario.Title, &scenario.Role,
-		&scenario.AttemptsCount, &completed, &scenario.Passed, &best, &initial, &latest, &active, &activeID); err != nil {
+		&scenario.AttemptsCount, &completed, &scenario.Passed, &best, &initial, &latest,
+		&firstSafeID, &firstSafeScore, &firstSafeAt, &active, &activeID); err != nil {
 		return domain.ScenarioProgress{}, dependencyError(err)
 	}
 
@@ -130,6 +137,19 @@ func scanProgressScenario(rows pgx.Rows) (domain.ScenarioProgress, error) {
 			return domain.ScenarioProgress{}, inconsistentError(err.Error())
 		}
 		scenario.LatestScore = &score
+	}
+	if firstSafeID.Valid || firstSafeScore.Valid || firstSafeAt.Valid {
+		if !firstSafeID.Valid || !firstSafeScore.Valid || !firstSafeAt.Valid {
+			return domain.ScenarioProgress{}, inconsistentError("first safe attempt has an invalid progress snapshot")
+		}
+		score, err := domain.NewScore(int(firstSafeScore.Int64), 100)
+		if err != nil {
+			return domain.ScenarioProgress{}, inconsistentError(err.Error())
+		}
+		firstSafe := domain.AttemptResult{
+			ID: firstSafeID.UUID, Score: score, Outcome: domain.OutcomeSafe, CompletedAt: firstSafeAt.Time,
+		}
+		scenario.FirstSafeAttempt = &firstSafe
 	}
 
 	if activeID.Valid {

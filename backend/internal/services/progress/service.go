@@ -101,6 +101,17 @@ func aggregate(snapshot domain.ProgressSnapshot) domain.OverallProgress {
 		overall.Roles = append(overall.Roles, *role)
 	}
 
+	buyer := roles[domain.RoleBuyer]
+	seller := roles[domain.RoleSeller]
+
+	completionPercentDelta := buyer.CompletionPercent - seller.CompletionPercent
+	passedPercentDelta := buyer.PassedPercent - seller.PassedPercent
+
+	overall.RoleComparison = domain.RoleComparison{
+		CompletionPercentDelta: completionPercentDelta,
+		PassedPercentDelta:     passedPercentDelta,
+	}
+
 	return overall
 }
 

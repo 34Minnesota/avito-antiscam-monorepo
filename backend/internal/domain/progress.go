@@ -28,6 +28,7 @@ type ScenarioProgress struct {
 	LatestScore              *Score
 	ImprovementPercentPoints *int
 	Trend                    *ProgressTrend
+	FirstSafeAttempt         *AttemptResult
 }
 
 type ProgressTrend string
@@ -59,4 +60,10 @@ type OverallProgress struct {
 	CompletionPercent  int
 	PassedPercent      int
 	Roles              []RoleProgress
+	RoleComparison     RoleComparison
+}
+
+type RoleComparison struct {
+	CompletionPercentDelta int
+	PassedPercentDelta     int
 }

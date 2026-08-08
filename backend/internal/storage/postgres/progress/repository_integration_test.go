@@ -201,6 +201,12 @@ func assertPopulatedScenario(
 		t.Fatalf("latest score = %v", scenario.LatestScore)
 	}
 
+	if scenario.FirstSafeAttempt == nil ||
+		scenario.FirstSafeAttempt.Score.Points() != 0 ||
+		scenario.FirstSafeAttempt.Outcome != domain.OutcomeSafe {
+		t.Fatalf("first safe attempt = %+v", scenario.FirstSafeAttempt)
+	}
+
 	if len(scenario.RecentAttempts) != 20 {
 		t.Fatalf("recent attempts count = %d", len(scenario.RecentAttempts))
 	}

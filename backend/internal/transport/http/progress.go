@@ -30,14 +30,27 @@ func RegisterProgressRoutes(router gin.IRoutes, handler *ProgressHandler) {
 	router.GET("/progress", handler.Get)
 }
 
+// Get godoc
+//
+//	@Summary		Получить прогресс пользователя
+//	@Description	Возвращает общий прогресс текущего авторизованного пользователя по сценариям.
+//	@Tags			progress
+//	@Produce		json
+//	@Security		SessionID
+//	@Success		200	{object}	progressResponse
+//
+//	@Failure		401	{object}	ErrorResponse
+//	@Failure		503	{object}	ErrorResponse
+//
+//	@Router			/v1/progress [get]
 func (h *ProgressHandler) Get(c *gin.Context) {
 	userID, ok := CurrentUser(c)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, errorResponse{Code: "unauthorized", Message: "authenticated user is required"})
+		c.JSON(http.StatusUnauthorized, ErrorResponse{Code: "unauthorized", Message: "authenticated user is required"})
 		return
 	}
 	if h == nil || h.service == nil {
-		c.JSON(http.StatusServiceUnavailable, errorResponse{Code: "dependency_unavailable", Message: "progress service is unavailable"})
+		c.JSON(http.StatusServiceUnavailable, ErrorResponse{Code: "dependency_unavailable", Message: "progress service is unavailable"})
 		return
 	}
 
@@ -45,9 +58,9 @@ func (h *ProgressHandler) Get(c *gin.Context) {
 	if err != nil {
 		switch {
 		case errors.Is(err, domainErrors.ErrDependencyUnavailable):
-			c.JSON(http.StatusServiceUnavailable, errorResponse{Code: "dependency_unavailable", Message: "progress dependency is unavailable"})
+			c.JSON(http.StatusServiceUnavailable, ErrorResponse{Code: "dependency_unavailable", Message: "progress dependency is unavailable"})
 		default:
-			c.JSON(http.StatusInternalServerError, errorResponse{Code: "internal_error", Message: "internal server error"})
+			c.JSON(http.StatusInternalServerError, ErrorResponse{Code: "internal_error", Message: "internal server error"})
 		}
 		return
 	}

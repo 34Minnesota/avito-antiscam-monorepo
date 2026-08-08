@@ -1,0 +1,503 @@
+basePath: /
+definitions:
+  domain.Outcome:
+    enum:
+    - safe
+    - partial
+    - scammed
+    type: string
+    x-enum-varnames:
+    - OutcomeSafe
+    - OutcomePartial
+    - OutcomeScammed
+  domain.Role:
+    enum:
+    - buyer
+    - seller
+    type: string
+    x-enum-varnames:
+    - RoleBuyer
+    - RoleSeller
+  httptransport.ChoiceRequest:
+    properties:
+      expected_revision:
+        minimum: 0
+        type: integer
+      option_id:
+        type: string
+      scene_id:
+        type: string
+    required:
+    - expected_revision
+    - option_id
+    - scene_id
+    type: object
+  httptransport.ErrorResponse:
+    properties:
+      code:
+        type: string
+      message:
+        type: string
+    type: object
+  httptransport.LoginRequest:
+    properties:
+      email:
+        maxLength: 254
+        type: string
+      password:
+        maxLength: 72
+        minLength: 8
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  httptransport.LoginResponse:
+    properties:
+      sessionId:
+        type: string
+    type: object
+  httptransport.RegisterRequest:
+    properties:
+      email:
+        maxLength: 254
+        type: string
+      nickname:
+        maxLength: 30
+        minLength: 3
+        type: string
+      password:
+        maxLength: 72
+        minLength: 8
+        type: string
+    required:
+    - email
+    - nickname
+    - password
+    type: object
+  httptransport.RegisterResponse:
+    properties:
+      sessionId:
+        type: string
+    type: object
+  httptransport.StartAttemptRequest:
+    properties:
+      scenario_id:
+        type: string
+    required:
+    - scenario_id
+    type: object
+  httptransport.UserResponse:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      nickname:
+        type: string
+    type: object
+  httptransport.completedAttemptResultResponse:
+    properties:
+      attemptId:
+        type: string
+      completedAt:
+        type: string
+      outcome:
+        $ref: '#/definitions/domain.Outcome'
+      score:
+        $ref: '#/definitions/httptransport.scoreResponse'
+    type: object
+  httptransport.progressResponse:
+    properties:
+      completedScenarios:
+        type: integer
+      completionPercent:
+        type: integer
+      passedPercent:
+        type: integer
+      passedScenarios:
+        type: integer
+      roles:
+        items:
+          $ref: '#/definitions/httptransport.roleProgressResponse'
+        type: array
+      totalScenarios:
+        type: integer
+    type: object
+  httptransport.roleProgressResponse:
+    properties:
+      completedScenarios:
+        type: integer
+      completionPercent:
+        type: integer
+      passedPercent:
+        type: integer
+      passedScenarios:
+        type: integer
+      role:
+        $ref: '#/definitions/domain.Role'
+      scenarios:
+        items:
+          $ref: '#/definitions/httptransport.scenarioProgressResponse'
+        type: array
+      totalScenarios:
+        type: integer
+    type: object
+  httptransport.scenarioProgressResponse:
+    properties:
+      activeAttemptId:
+        type: string
+      attemptsCount:
+        type: integer
+      bestScore:
+        $ref: '#/definitions/httptransport.scoreResponse'
+      completed:
+        type: boolean
+      passed:
+        type: boolean
+      recentAttempts:
+        items:
+          $ref: '#/definitions/httptransport.completedAttemptResultResponse'
+        type: array
+      scenarioSlug:
+        type: string
+      title:
+        type: string
+    type: object
+  httptransport.scoreResponse:
+    properties:
+      maxPoints:
+        type: integer
+      percent:
+        type: integer
+      points:
+        type: integer
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: API сервиса AntiScam.
+  title: AntiScam API
+  version: "1.0"
+paths:
+  /healthz:
+    get:
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: OK
+      summary: Проверка состояния сервиса
+      tags:
+      - health
+  /v1/attempts:
+    post:
+      consumes:
+      - application/json
+      description: Создаёт новую попытку прохождения сценария.
+      parameters:
+      - description: Данные сценария
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/httptransport.StartAttemptRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httptransport.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/httptransport.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httptransport.ErrorResponse'
+      security:
+      - SessionID: []
+      summary: Начать попытку
+      tags:
+      - attempts
+  /v1/attempts/{attemptID}/choice:
+    post:
+      consumes:
+      - application/json
+      description: Отправляет выбор пользователя для текущей сцены.
+      parameters:
+      - description: ID попытки
+        in: path
+        name: attemptID
+        required: true
+        type: string
+      - description: Выбор пользователя
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/httptransport.ChoiceRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httptransport.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/httptransport.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/httptransport.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/httptransport.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/httptransport.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httptransport.ErrorResponse'
+      security:
+      - SessionID: []
+      summary: Сделать выбор в попытке
+      tags:
+      - attempts
+  /v1/attempts/{attemptID}/summary:
+    get:
+      description: Возвращает итоговую информацию по попытке пользователя.
+      parameters:
+      - description: ID попытки
+        in: path
+        name: attemptID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httptransport.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/httptransport.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/httptransport.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/httptransport.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httptransport.ErrorResponse'
+      security:
+      - SessionID: []
+      summary: Получить результат попытки
+      tags:
+      - attempts
+  /v1/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Выполняет вход по email и паролю и создаёт сессию.
+      parameters:
+      - description: Учётные данные
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/httptransport.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httptransport.LoginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httptransport.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/httptransport.ErrorResponse'
+      summary: Вход в систему
+      tags:
+      - auth
+  /v1/auth/logout:
+    post:
+      description: Завершает текущую сессию.
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/httptransport.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httptransport.ErrorResponse'
+      security:
+      - SessionID: []
+      summary: Выход из системы
+      tags:
+      - auth
+  /v1/auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Создаёт пользователя и связанную с ним сессию.
+      parameters:
+      - description: Данные для регистрации
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/httptransport.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/httptransport.RegisterResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httptransport.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/httptransport.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httptransport.ErrorResponse'
+      summary: Регистрация пользователя
+      tags:
+      - auth
+  /v1/progress:
+    get:
+      description: Возвращает общий прогресс текущего авторизованного пользователя
+        по сценариям.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httptransport.progressResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/httptransport.ErrorResponse'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/httptransport.ErrorResponse'
+      security:
+      - SessionID: []
+      summary: Получить прогресс пользователя
+      tags:
+      - progress
+  /v1/scenarios:
+    get:
+      description: Возвращает доступные пользователю сценарии.
+      parameters:
+      - description: Роль пользователя
+        enum:
+        - buyer
+        - seller
+        in: query
+        name: role
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httptransport.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/httptransport.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httptransport.ErrorResponse'
+      security:
+      - SessionID: []
+      summary: Получить список сценариев
+      tags:
+      - training
+  /v1/users/me:
+    get:
+      description: Возвращает данные пользователя, связанного с текущей сессией.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httptransport.UserResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/httptransport.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httptransport.ErrorResponse'
+      security:
+      - SessionID: []
+      summary: Получить текущего пользователя
+      tags:
+      - users
+schemes:
+- http
+securityDefinitions:
+  SessionID:
+    in: header
+    name: X-Session-ID
+    type: apiKey
+swagger: "2.0"

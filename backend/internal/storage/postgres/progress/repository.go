@@ -49,9 +49,14 @@ func (r *Repository) Load(ctx context.Context, userID domain.UserID, historyLimi
 const scenariosQuery = `
 	SELECT s.id, s.slug, s.title, s.role,
 		COUNT(a.id),
-		COUNT(a.id) FILTER (WHERE a.status = 'finished'),
+		COUNT(a.id) FILTER (WHERE a.status = 'finished' AND a.finished_at IS NOT NULL),
 		COALESCE(BOOL_OR(a.status = 'finished' AND a.outcome = 'safe'), false),
-		MAX(a.score) FILTER (WHERE a.status = 'finished'),
+		MAX(a.score) FILTER (WHERE a.status = 'finished' AND a.finished_at IS NOT NULL),
+		(ARRAY_AGG(a.score ORDER BY a.finished_at, a.id) FILTER (WHERE a.status = 'finished' AND a.finished_at IS NOT NULL))[1],
+		(ARRAY_AGG(a.score ORDER BY a.finished_at DESC, a.id DESC) FILTER (WHERE a.status = 'finished' AND a.finished_at IS NOT NULL))[1],
+		(ARRAY_AGG(a.id ORDER BY a.finished_at, a.id) FILTER (WHERE a.status = 'finished' AND a.outcome = 'safe' AND a.finished_at IS NOT NULL))[1],
+		(ARRAY_AGG(a.score ORDER BY a.finished_at, a.id) FILTER (WHERE a.status = 'finished' AND a.outcome = 'safe' AND a.finished_at IS NOT NULL))[1],
+		(ARRAY_AGG(a.finished_at ORDER BY a.finished_at, a.id) FILTER (WHERE a.status = 'finished' AND a.outcome = 'safe' AND a.finished_at IS NOT NULL))[1],
 		COUNT(a.id) FILTER (WHERE a.status = 'in_progress'),
 		(MIN(a.id::text) FILTER (WHERE a.status = 'in_progress'))::uuid
 	FROM scenarios s
@@ -94,26 +99,50 @@ func loadScenarios(
 func scanProgressScenario(rows pgx.Rows) (domain.ScenarioProgress, error) {
 	var scenario domain.ScenarioProgress
 	var completed, active int
-	var best sql.NullInt64
+	var best, initial, latest sql.NullInt64
+	var firstSafeID uuid.NullUUID
+	var firstSafeScore sql.NullInt64
+	var firstSafeAt sql.NullTime
 	var activeID uuid.NullUUID
 
 	if err := rows.Scan(&scenario.ID, &scenario.Slug, &scenario.Title, &scenario.Role,
-		&scenario.AttemptsCount, &completed, &scenario.Passed, &best, &active, &activeID); err != nil {
+		&scenario.AttemptsCount, &completed, &scenario.Passed, &best, &initial, &latest,
+		&firstSafeID, &firstSafeScore, &firstSafeAt, &active, &activeID); err != nil {
 		return domain.ScenarioProgress{}, dependencyError(err)
 	}
 
-	if active > 1 || scenario.Passed && completed == 0 {
-		return domain.ScenarioProgress{}, inconsistentError("attempt snapshot violates progress invariants")
+	if err := validateProgressSnapshot(scenario.Passed, completed, active); err != nil {
+		return domain.ScenarioProgress{}, err
 	}
 
 	scenario.Completed = completed > 0
 
-	if best.Valid {
-		score, err := domain.NewScore(int(best.Int64), 100)
+	var err error
+
+	if scenario.BestScore, err = scoreFromNull(best); err != nil {
+		return domain.ScenarioProgress{}, err
+	}
+
+	if scenario.InitialScore, err = scoreFromNull(initial); err != nil {
+		return domain.ScenarioProgress{}, err
+	}
+
+	if scenario.LatestScore, err = scoreFromNull(latest); err != nil {
+		return domain.ScenarioProgress{}, err
+	}
+
+	if firstSafeID.Valid || firstSafeScore.Valid || firstSafeAt.Valid {
+		if !firstSafeID.Valid || !firstSafeScore.Valid || !firstSafeAt.Valid {
+			return domain.ScenarioProgress{}, inconsistentError("first safe attempt has an invalid progress snapshot")
+		}
+		score, err := domain.NewScore(int(firstSafeScore.Int64), 100)
 		if err != nil {
 			return domain.ScenarioProgress{}, inconsistentError(err.Error())
 		}
-		scenario.BestScore = &score
+		firstSafe := domain.AttemptResult{
+			ID: firstSafeID.UUID, Score: score, Outcome: domain.OutcomeSafe, CompletedAt: firstSafeAt.Time,
+		}
+		scenario.FirstSafeAttempt = &firstSafe
 	}
 
 	if activeID.Valid {
@@ -122,6 +151,27 @@ func scanProgressScenario(rows pgx.Rows) (domain.ScenarioProgress, error) {
 	}
 
 	return scenario, nil
+}
+
+func validateProgressSnapshot(passed bool, completed, active int) error {
+	if active > 1 || passed && completed == 0 {
+		return inconsistentError("attempt snapshot violates progress invariants")
+	}
+
+	return nil
+}
+
+func scoreFromNull(value sql.NullInt64) (*domain.Score, error) {
+	if !value.Valid {
+		return nil, nil
+	}
+
+	score, err := domain.NewScore(int(value.Int64), 100)
+	if err != nil {
+		return nil, inconsistentError(err.Error())
+	}
+
+	return &score, nil
 }
 
 const recentAttemptsQuery = `

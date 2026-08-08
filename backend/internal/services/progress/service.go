@@ -53,6 +53,25 @@ func aggregate(snapshot domain.ProgressSnapshot) domain.OverallProgress {
 	overall := domain.OverallProgress{}
 
 	for _, scenario := range snapshot.Scenarios {
+		if scenario.InitialScore != nil && scenario.LatestScore != nil {
+			initialPercent := scenario.InitialScore.Percent()
+			latestPercent := scenario.LatestScore.Percent()
+
+			improvement := latestPercent - initialPercent
+			var trend domain.ProgressTrend
+
+			if latestPercent > initialPercent {
+				trend = domain.ProgressTrendImproving
+			} else if latestPercent < initialPercent {
+				trend = domain.ProgressTrendDeclining
+			} else {
+				trend = domain.ProgressTrendStable
+			}
+
+			scenario.ImprovementPercentPoints = &improvement
+			scenario.Trend = &trend
+		}
+
 		role := roles[scenario.Role]
 
 		role.Scenarios = append(role.Scenarios, scenario)
@@ -82,6 +101,17 @@ func aggregate(snapshot domain.ProgressSnapshot) domain.OverallProgress {
 		overall.Roles = append(overall.Roles, *role)
 	}
 
+	buyer := roles[domain.RoleBuyer]
+	seller := roles[domain.RoleSeller]
+
+	completionPercentDelta := buyer.CompletionPercent - seller.CompletionPercent
+	passedPercentDelta := buyer.PassedPercent - seller.PassedPercent
+
+	overall.RoleComparison = domain.RoleComparison{
+		CompletionPercentDelta: completionPercentDelta,
+		PassedPercentDelta:     passedPercentDelta,
+	}
+
 	return overall
 }
 
@@ -104,15 +134,15 @@ func validate(snapshot domain.ProgressSnapshot) error {
 }
 
 func validateScenario(scenario domain.ScenarioProgress) error {
-	if scenario.ID == uuid.Nil || scenario.Slug == "" || scenario.Title == "" || (scenario.Role != domain.RoleBuyer && scenario.Role != domain.RoleSeller) {
+	if !isValidScenarioIdentity(scenario) {
 		return domainErrors.ErrInvalidProgressData
 	}
 
-	if scenario.AttemptsCount < 0 || scenario.Passed && !scenario.Completed || scenario.BestScore != nil && !scenario.Completed {
+	if !isValidScenarioState(scenario) {
 		return domainErrors.ErrInvalidProgressData
 	}
 
-	if scenario.BestScore != nil && scenario.BestScore.MaxPoints() != 100 {
+	if !isValidScenarioScores(scenario) {
 		return domainErrors.ErrInvalidProgressData
 	}
 
@@ -120,7 +150,57 @@ func validateScenario(scenario domain.ScenarioProgress) error {
 		return domainErrors.ErrInvalidProgressData
 	}
 
+	if err := validateInitialLatestScore(scenario.InitialScore, scenario.LatestScore); err != nil {
+		return err
+	}
+
 	return validateAttempts(scenario.RecentAttempts)
+}
+
+func isValidScenarioIdentity(scenario domain.ScenarioProgress) bool {
+	return scenario.ID != uuid.Nil &&
+		scenario.Slug != "" &&
+		scenario.Title != "" &&
+		isValidRole(scenario.Role)
+}
+
+func isValidRole(role domain.Role) bool {
+	return role == domain.RoleBuyer || role == domain.RoleSeller
+}
+
+func isValidScenarioState(scenario domain.ScenarioProgress) bool {
+	if scenario.AttemptsCount < 0 {
+		return false
+	}
+
+	if scenario.Passed && !scenario.Completed {
+		return false
+	}
+
+	return scenario.BestScore == nil || scenario.Completed
+}
+
+func isValidScenarioScores(scenario domain.ScenarioProgress) bool {
+	if scenario.BestScore != nil && scenario.BestScore.MaxPoints() != 100 {
+		return false
+	}
+
+	return scenario.AttemptsCount != 0 ||
+		(scenario.InitialScore == nil && scenario.LatestScore == nil)
+}
+
+func validateInitialLatestScore(initialScore, latestScore *domain.Score) error {
+	if (initialScore == nil && latestScore != nil) ||
+		(initialScore != nil && latestScore == nil) {
+		return domainErrors.ErrInvalidProgressData
+	}
+
+	if (initialScore != nil && initialScore.MaxPoints() != 100) ||
+		(latestScore != nil && latestScore.MaxPoints() != 100) {
+		return domainErrors.ErrInvalidProgressData
+	}
+
+	return nil
 }
 
 func validateAttempts(attempts []domain.AttemptResult) error {

@@ -68,15 +68,22 @@ type completedAttemptResultResponse struct {
 	CompletedAt time.Time      `json:"completedAt"`
 }
 
+type progressTrendResponse string
+
 type scenarioProgressResponse struct {
-	ScenarioSlug    string                           `json:"scenarioSlug"`
-	Title           string                           `json:"title"`
-	Completed       bool                             `json:"completed"`
-	Passed          bool                             `json:"passed"`
-	AttemptsCount   int                              `json:"attemptsCount"`
-	BestScore       *scoreResponse                   `json:"bestScore"`
-	ActiveAttemptID *uuid.UUID                       `json:"activeAttemptId"`
-	RecentAttempts  []completedAttemptResultResponse `json:"recentAttempts"`
+	ScenarioSlug             string                           `json:"scenarioSlug"`
+	Title                    string                           `json:"title"`
+	Completed                bool                             `json:"completed"`
+	Passed                   bool                             `json:"passed"`
+	AttemptsCount            int                              `json:"attemptsCount"`
+	BestScore                *scoreResponse                   `json:"bestScore"`
+	ActiveAttemptID          *uuid.UUID                       `json:"activeAttemptId"`
+	RecentAttempts           []completedAttemptResultResponse `json:"recentAttempts"`
+	InitialScore             *scoreResponse                   `json:"initialScore"`
+	LatestScore              *scoreResponse                   `json:"latestScore"`
+	ImprovementPercentPoints *int                             `json:"improvementPercentPoints"`
+	Trend                    *progressTrendResponse           `json:"trend"`
+	FirstSafeAttempt         *completedAttemptResultResponse  `json:"firstSafeAttempt"`
 }
 
 type roleProgressResponse struct {
@@ -89,6 +96,11 @@ type roleProgressResponse struct {
 	Scenarios          []scenarioProgressResponse `json:"scenarios"`
 }
 
+type roleComparisonResponse struct {
+	CompletionPercentDelta int `json:"completionPercentDelta"`
+	PassedPercentDelta     int `json:"passedPercentDelta"`
+}
+
 type progressResponse struct {
 	TotalScenarios     int                    `json:"totalScenarios"`
 	CompletedScenarios int                    `json:"completedScenarios"`
@@ -96,6 +108,7 @@ type progressResponse struct {
 	CompletionPercent  int                    `json:"completionPercent"`
 	PassedPercent      int                    `json:"passedPercent"`
 	Roles              []roleProgressResponse `json:"roles"`
+	RoleComparison     roleComparisonResponse `json:"roleComparison"`
 }
 
 func mapProgress(progress domain.OverallProgress) progressResponse {
@@ -107,6 +120,10 @@ func mapProgress(progress domain.OverallProgress) progressResponse {
 		TotalScenarios: progress.TotalScenarios, CompletedScenarios: progress.CompletedScenarios,
 		PassedScenarios: progress.PassedScenarios, CompletionPercent: progress.CompletionPercent,
 		PassedPercent: progress.PassedPercent, Roles: roles,
+		RoleComparison: roleComparisonResponse{
+			CompletionPercentDelta: progress.RoleComparison.CompletionPercentDelta,
+			PassedPercentDelta:     progress.RoleComparison.PassedPercentDelta,
+		},
 	}
 }
 
@@ -133,6 +150,18 @@ func mapScenario(scenario domain.ScenarioProgress) scenarioProgressResponse {
 		ScenarioSlug: scenario.Slug, Title: scenario.Title, Completed: scenario.Completed, Passed: scenario.Passed,
 		AttemptsCount: scenario.AttemptsCount, BestScore: mapOptionalScore(scenario.BestScore),
 		ActiveAttemptID: scenario.ActiveAttemptID, RecentAttempts: attempts,
+		InitialScore: mapOptionalScore(scenario.InitialScore), LatestScore: mapOptionalScore(scenario.LatestScore),
+		ImprovementPercentPoints: scenario.ImprovementPercentPoints, Trend: (*progressTrendResponse)(scenario.Trend),
+		FirstSafeAttempt: mapOptionalAttempt(scenario.FirstSafeAttempt),
+	}
+}
+
+func mapOptionalAttempt(attempt *domain.AttemptResult) *completedAttemptResultResponse {
+	if attempt == nil {
+		return nil
+	}
+	return &completedAttemptResultResponse{
+		AttemptID: attempt.ID, Score: mapScore(attempt.Score), Outcome: attempt.Outcome, CompletedAt: attempt.CompletedAt,
 	}
 }
 

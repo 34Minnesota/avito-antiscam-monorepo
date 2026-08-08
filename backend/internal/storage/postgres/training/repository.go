@@ -25,8 +25,7 @@ func New(pool *postgrespool.Pool) *Repository {
 }
 
 // UpsertScenario создаёт сценарий либо подтверждает, что существующий сценарий
-// с тем же slug содержит идентичный документ. Изменять опубликованный сценарий
-// через seed запрещено.
+// с тем же slug содержит идентичный документ.
 func (r *Repository) UpsertScenario(ctx context.Context, s domain.Scenario) error {
 	ctx, cancel := context.WithTimeout(ctx, r.pool.OpTimeout())
 	defer cancel()

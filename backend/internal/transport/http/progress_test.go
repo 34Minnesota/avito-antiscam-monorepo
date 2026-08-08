@@ -47,6 +47,41 @@ func TestProgressHandlerMapsSuccess(t *testing.T) {
 	}
 }
 
+func TestProgressHandlerMapsRecommendations(t *testing.T) {
+	t.Parallel()
+
+	response := performRequest(t, progressStub{result: domain.OverallProgress{
+		Recommendations: []domain.Recommendation{
+			{ScenarioSlug: "active-attempt", ReasonCode: "ACTIVE_ATTEMPT", ReasonText: "Continue the active attempt."},
+			{ScenarioSlug: "low-score", ReasonCode: "LOW_BEST_SCORE", ReasonText: "Improve the best score."},
+		},
+	}}, true)
+	if response.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", response.Code, response.Body.String())
+	}
+
+	var body struct {
+		Recommendations []struct {
+			ScenarioSlug string `json:"scenarioSlug"`
+			ReasonCode   string `json:"reasonCode"`
+			ReasonText   string `json:"reasonText"`
+		} `json:"recommendations"`
+	}
+	if err := json.Unmarshal(response.Body.Bytes(), &body); err != nil {
+		t.Fatal(err)
+	}
+
+	if len(body.Recommendations) != 2 {
+		t.Fatalf("recommendations = %+v", body.Recommendations)
+	}
+	if got := body.Recommendations[0]; got.ScenarioSlug != "active-attempt" || got.ReasonCode != "ACTIVE_ATTEMPT" || got.ReasonText != "Continue the active attempt." {
+		t.Fatalf("first recommendation = %+v", got)
+	}
+	if got := body.Recommendations[1]; got.ScenarioSlug != "low-score" || got.ReasonCode != "LOW_BEST_SCORE" || got.ReasonText != "Improve the best score." {
+		t.Fatalf("second recommendation = %+v", got)
+	}
+}
+
 func TestProgressHandlerMapsScenarioDynamics(t *testing.T) {
 	t.Parallel()
 	initial, err := domain.NewScore(42, 100)

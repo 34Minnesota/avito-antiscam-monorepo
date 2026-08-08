@@ -68,15 +68,21 @@ type completedAttemptResultResponse struct {
 	CompletedAt time.Time      `json:"completedAt"`
 }
 
+type progressTrendResponse string
+
 type scenarioProgressResponse struct {
-	ScenarioSlug    string                           `json:"scenarioSlug"`
-	Title           string                           `json:"title"`
-	Completed       bool                             `json:"completed"`
-	Passed          bool                             `json:"passed"`
-	AttemptsCount   int                              `json:"attemptsCount"`
-	BestScore       *scoreResponse                   `json:"bestScore"`
-	ActiveAttemptID *uuid.UUID                       `json:"activeAttemptId"`
-	RecentAttempts  []completedAttemptResultResponse `json:"recentAttempts"`
+	ScenarioSlug             string                           `json:"scenarioSlug"`
+	Title                    string                           `json:"title"`
+	Completed                bool                             `json:"completed"`
+	Passed                   bool                             `json:"passed"`
+	AttemptsCount            int                              `json:"attemptsCount"`
+	BestScore                *scoreResponse                   `json:"bestScore"`
+	ActiveAttemptID          *uuid.UUID                       `json:"activeAttemptId"`
+	RecentAttempts           []completedAttemptResultResponse `json:"recentAttempts"`
+	InitialScore             *scoreResponse                   `json:"initialScore"`
+	LatestScore              *scoreResponse                   `json:"latestScore"`
+	ImprovementPercentPoints *int                             `json:"improvementPercentPoints"`
+	Trend                    *progressTrendResponse           `json:"trend"`
 }
 
 type roleProgressResponse struct {
@@ -133,6 +139,8 @@ func mapScenario(scenario domain.ScenarioProgress) scenarioProgressResponse {
 		ScenarioSlug: scenario.Slug, Title: scenario.Title, Completed: scenario.Completed, Passed: scenario.Passed,
 		AttemptsCount: scenario.AttemptsCount, BestScore: mapOptionalScore(scenario.BestScore),
 		ActiveAttemptID: scenario.ActiveAttemptID, RecentAttempts: attempts,
+		InitialScore: mapOptionalScore(scenario.InitialScore), LatestScore: mapOptionalScore(scenario.LatestScore),
+		ImprovementPercentPoints: scenario.ImprovementPercentPoints, Trend: (*progressTrendResponse)(scenario.Trend),
 	}
 }
 

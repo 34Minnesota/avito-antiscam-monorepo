@@ -14,17 +14,29 @@ type AttemptResult struct {
 }
 
 type ScenarioProgress struct {
-	ID              uuid.UUID
-	Slug            string
-	Title           string
-	Role            Role
-	Completed       bool
-	Passed          bool
-	AttemptsCount   int
-	BestScore       *Score
-	ActiveAttemptID *uuid.UUID
-	RecentAttempts  []AttemptResult
+	ID                       uuid.UUID
+	Slug                     string
+	Title                    string
+	Role                     Role
+	Completed                bool
+	Passed                   bool
+	AttemptsCount            int
+	BestScore                *Score
+	ActiveAttemptID          *uuid.UUID
+	RecentAttempts           []AttemptResult
+	InitialScore             *Score
+	LatestScore              *Score
+	ImprovementPercentPoints *int
+	Trend                    *ProgressTrend
 }
+
+type ProgressTrend string
+
+const (
+	ProgressTrendImproving ProgressTrend = "improving"
+	ProgressTrendStable    ProgressTrend = "stable"
+	ProgressTrendDeclining ProgressTrend = "declining"
+)
 
 type RoleProgress struct {
 	Role               Role

@@ -52,6 +52,8 @@ const scenariosQuery = `
 		COUNT(a.id) FILTER (WHERE a.status = 'finished'),
 		COALESCE(BOOL_OR(a.status = 'finished' AND a.outcome = 'safe'), false),
 		MAX(a.score) FILTER (WHERE a.status = 'finished'),
+		(ARRAY_AGG(a.score ORDER BY a.finished_at, a.id) FILTER (WHERE a.status = 'finished'))[1],
+		(ARRAY_AGG(a.score ORDER BY a.finished_at DESC, a.id DESC) FILTER (WHERE a.status = 'finished'))[1],
 		COUNT(a.id) FILTER (WHERE a.status = 'in_progress'),
 		(MIN(a.id::text) FILTER (WHERE a.status = 'in_progress'))::uuid
 	FROM scenarios s
@@ -94,11 +96,11 @@ func loadScenarios(
 func scanProgressScenario(rows pgx.Rows) (domain.ScenarioProgress, error) {
 	var scenario domain.ScenarioProgress
 	var completed, active int
-	var best sql.NullInt64
+	var best, initial, latest sql.NullInt64
 	var activeID uuid.NullUUID
 
 	if err := rows.Scan(&scenario.ID, &scenario.Slug, &scenario.Title, &scenario.Role,
-		&scenario.AttemptsCount, &completed, &scenario.Passed, &best, &active, &activeID); err != nil {
+		&scenario.AttemptsCount, &completed, &scenario.Passed, &best, &initial, &latest, &active, &activeID); err != nil {
 		return domain.ScenarioProgress{}, dependencyError(err)
 	}
 
@@ -114,6 +116,20 @@ func scanProgressScenario(rows pgx.Rows) (domain.ScenarioProgress, error) {
 			return domain.ScenarioProgress{}, inconsistentError(err.Error())
 		}
 		scenario.BestScore = &score
+	}
+	if initial.Valid {
+		score, err := domain.NewScore(int(initial.Int64), 100)
+		if err != nil {
+			return domain.ScenarioProgress{}, inconsistentError(err.Error())
+		}
+		scenario.InitialScore = &score
+	}
+	if latest.Valid {
+		score, err := domain.NewScore(int(latest.Int64), 100)
+		if err != nil {
+			return domain.ScenarioProgress{}, inconsistentError(err.Error())
+		}
+		scenario.LatestScore = &score
 	}
 
 	if activeID.Valid {

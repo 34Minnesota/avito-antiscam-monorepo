@@ -53,6 +53,25 @@ func aggregate(snapshot domain.ProgressSnapshot) domain.OverallProgress {
 	overall := domain.OverallProgress{}
 
 	for _, scenario := range snapshot.Scenarios {
+		if scenario.InitialScore != nil && scenario.LatestScore != nil {
+			initialPercent := scenario.InitialScore.Percent()
+			latestPercent := scenario.LatestScore.Percent()
+
+			improvement := latestPercent - initialPercent
+			var trend domain.ProgressTrend
+
+			if latestPercent > initialPercent {
+				trend = domain.ProgressTrendImproving
+			} else if latestPercent < initialPercent {
+				trend = domain.ProgressTrendDeclining
+			} else {
+				trend = domain.ProgressTrendStable
+			}
+
+			scenario.ImprovementPercentPoints = &improvement
+			scenario.Trend = &trend
+		}
+
 		role := roles[scenario.Role]
 
 		role.Scenarios = append(role.Scenarios, scenario)

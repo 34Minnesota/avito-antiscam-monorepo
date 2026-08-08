@@ -25,7 +25,6 @@ import (
 	trainingstorage "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/storage/postgres/training"
 	userstorage "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/storage/postgres/user"
 	transport "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/transport/http"
-	usershttp "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/transport/http/users"
 )
 
 const (
@@ -101,9 +100,7 @@ func main() {
 		authservice.BcryptPasswordVerifier{},
 		appLogger,
 	)
-	userHandler := usershttp.NewUsersHandler(userService)
 	progressHandler := transport.NewProgressHandler(progressService)
-
 	// HTTP
 	server := transport.NewServer(
 		authService,
@@ -116,8 +113,7 @@ func main() {
 
 	router.GET("/healthz", server.HealthCheck)
 	router.POST("/v1/auth/login", server.Login)
-
-	usershttp.RegisterUsersRoutes(router, userHandler)
+	router.POST("/v1/auth/register", server.Register)
 
 	// Всё остальное требует X-Session-ID.
 	v1 := router.Group("/v1", server.SessionMiddleware())

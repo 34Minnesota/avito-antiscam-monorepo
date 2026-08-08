@@ -1,13 +1,14 @@
 package httptransport
 
 import (
+	"errors"
 	"net/http"
 
+	coreErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 
-	openapi "github.com/34Minnesota/avito-antiscam-monorepo/backend/generated/openapi"
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
 	applogger "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/logger"
 	authservice "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/auth"
@@ -49,7 +50,7 @@ func (s *Server) HealthCheck(c *gin.Context) {
 // -----------------------------------------------------
 
 func (s *Server) Login(c *gin.Context) {
-	var req openapi.LoginRequest
+	var req LoginRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -61,7 +62,7 @@ func (s *Server) Login(c *gin.Context) {
 
 	session, err := s.auth.Login(
 		c.Request.Context(),
-		string(req.Email),
+		req.Email,
 		req.Password,
 	)
 	if err != nil {
@@ -72,8 +73,68 @@ func (s *Server) Login(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, openapi.LoginResponse{
-		SessionId: session.ID,
+	c.JSON(http.StatusOK, LoginResponse{
+		SessionID: session.ID,
+	})
+}
+func (s *Server) Register(c *gin.Context) {
+	var req RegisterRequest
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    "bad_request",
+			"message": "invalid request",
+		})
+		return
+	}
+
+	user, err := s.users.CreateUser(
+		c.Request.Context(),
+		usersservice.CreateUserInput{
+			Nickname: req.Nickname,
+			Email:    req.Email,
+			Password: req.Password,
+		},
+	)
+	if err != nil {
+		switch {
+		case errors.Is(err, coreErrors.ErrInvalidArgument):
+			c.JSON(http.StatusBadRequest, gin.H{
+				"code":    "bad_request",
+				"message": "invalid request",
+			})
+		case errors.Is(err, coreErrors.ErrConflict):
+			c.JSON(http.StatusConflict, gin.H{
+				"code":    "conflict",
+				"message": "user already exists",
+			})
+		default:
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"code":    "internal_error",
+				"message": "internal server error",
+			})
+		}
+		return
+	}
+
+	session, err := s.auth.CreateSession(
+		c.Request.Context(),
+		user.ID,
+	)
+	if err != nil {
+		if s.logger != nil {
+			s.logger.Error("create session failed", zap.Error(err))
+		}
+
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    "internal_error",
+			"message": "failed to create session",
+		})
+		return
+	}
+
+	c.JSON(http.StatusCreated, RegisterResponse{
+		SessionID: session.ID,
 	})
 }
 

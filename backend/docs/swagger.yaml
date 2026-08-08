@@ -1,5 +1,80 @@
 basePath: /
 definitions:
+  domain.Attachment:
+    properties:
+      title:
+        type: string
+      type:
+        type: string
+    type: object
+  domain.Author:
+    enum:
+    - counterpart
+    - system
+    - user
+    type: string
+    x-enum-comments:
+      AuthorCounterpart: собеседник (потенциальный мошенник)
+      AuthorSystem: служебная вставка
+      AuthorUser: реплика самого пользователя
+    x-enum-descriptions:
+    - собеседник (потенциальный мошенник)
+    - служебная вставка
+    - реплика самого пользователя
+    x-enum-varnames:
+    - AuthorCounterpart
+    - AuthorSystem
+    - AuthorUser
+  domain.Counterpart:
+    properties:
+      name:
+        type: string
+      rating:
+        type: number
+      registered:
+        type: string
+      reviews:
+        type: integer
+    type: object
+  domain.Ending:
+    properties:
+      outcome:
+        $ref: '#/definitions/domain.Outcome'
+      text:
+        type: string
+      title:
+        type: string
+    type: object
+  domain.FlagInfo:
+    properties:
+      id:
+        type: string
+      text:
+        type: string
+      title:
+        type: string
+    type: object
+  domain.Listing:
+    properties:
+      image:
+        description: 'TODO: решить вопрос с image'
+        type: string
+      location:
+        type: string
+      price:
+        type: integer
+      title:
+        type: string
+    type: object
+  domain.Message:
+    properties:
+      attachment:
+        $ref: '#/definitions/domain.Attachment'
+      author:
+        $ref: '#/definitions/domain.Author'
+      text:
+        type: string
+    type: object
   domain.Outcome:
     enum:
     - safe
@@ -18,6 +93,24 @@ definitions:
     x-enum-varnames:
     - RoleBuyer
     - RoleSeller
+  domain.Verdict:
+    enum:
+    - safe
+    - risky
+    - fatal
+    type: string
+    x-enum-comments:
+      VerdictFatal: fatal — точка невозврата
+      VerdictRisky: risky — рискованное, но не фатальное
+      VerdictSafe: safe  — безопасное действие;
+    x-enum-descriptions:
+    - safe  — безопасное действие;
+    - risky — рискованное, но не фатальное
+    - fatal — точка невозврата
+    x-enum-varnames:
+    - VerdictSafe
+    - VerdictRisky
+    - VerdictFatal
   httptransport.ChoiceRequest:
     properties:
       expected_revision:
@@ -80,6 +173,13 @@ definitions:
       sessionId:
         type: string
     type: object
+  httptransport.ScenariosResponse:
+    properties:
+      scenarios:
+        items:
+          $ref: '#/definitions/training.ScenarioCard'
+        type: array
+    type: object
   httptransport.StartAttemptRequest:
     properties:
       scenario_id:
@@ -119,11 +219,20 @@ definitions:
         type: integer
       passedScenarios:
         type: integer
+      roleComparison:
+        $ref: '#/definitions/httptransport.roleComparisonResponse'
       roles:
         items:
           $ref: '#/definitions/httptransport.roleProgressResponse'
         type: array
       totalScenarios:
+        type: integer
+    type: object
+  httptransport.roleComparisonResponse:
+    properties:
+      completionPercentDelta:
+        type: integer
+      passedPercentDelta:
         type: integer
     type: object
   httptransport.roleProgressResponse:
@@ -155,6 +264,14 @@ definitions:
         $ref: '#/definitions/httptransport.scoreResponse'
       completed:
         type: boolean
+      firstSafeAttempt:
+        $ref: '#/definitions/httptransport.completedAttemptResultResponse'
+      improvementPercentPoints:
+        type: integer
+      initialScore:
+        $ref: '#/definitions/httptransport.scoreResponse'
+      latestScore:
+        $ref: '#/definitions/httptransport.scoreResponse'
       passed:
         type: boolean
       recentAttempts:
@@ -165,6 +282,8 @@ definitions:
         type: string
       title:
         type: string
+      trend:
+        type: string
     type: object
   httptransport.scoreResponse:
     properties:
@@ -174,6 +293,114 @@ definitions:
         type: integer
       points:
         type: integer
+    type: object
+  training.ChoiceResult:
+    properties:
+      feedback:
+        $ref: '#/definitions/training.Feedback'
+      finished:
+        type: boolean
+      next_scene:
+        $ref: '#/definitions/training.ScenePayload'
+      reaction:
+        items:
+          $ref: '#/definitions/domain.Message'
+        type: array
+      revision:
+        type: integer
+      summary:
+        $ref: '#/definitions/training.SummaryResult'
+    type: object
+  training.Feedback:
+    properties:
+      text:
+        type: string
+      verdict:
+        $ref: '#/definitions/domain.Verdict'
+    type: object
+  training.OptionPayload:
+    properties:
+      id:
+        type: string
+      text:
+        type: string
+    type: object
+  training.ScenarioCard:
+    properties:
+      category:
+        type: string
+      description:
+        type: string
+      difficulty:
+        type: integer
+      id:
+        type: string
+      role:
+        $ref: '#/definitions/domain.Role'
+      slug:
+        type: string
+      stats:
+        $ref: '#/definitions/training.ScenarioStats'
+      title:
+        type: string
+    type: object
+  training.ScenarioStats:
+    properties:
+      attempts_count:
+        type: integer
+      best_score:
+        type: integer
+    type: object
+  training.ScenePayload:
+    properties:
+      intro:
+        items:
+          $ref: '#/definitions/domain.Message'
+        type: array
+      options:
+        items:
+          $ref: '#/definitions/training.OptionPayload'
+        type: array
+      prompt:
+        type: string
+      scene_id:
+        type: string
+    type: object
+  training.StartResult:
+    properties:
+      attempt_id:
+        type: string
+      counterpart:
+        $ref: '#/definitions/domain.Counterpart'
+      listing:
+        $ref: '#/definitions/domain.Listing'
+      role:
+        $ref: '#/definitions/domain.Role'
+      scene:
+        $ref: '#/definitions/training.ScenePayload'
+      scenes_total:
+        type: integer
+      title:
+        type: string
+    type: object
+  training.SummaryResult:
+    properties:
+      delta_vs_previous:
+        type: integer
+      ending:
+        $ref: '#/definitions/domain.Ending'
+      missed_flags:
+        items:
+          $ref: '#/definitions/domain.FlagInfo'
+        type: array
+      outcome:
+        $ref: '#/definitions/domain.Outcome'
+      score:
+        type: integer
+      steps_total:
+        type: integer
+      takeaway:
+        type: string
     type: object
 host: localhost:8080
 info:
@@ -210,14 +437,17 @@ paths:
         "201":
           description: Created
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/training.StartResult'
         "400":
           description: Bad Request
           schema:
             $ref: '#/definitions/httptransport.ErrorResponse'
         "401":
           description: Unauthorized
+          schema:
+            $ref: '#/definitions/httptransport.ErrorResponse'
+        "404":
+          description: Not Found
           schema:
             $ref: '#/definitions/httptransport.ErrorResponse'
         "500":
@@ -252,8 +482,7 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/training.ChoiceResult'
         "400":
           description: Bad Request
           schema:
@@ -262,16 +491,16 @@ paths:
           description: Unauthorized
           schema:
             $ref: '#/definitions/httptransport.ErrorResponse'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/httptransport.ErrorResponse'
         "404":
           description: Not Found
           schema:
             $ref: '#/definitions/httptransport.ErrorResponse'
         "409":
           description: Conflict
+          schema:
+            $ref: '#/definitions/httptransport.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
           schema:
             $ref: '#/definitions/httptransport.ErrorResponse'
         "500":
@@ -298,18 +527,13 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/training.SummaryResult'
         "400":
           description: Bad Request
           schema:
             $ref: '#/definitions/httptransport.ErrorResponse'
         "401":
           description: Unauthorized
-          schema:
-            $ref: '#/definitions/httptransport.ErrorResponse'
-        "403":
-          description: Forbidden
           schema:
             $ref: '#/definitions/httptransport.ErrorResponse'
         "404":
@@ -425,6 +649,10 @@ paths:
           description: Unauthorized
           schema:
             $ref: '#/definitions/httptransport.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httptransport.ErrorResponse'
         "503":
           description: Service Unavailable
           schema:
@@ -451,8 +679,7 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/httptransport.ScenariosResponse'
         "400":
           description: Bad Request
           schema:

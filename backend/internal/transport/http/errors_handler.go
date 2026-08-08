@@ -15,8 +15,13 @@ type ErrorResponse struct {
 
 func writeTrainingError(c *gin.Context, err error) {
 	switch {
-	case errors.Is(err, domainErrors.ErrNotFound),
-		errors.Is(err, domainErrors.ErrForbidden):
+	case errors.Is(err, domainErrors.ErrForbidden):
+		c.JSON(http.StatusForbidden, ErrorResponse{
+			Code:    "forbidden",
+			Message: "access to resource is forbidden",
+		})
+
+	case errors.Is(err, domainErrors.ErrNotFound):
 		c.JSON(http.StatusNotFound, ErrorResponse{
 			Code:    "not_found",
 			Message: "resource not found",

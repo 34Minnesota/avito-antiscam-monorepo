@@ -36,6 +36,3 @@ type Attempt struct {
 	FinishedAt   *time.Time
 	Revision     int
 }
-
-// AttemptStep — зафиксированный выбор пользователя.
-// Полный журнал шагов — источник правды и для оценки, и для разбора.

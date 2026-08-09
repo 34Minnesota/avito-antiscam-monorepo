@@ -6,9 +6,12 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/uuid"
+	"go.uber.org/zap"
+
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
 	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
-	"github.com/google/uuid"
+	applogger "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/logger"
 )
 
 type Repository interface {
@@ -26,12 +29,22 @@ type Repository interface {
 	BestScore(ctx context.Context, userID domain.UserID, scenarioID, exclude uuid.UUID) (*int, error)
 }
 
+// Service пишет в лог бизнес-события, а не ошибки: ошибки он оборачивает
+// и отдаёт наверх, где транспорт решает, чем они обернутся для клиента.
 type Service struct {
-	repo Repository
+	repo   Repository
+	logger *applogger.Logger
 }
 
-func New(repo Repository) *Service {
-	return &Service{repo: repo}
+// New создаёт сервис тренировок.
+//
+// Пустой logger заменяется на no-op: тесты создают сервис без него,
+// а проверять на nil в каждом вызове не хочется.
+func New(repo Repository, logger *applogger.Logger) *Service {
+	if logger == nil {
+		logger = &applogger.Logger{Logger: zap.NewNop()}
+	}
+	return &Service{repo: repo, logger: logger}
 }
 
 // Catalog возвращает список сценариев с персональной статистикой пользователя.
@@ -81,10 +94,27 @@ func (s *Service) Start(ctx context.Context, userID domain.UserID, scenarioID uu
 	case err == nil:
 		scene, ok := sc.Doc.SceneByID(CurrentSceneID(sc.Doc, existing.State))
 		if !ok {
+			// Единственное место, где ошибка и логируется, и отдаётся наверх:
+			// это не отказ запросу, а сигнал о рассогласовании данных,
+			// и диагностика ниже наверху уже недоступна.
+			s.logger.Error("active attempt points outside scenario scenes",
+				zap.String("attempt_id", existing.ID.String()),
+				zap.String("scenario_id", scenarioID.String()),
+				zap.Int("scene_index", existing.State.SceneIndex),
+				zap.Int("scenes_total", len(sc.Doc.Scenes)),
+			)
 			return StartResult{}, fmt.Errorf(
 				"%w: active attempt %s points outside scenario scenes",
 				domainErrors.ErrInvalidScenario, existing.ID)
 		}
+
+		// Возврат в незавершённую попытку и старт новой дают клиенту
+		// одинаковый ответ — различить их можно только отсюда.
+		s.logger.Info("attempt resumed",
+			zap.String("attempt_id", existing.ID.String()),
+			zap.String("scenario_id", scenarioID.String()),
+			zap.String("scene_id", scene.ID),
+		)
 		return buildStartResult(existing.ID, sc, BuildScene(scene)), nil
 
 	case errors.Is(err, domainErrors.ErrNotFound):
@@ -109,6 +139,12 @@ func (s *Service) Start(ctx context.Context, userID domain.UserID, scenarioID uu
 	if err := s.repo.CreateAttempt(ctx, attempt); err != nil {
 		return StartResult{}, err
 	}
+
+	s.logger.Info("attempt started",
+		zap.String("attempt_id", attempt.ID.String()),
+		zap.String("scenario_id", scenarioID.String()),
+		zap.String("slug", sc.Doc.Slug),
+	)
 
 	return buildStartResult(attempt.ID, sc, scene), nil
 }
@@ -224,6 +260,19 @@ func (s *Service) finish(ctx context.Context, attempt domain.Attempt, sc domain.
 	if err := s.repo.FinishAttempt(ctx, attempt.ID, result.Score, result.Outcome, time.Now().UTC()); err != nil {
 		return SummaryResult{}, err
 	}
+
+	// Продуктовое событие: по нему видно, на каких сценариях и признаках
+	// пользователи проваливаются.
+	s.logger.Info("attempt finished",
+		zap.String("attempt_id", attempt.ID.String()),
+		zap.String("scenario_id", attempt.ScenarioID.String()),
+		zap.String("slug", sc.Doc.Slug),
+		zap.Int("score", result.Score),
+		zap.String("outcome", string(result.Outcome)),
+		zap.Int("steps", result.StepsTotal),
+		zap.Int("missed_flags", len(result.MissedFlags)),
+	)
+
 	return result, nil
 }
 

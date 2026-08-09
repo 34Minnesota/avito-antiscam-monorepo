@@ -99,7 +99,7 @@ func main() {
 		usersutils.UUIDGenerator{},
 		usersutils.RealClock{},
 	)
-	trainingService := trainingservice.New(trainingRepository)
+	trainingService := trainingservice.New(trainingRepository, appLogger)
 	progressService := progressservice.NewService(progressRepository)
 
 	// Scenarios loading

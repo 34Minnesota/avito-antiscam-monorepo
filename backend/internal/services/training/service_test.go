@@ -22,7 +22,7 @@ func TestCatalogBuildsCardsWithPersonalStats(t *testing.T) {
 		stats:     map[uuid.UUID]training.ScenarioStats{first: {BestScore: 80, AttemptsCount: 3}},
 	}
 
-	cards, err := training.New(repo).Catalog(context.Background(), mustUserID(t), domain.RoleSeller)
+	cards, err := training.New(repo, nil).Catalog(context.Background(), mustUserID(t), domain.RoleSeller)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -46,7 +46,7 @@ func TestCatalogPropagatesRepositoryErrors(t *testing.T) {
 		"list":  {listErr: errBoom},
 		"stats": {statsErr: errBoom},
 	} {
-		if _, err := training.New(repo).Catalog(context.Background(), mustUserID(t), ""); !errors.Is(err, errBoom) {
+		if _, err := training.New(repo, nil).Catalog(context.Background(), mustUserID(t), ""); !errors.Is(err, errBoom) {
 			t.Fatalf("%s: got %v", name, err)
 		}
 	}
@@ -58,7 +58,7 @@ func TestStartCreatesAttemptOnFirstRun(t *testing.T) {
 	userID := mustUserID(t)
 	repo := &repositoryStub{byID: map[uuid.UUID]domain.Scenario{scenarioID: testScenario(scenarioID)}}
 
-	result, err := training.New(repo).Start(context.Background(), userID, scenarioID)
+	result, err := training.New(repo, nil).Start(context.Background(), userID, scenarioID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -85,7 +85,7 @@ func TestStartReusesActiveAttempt(t *testing.T) {
 		active: &domain.Attempt{ID: attemptID, ScenarioID: scenarioID, State: domain.State{SceneIndex: 1}},
 	}
 
-	result, err := training.New(repo).Start(context.Background(), mustUserID(t), scenarioID)
+	result, err := training.New(repo, nil).Start(context.Background(), mustUserID(t), scenarioID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -105,7 +105,7 @@ func TestStartRejectsActiveAttemptOutsideScenes(t *testing.T) {
 		active: &domain.Attempt{ID: uuid.New(), ScenarioID: scenarioID, State: domain.State{SceneIndex: 99}},
 	}
 
-	_, err := training.New(repo).Start(context.Background(), mustUserID(t), scenarioID)
+	_, err := training.New(repo, nil).Start(context.Background(), mustUserID(t), scenarioID)
 	if !errors.Is(err, domainErrors.ErrInvalidScenario) {
 		t.Fatalf("got %v", err)
 	}
@@ -131,7 +131,7 @@ func TestStartPropagatesErrors(t *testing.T) {
 	}
 
 	for name, repo := range cases {
-		if _, err := training.New(repo).Start(context.Background(), mustUserID(t), scenarioID); err == nil {
+		if _, err := training.New(repo, nil).Start(context.Background(), mustUserID(t), scenarioID); err == nil {
 			t.Fatalf("%s: expected error", name)
 		}
 	}
@@ -144,7 +144,7 @@ func TestStartRejectsStoredScenarioWithoutScenes(t *testing.T) {
 	broken.Doc.Scenes = nil
 	repo := &repositoryStub{byID: map[uuid.UUID]domain.Scenario{scenarioID: broken}}
 
-	_, err := training.New(repo).Start(context.Background(), mustUserID(t), scenarioID)
+	_, err := training.New(repo, nil).Start(context.Background(), mustUserID(t), scenarioID)
 	if !errors.Is(err, domainErrors.ErrInvalidScenario) {
 		t.Fatalf("got %v", err)
 	}
@@ -159,7 +159,7 @@ func TestChooseSavesStepAndReturnsNextScene(t *testing.T) {
 		attempt: &domain.Attempt{ID: attemptID, UserID: userID, ScenarioID: scenarioID, Status: domain.AttemptInProgress},
 	}
 
-	result, err := training.New(repo).Choose(context.Background(), userID, attemptID, "s1", "a1", 0)
+	result, err := training.New(repo, nil).Choose(context.Background(), userID, attemptID, "s1", "a1", 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -198,7 +198,7 @@ func TestChooseFinishesAttemptAndAttachesSummary(t *testing.T) {
 		best:    &best,
 	}
 
-	result, err := training.New(repo).Choose(context.Background(), userID, attemptID, "s3", "c1", 0)
+	result, err := training.New(repo, nil).Choose(context.Background(), userID, attemptID, "s3", "c1", 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -228,7 +228,7 @@ func TestChooseRejectsForeignAndFinishedAttempts(t *testing.T) {
 		byID:    map[uuid.UUID]domain.Scenario{scenarioID: testScenario(scenarioID)},
 		attempt: &domain.Attempt{ID: attemptID, UserID: mustUserID(t), ScenarioID: scenarioID},
 	}
-	_, err := training.New(foreign).Choose(context.Background(), userID, attemptID, "s1", "a1", 0)
+	_, err := training.New(foreign, nil).Choose(context.Background(), userID, attemptID, "s1", "a1", 0)
 	if !errors.Is(err, domainErrors.ErrForbidden) {
 		t.Fatalf("foreign attempt: got %v", err)
 	}
@@ -237,7 +237,7 @@ func TestChooseRejectsForeignAndFinishedAttempts(t *testing.T) {
 		byID:    map[uuid.UUID]domain.Scenario{scenarioID: testScenario(scenarioID)},
 		attempt: &domain.Attempt{ID: attemptID, UserID: userID, ScenarioID: scenarioID, Status: domain.AttemptFinished},
 	}
-	_, err = training.New(finished).Choose(context.Background(), userID, attemptID, "s1", "a1", 0)
+	_, err = training.New(finished, nil).Choose(context.Background(), userID, attemptID, "s1", "a1", 0)
 	if !errors.Is(err, domainErrors.ErrAttemptFinished) {
 		t.Fatalf("finished attempt: got %v", err)
 	}
@@ -282,7 +282,7 @@ func TestChoosePropagatesErrors(t *testing.T) {
 	}
 
 	for name, tc := range cases {
-		if _, err := training.New(tc.repo).Choose(context.Background(), userID, attemptID, tc.scene, tc.opt, 0); err == nil {
+		if _, err := training.New(tc.repo, nil).Choose(context.Background(), userID, attemptID, tc.scene, tc.opt, 0); err == nil {
 			t.Fatalf("%s: expected error", name)
 		}
 	}
@@ -300,7 +300,7 @@ func TestSummaryReturnsResultWithDelta(t *testing.T) {
 		best:    &best,
 	}
 
-	result, err := training.New(repo).Summary(context.Background(), userID, attemptID)
+	result, err := training.New(repo, nil).Summary(context.Background(), userID, attemptID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -321,7 +321,7 @@ func TestSummaryWithoutPreviousAttemptsHasNoDelta(t *testing.T) {
 		attempt: &domain.Attempt{ID: attemptID, UserID: userID, ScenarioID: scenarioID, Status: domain.AttemptFinished},
 	}
 
-	result, err := training.New(repo).Summary(context.Background(), userID, attemptID)
+	result, err := training.New(repo, nil).Summary(context.Background(), userID, attemptID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -354,7 +354,7 @@ func TestSummaryPropagatesErrors(t *testing.T) {
 	}
 
 	for name, repo := range cases {
-		if _, err := training.New(repo).Summary(context.Background(), userID, attemptID); err == nil {
+		if _, err := training.New(repo, nil).Summary(context.Background(), userID, attemptID); err == nil {
 			t.Fatalf("%s: expected error", name)
 		}
 	}

@@ -5,7 +5,7 @@
 Клонируйте репозиторий и перейдите в него:
 
 ```bash
-git clone git@github.com:34Minnesota/avito-antiscam-monorepo.git
+git clone https://github.com/34Minnesota/avito-antiscam-monorepo.git
 cd avito-antiscam-monorepo
 ```
 
@@ -36,7 +36,7 @@ make run
 ### 1. Клонирование и конфигурация
 
 ```bash
-git clone git@github.com:34Minnesota/avito-antiscam-monorepo.git
+git clone https://github.com/34Minnesota/avito-antiscam-monorepo.git
 cd avito-antiscam-monorepo
 
 cp .env.example .env

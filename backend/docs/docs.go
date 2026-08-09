@@ -821,6 +821,12 @@ const docTemplate = `{
                 "passedScenarios": {
                     "type": "integer"
                 },
+                "recommendations": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/httptransport.recommendationResponse"
+                    }
+                },
                 "roleComparison": {
                     "$ref": "#/definitions/httptransport.roleComparisonResponse"
                 },
@@ -832,6 +838,20 @@ const docTemplate = `{
                 },
                 "totalScenarios": {
                     "type": "integer"
+                }
+            }
+        },
+        "httptransport.recommendationResponse": {
+            "type": "object",
+            "properties": {
+                "reasonCode": {
+                    "type": "string"
+                },
+                "reasonText": {
+                    "type": "string"
+                },
+                "scenarioSlug": {
+                    "type": "string"
                 }
             }
         },

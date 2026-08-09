@@ -219,6 +219,10 @@ definitions:
         type: integer
       passedScenarios:
         type: integer
+      recommendations:
+        items:
+          $ref: '#/definitions/httptransport.recommendationResponse'
+        type: array
       roleComparison:
         $ref: '#/definitions/httptransport.roleComparisonResponse'
       roles:
@@ -227,6 +231,15 @@ definitions:
         type: array
       totalScenarios:
         type: integer
+    type: object
+  httptransport.recommendationResponse:
+    properties:
+      reasonCode:
+        type: string
+      reasonText:
+        type: string
+      scenarioSlug:
+        type: string
     type: object
   httptransport.roleComparisonResponse:
     properties:

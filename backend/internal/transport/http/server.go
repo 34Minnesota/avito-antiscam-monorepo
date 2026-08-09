@@ -71,9 +71,9 @@ func (s *Server) Login(c *gin.Context) {
 	var req LoginRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    "bad_request",
-			"message": err.Error(),
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Code:    "bad_request",
+			Message: "invalid request",
 		})
 		return
 	}
@@ -84,9 +84,9 @@ func (s *Server) Login(c *gin.Context) {
 		req.Password,
 	)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"code":    "unauthorized",
-			"message": "invalid email or password",
+		c.JSON(http.StatusUnauthorized, ErrorResponse{
+			Code:    "unauthorized",
+			Message: "invalid email or password",
 		})
 		return
 	}
@@ -113,9 +113,9 @@ func (s *Server) Register(c *gin.Context) {
 	var req RegisterRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":    "bad_request",
-			"message": "invalid request",
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Code:    "bad_request",
+			Message: "invalid request",
 		})
 		return
 	}
@@ -131,19 +131,19 @@ func (s *Server) Register(c *gin.Context) {
 	if err != nil {
 		switch {
 		case errors.Is(err, coreErrors.ErrInvalidArgument):
-			c.JSON(http.StatusBadRequest, gin.H{
-				"code":    "bad_request",
-				"message": "invalid request",
+			c.JSON(http.StatusBadRequest, ErrorResponse{
+				Code:    "bad_request",
+				Message: "invalid request",
 			})
 		case errors.Is(err, coreErrors.ErrConflict):
-			c.JSON(http.StatusConflict, gin.H{
-				"code":    "conflict",
-				"message": "user already exists",
+			c.JSON(http.StatusConflict, ErrorResponse{
+				Code:    "conflict",
+				Message: "user already exists",
 			})
 		default:
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"code":    "internal_error",
-				"message": "internal server error",
+			c.JSON(http.StatusInternalServerError, ErrorResponse{
+				Code:    "internal_error",
+				Message: "internal server error",
 			})
 		}
 		return
@@ -158,9 +158,9 @@ func (s *Server) Register(c *gin.Context) {
 			s.logger.Error("create session failed", zap.Error(err))
 		}
 
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code":    "internal_error",
-			"message": "failed to create session",
+		c.JSON(http.StatusInternalServerError, ErrorResponse{
+			Code:    "internal_error",
+			Message: "failed to create session",
 		})
 		return
 	}
@@ -184,18 +184,18 @@ func (s *Server) Register(c *gin.Context) {
 func (s *Server) Logout(c *gin.Context) {
 	value, exists := c.Get(sessionContextKey)
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"code":    "unauthorized",
-			"message": "unauthorized",
+		c.JSON(http.StatusUnauthorized, ErrorResponse{
+			Code:    "unauthorized",
+			Message: "unauthorized",
 		})
 		return
 	}
 
 	session, ok := value.(domain.Session)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"code":    "unauthorized",
-			"message": "unauthorized",
+		c.JSON(http.StatusUnauthorized, ErrorResponse{
+			Code:    "unauthorized",
+			Message: "unauthorized",
 		})
 		return
 	}
@@ -209,9 +209,9 @@ func (s *Server) Logout(c *gin.Context) {
 			s.logger.Error("logout failed", zap.Error(err))
 		}
 
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code":    "internal_error",
-			"message": "logout failed",
+		c.JSON(http.StatusInternalServerError, ErrorResponse{
+			Code:    "internal_error",
+			Message: "logout failed",
 		})
 		return
 	}
@@ -234,9 +234,9 @@ func (s *Server) GetCurrentUser(c *gin.Context) {
 
 	userID, ok := CurrentUser(c)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"code":    "unauthorized",
-			"message": "unauthorized",
+		c.JSON(http.StatusUnauthorized, ErrorResponse{
+			Code:    "unauthorized",
+			Message: "unauthorized",
 		})
 		return
 	}
@@ -250,9 +250,9 @@ func (s *Server) GetCurrentUser(c *gin.Context) {
 			s.logger.Error("get current user failed", zap.Error(err))
 		}
 
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code":    "internal_error",
-			"message": "failed to get current user",
+		c.JSON(http.StatusInternalServerError, ErrorResponse{
+			Code:    "internal_error",
+			Message: "failed to get current user",
 		})
 		return
 	}
@@ -265,10 +265,6 @@ func (s *Server) GetCurrentUser(c *gin.Context) {
 	})
 }
 
-// -----------------------------------------------------
-// Остальные endpoint'ы пока заглушки
-// -----------------------------------------------------
-
 // ListScenarios godoc
 //
 //	@Summary		Получить список сценариев
@@ -277,7 +273,7 @@ func (s *Server) GetCurrentUser(c *gin.Context) {
 //	@Produce		json
 //	@Security		SessionID
 //	@Param			role	query		string	false	"Роль пользователя"	Enums(buyer,seller)
-//	@Success		200		{object}	map[string]interface{}
+//	@Success		200		{object}	ScenariosResponse
 //	@Failure		400		{object}	ErrorResponse
 //	@Failure		401		{object}	ErrorResponse
 //	@Failure		500		{object}	ErrorResponse
@@ -285,13 +281,19 @@ func (s *Server) GetCurrentUser(c *gin.Context) {
 func (s *Server) ListScenarios(c *gin.Context) {
 	userID, ok := CurrentUser(c)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"message": "unauthorized"})
+		c.JSON(http.StatusUnauthorized, ErrorResponse{
+			Code:    "unauthorized",
+			Message: "unauthorized",
+		})
 		return
 	}
 
 	role := domain.Role(c.Query("role"))
 	if role != "" && (role != domain.RoleBuyer && role != domain.RoleSeller) {
-		c.JSON(http.StatusBadRequest, gin.H{"code": "bad_request", "message": "неизвестная роль: " + string(role)})
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Code:    "bad_request",
+			Message: "неизвестная роль: " + string(role),
+		})
 		return
 	}
 
@@ -300,10 +302,15 @@ func (s *Server) ListScenarios(c *gin.Context) {
 		if s.logger != nil {
 			s.logger.Error("list scenarios failed", zap.Error(err))
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "failed to list scenarios"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{
+			Code:    "internal_error",
+			Message: "failed to list scenarios",
+		})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"scenarios": scenarios})
+	c.JSON(http.StatusOK, ScenariosResponse{
+		Scenarios: scenarios,
+	})
 }
 
 // StartAttempt godoc
@@ -315,21 +322,28 @@ func (s *Server) ListScenarios(c *gin.Context) {
 //	@Produce		json
 //	@Security		SessionID
 //	@Param			request	body		StartAttemptRequest	true	"Данные сценария"
-//	@Success		201		{object}	map[string]interface{}
+//	@Success		201		{object}	training.StartResult
 //	@Failure		400		{object}	ErrorResponse
 //	@Failure		401		{object}	ErrorResponse
+//	@Failure		404		{object}	ErrorResponse
 //	@Failure		500		{object}	ErrorResponse
 //	@Router			/v1/attempts [post]
 func (s *Server) StartAttempt(c *gin.Context) {
 	userID, ok := CurrentUser(c)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"message": "unauthorized"})
+		c.JSON(http.StatusUnauthorized, ErrorResponse{
+			Code:    "unauthorized",
+			Message: "unauthorized",
+		})
 		return
 	}
 
 	var req StartAttemptRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"code": "bad_request", "message": err.Error()})
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Code:    "bad_request",
+			Message: err.Error(),
+		})
 		return
 	}
 
@@ -354,30 +368,39 @@ func (s *Server) StartAttempt(c *gin.Context) {
 //	@Security		SessionID
 //	@Param			attemptID	path		string			true	"ID попытки"
 //	@Param			request		body		ChoiceRequest	true	"Выбор пользователя"
-//	@Success		200			{object}	map[string]interface{}
+//	@Success		200			{object}	training.ChoiceResult
 //	@Failure		400			{object}	ErrorResponse
 //	@Failure		401			{object}	ErrorResponse
-//	@Failure		403			{object}	ErrorResponse
 //	@Failure		404			{object}	ErrorResponse
 //	@Failure		409			{object}	ErrorResponse
+//	@Failure		422			{object}	ErrorResponse
 //	@Failure		500			{object}	ErrorResponse
 //	@Router			/v1/attempts/{attemptID}/choice [post]
 func (s *Server) SubmitChoice(c *gin.Context) {
 	userID, ok := CurrentUser(c)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"message": "unauthorized"})
+		c.JSON(http.StatusUnauthorized, ErrorResponse{
+			Code:    "unauthorized",
+			Message: "unauthorized",
+		})
 		return
 	}
 
 	attemptID, err := uuid.Parse(c.Param("attemptID"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"code": "bad_request", "message": err.Error()})
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Code:    "bad_request",
+			Message: err.Error(),
+		})
 		return
 	}
 
 	var req ChoiceRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"code": "bad_request", "message": err.Error()})
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Code:    "bad_request",
+			Message: err.Error(),
+		})
 		return
 	}
 
@@ -400,23 +423,28 @@ func (s *Server) SubmitChoice(c *gin.Context) {
 //	@Produce		json
 //	@Security		SessionID
 //	@Param			attemptID	path		string	true	"ID попытки"
-//	@Success		200			{object}	map[string]interface{}
+//	@Success		200			{object}	training.SummaryResult
 //	@Failure		400			{object}	ErrorResponse
 //	@Failure		401			{object}	ErrorResponse
-//	@Failure		403			{object}	ErrorResponse
 //	@Failure		404			{object}	ErrorResponse
 //	@Failure		500			{object}	ErrorResponse
 //	@Router			/v1/attempts/{attemptID}/summary [get]
 func (s *Server) GetSummary(c *gin.Context) {
 	userID, ok := CurrentUser(c)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"message": "unauthorized"})
+		c.JSON(http.StatusUnauthorized, ErrorResponse{
+			Code:    "unauthorized",
+			Message: "unauthorized",
+		})
 		return
 	}
 
 	attemptID, err := uuid.Parse(c.Param("attemptID"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"code": "bad_request", "message": err.Error()})
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Code:    "bad_request",
+			Message: err.Error(),
+		})
 		return
 	}
 

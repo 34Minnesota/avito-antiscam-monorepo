@@ -64,8 +64,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/training.StartResult"
                         }
                     },
                     "400": {
@@ -76,6 +75,12 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/httptransport.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/httptransport.ErrorResponse"
                         }
@@ -129,8 +134,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/training.ChoiceResult"
                         }
                     },
                     "400": {
@@ -145,12 +149,6 @@ const docTemplate = `{
                             "$ref": "#/definitions/httptransport.ErrorResponse"
                         }
                     },
-                    "403": {
-                        "description": "Forbidden",
-                        "schema": {
-                            "$ref": "#/definitions/httptransport.ErrorResponse"
-                        }
-                    },
                     "404": {
                         "description": "Not Found",
                         "schema": {
@@ -159,6 +157,12 @@ const docTemplate = `{
                     },
                     "409": {
                         "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/httptransport.ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
                         "schema": {
                             "$ref": "#/definitions/httptransport.ErrorResponse"
                         }
@@ -200,8 +204,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/training.SummaryResult"
                         }
                     },
                     "400": {
@@ -212,12 +215,6 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/httptransport.ErrorResponse"
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden",
                         "schema": {
                             "$ref": "#/definitions/httptransport.ErrorResponse"
                         }
@@ -397,6 +394,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/httptransport.ErrorResponse"
                         }
                     },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/httptransport.ErrorResponse"
+                        }
+                    },
                     "503": {
                         "description": "Service Unavailable",
                         "schema": {
@@ -437,8 +440,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/httptransport.ScenariosResponse"
                         }
                     },
                     "400": {
@@ -501,6 +503,117 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "domain.Attachment": {
+            "type": "object",
+            "properties": {
+                "title": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.Author": {
+            "type": "string",
+            "enum": [
+                "counterpart",
+                "system",
+                "user"
+            ],
+            "x-enum-comments": {
+                "AuthorCounterpart": "собеседник (потенциальный мошенник)",
+                "AuthorSystem": "служебная вставка",
+                "AuthorUser": "реплика самого пользователя"
+            },
+            "x-enum-descriptions": [
+                "собеседник (потенциальный мошенник)",
+                "служебная вставка",
+                "реплика самого пользователя"
+            ],
+            "x-enum-varnames": [
+                "AuthorCounterpart",
+                "AuthorSystem",
+                "AuthorUser"
+            ]
+        },
+        "domain.Counterpart": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "rating": {
+                    "type": "number"
+                },
+                "registered": {
+                    "type": "string"
+                },
+                "reviews": {
+                    "type": "integer"
+                }
+            }
+        },
+        "domain.Ending": {
+            "type": "object",
+            "properties": {
+                "outcome": {
+                    "$ref": "#/definitions/domain.Outcome"
+                },
+                "text": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.FlagInfo": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "text": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.Listing": {
+            "type": "object",
+            "properties": {
+                "image": {
+                    "description": "TODO: решить вопрос с image",
+                    "type": "string"
+                },
+                "location": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "integer"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.Message": {
+            "type": "object",
+            "properties": {
+                "attachment": {
+                    "$ref": "#/definitions/domain.Attachment"
+                },
+                "author": {
+                    "$ref": "#/definitions/domain.Author"
+                },
+                "text": {
+                    "type": "string"
+                }
+            }
+        },
         "domain.Outcome": {
             "type": "string",
             "enum": [
@@ -523,6 +636,29 @@ const docTemplate = `{
             "x-enum-varnames": [
                 "RoleBuyer",
                 "RoleSeller"
+            ]
+        },
+        "domain.Verdict": {
+            "type": "string",
+            "enum": [
+                "safe",
+                "risky",
+                "fatal"
+            ],
+            "x-enum-comments": {
+                "VerdictFatal": "fatal — точка невозврата",
+                "VerdictRisky": "risky — рискованное, но не фатальное",
+                "VerdictSafe": "safe  — безопасное действие;"
+            },
+            "x-enum-descriptions": [
+                "safe  — безопасное действие;",
+                "risky — рискованное, но не фатальное",
+                "fatal — точка невозврата"
+            ],
+            "x-enum-varnames": [
+                "VerdictSafe",
+                "VerdictRisky",
+                "VerdictFatal"
             ]
         },
         "httptransport.ChoiceRequest": {
@@ -614,6 +750,17 @@ const docTemplate = `{
                 }
             }
         },
+        "httptransport.ScenariosResponse": {
+            "type": "object",
+            "properties": {
+                "scenarios": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/training.ScenarioCard"
+                    }
+                }
+            }
+        },
         "httptransport.StartAttemptRequest": {
             "type": "object",
             "required": [
@@ -674,6 +821,9 @@ const docTemplate = `{
                 "passedScenarios": {
                     "type": "integer"
                 },
+                "roleComparison": {
+                    "$ref": "#/definitions/httptransport.roleComparisonResponse"
+                },
                 "roles": {
                     "type": "array",
                     "items": {
@@ -681,6 +831,17 @@ const docTemplate = `{
                     }
                 },
                 "totalScenarios": {
+                    "type": "integer"
+                }
+            }
+        },
+        "httptransport.roleComparisonResponse": {
+            "type": "object",
+            "properties": {
+                "completionPercentDelta": {
+                    "type": "integer"
+                },
+                "passedPercentDelta": {
                     "type": "integer"
                 }
             }
@@ -729,6 +890,18 @@ const docTemplate = `{
                 "completed": {
                     "type": "boolean"
                 },
+                "firstSafeAttempt": {
+                    "$ref": "#/definitions/httptransport.completedAttemptResultResponse"
+                },
+                "improvementPercentPoints": {
+                    "type": "integer"
+                },
+                "initialScore": {
+                    "$ref": "#/definitions/httptransport.scoreResponse"
+                },
+                "latestScore": {
+                    "$ref": "#/definitions/httptransport.scoreResponse"
+                },
                 "passed": {
                     "type": "boolean"
                 },
@@ -742,6 +915,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "title": {
+                    "type": "string"
+                },
+                "trend": {
                     "type": "string"
                 }
             }
@@ -757,6 +933,172 @@ const docTemplate = `{
                 },
                 "points": {
                     "type": "integer"
+                }
+            }
+        },
+        "training.ChoiceResult": {
+            "type": "object",
+            "properties": {
+                "feedback": {
+                    "$ref": "#/definitions/training.Feedback"
+                },
+                "finished": {
+                    "type": "boolean"
+                },
+                "next_scene": {
+                    "$ref": "#/definitions/training.ScenePayload"
+                },
+                "reaction": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.Message"
+                    }
+                },
+                "revision": {
+                    "type": "integer"
+                },
+                "summary": {
+                    "$ref": "#/definitions/training.SummaryResult"
+                }
+            }
+        },
+        "training.Feedback": {
+            "type": "object",
+            "properties": {
+                "text": {
+                    "type": "string"
+                },
+                "verdict": {
+                    "$ref": "#/definitions/domain.Verdict"
+                }
+            }
+        },
+        "training.OptionPayload": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "text": {
+                    "type": "string"
+                }
+            }
+        },
+        "training.ScenarioCard": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "difficulty": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "role": {
+                    "$ref": "#/definitions/domain.Role"
+                },
+                "slug": {
+                    "type": "string"
+                },
+                "stats": {
+                    "$ref": "#/definitions/training.ScenarioStats"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "training.ScenarioStats": {
+            "type": "object",
+            "properties": {
+                "attempts_count": {
+                    "type": "integer"
+                },
+                "best_score": {
+                    "type": "integer"
+                }
+            }
+        },
+        "training.ScenePayload": {
+            "type": "object",
+            "properties": {
+                "intro": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.Message"
+                    }
+                },
+                "options": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/training.OptionPayload"
+                    }
+                },
+                "prompt": {
+                    "type": "string"
+                },
+                "scene_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "training.StartResult": {
+            "type": "object",
+            "properties": {
+                "attempt_id": {
+                    "type": "string"
+                },
+                "counterpart": {
+                    "$ref": "#/definitions/domain.Counterpart"
+                },
+                "listing": {
+                    "$ref": "#/definitions/domain.Listing"
+                },
+                "role": {
+                    "$ref": "#/definitions/domain.Role"
+                },
+                "scene": {
+                    "$ref": "#/definitions/training.ScenePayload"
+                },
+                "scenes_total": {
+                    "type": "integer"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "training.SummaryResult": {
+            "type": "object",
+            "properties": {
+                "delta_vs_previous": {
+                    "type": "integer"
+                },
+                "ending": {
+                    "$ref": "#/definitions/domain.Ending"
+                },
+                "missed_flags": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.FlagInfo"
+                    }
+                },
+                "outcome": {
+                    "$ref": "#/definitions/domain.Outcome"
+                },
+                "score": {
+                    "type": "integer"
+                },
+                "steps_total": {
+                    "type": "integer"
+                },
+                "takeaway": {
+                    "type": "string"
                 }
             }
         }

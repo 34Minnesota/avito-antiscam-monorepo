@@ -22,7 +22,7 @@ func TestWriteTrainingError(t *testing.T) {
 		wantCode   string
 	}{
 		{name: "not found", err: domainErrors.ErrNotFound, wantStatus: http.StatusNotFound, wantCode: "not_found"},
-		{name: "forbidden", err: domainErrors.ErrForbidden, wantStatus: http.StatusNotFound, wantCode: "not_found"},
+		{name: "forbidden", err: domainErrors.ErrForbidden, wantStatus: http.StatusForbidden, wantCode: "forbidden"},
 		{name: "revision conflict", err: domainErrors.ErrConflict, wantStatus: http.StatusConflict, wantCode: "conflict"},
 		{name: "finished attempt", err: domainErrors.ErrAttemptFinished, wantStatus: http.StatusConflict, wantCode: "conflict"},
 		{name: "out of order", err: domainErrors.ErrOutOfOrder, wantStatus: http.StatusUnprocessableEntity, wantCode: "out_of_order"},

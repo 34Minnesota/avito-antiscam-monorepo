@@ -3,6 +3,7 @@ package httptransport
 import (
 	"time"
 
+	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/training"
 	"github.com/google/uuid"
 )
 
@@ -12,6 +13,10 @@ type UpdateMeRequest struct {
 
 type StartAttemptRequest struct {
 	ScenarioID uuid.UUID `json:"scenario_id" binding:"required"`
+}
+
+type ScenariosResponse struct {
+	Scenarios []training.ScenarioCard `json:"scenarios"`
 }
 
 type ChoiceRequest struct {

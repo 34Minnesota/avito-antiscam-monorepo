@@ -5,12 +5,12 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
 	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
+	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/models"
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-func (r *UsersRepository) CreateUser(ctx context.Context, user domain.User) error {
+func (r *UsersRepository) CreateUser(ctx context.Context, user models.User) error {
 	ctx, cancel := context.WithTimeout(ctx, r.pool.OpTimeout())
 	defer cancel()
 

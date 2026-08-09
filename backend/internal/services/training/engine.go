@@ -3,8 +3,8 @@ package training
 import (
 	"fmt"
 
-	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
 	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
+	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/models"
 )
 
 // Проигрыватель сценариев тренажера
@@ -16,23 +16,23 @@ const (
 
 // Transition — результат одного шага прохождения.
 type Transition struct {
-	Verdict   domain.Verdict
+	Verdict   models.Verdict
 	Feedback  string
-	Reaction  []domain.Message
+	Reaction  []models.Message
 	NextScene *ScenePayload
-	Ending    *domain.Ending
+	Ending    *models.Ending
 	EndingKey string
-	State     domain.State
-	Step      domain.AttemptStep
+	State     models.State
+	Step      models.AttemptStep
 	Finished  bool
 }
 
 // Start возвращает первую сцену сценария и начальное состояние.
-func Start(doc domain.ScenarioDoc) (ScenePayload, domain.State, error) {
+func Start(doc models.ScenarioDoc) (ScenePayload, models.State, error) {
 	if len(doc.Scenes) == 0 {
-		return ScenePayload{}, domain.State{}, fmt.Errorf("%w: scenario has no scenes", domainErrors.ErrInvalidScenario)
+		return ScenePayload{}, models.State{}, fmt.Errorf("%w: scenario has no scenes", domainErrors.ErrInvalidScenario)
 	}
-	state := domain.State{SceneIndex: 0, Earned: 0, Flags: []string{}}
+	state := models.State{SceneIndex: 0, Earned: 0, Flags: []string{}}
 	return BuildScene(doc.Scenes[0]), state, nil
 }
 
@@ -47,7 +47,7 @@ func Start(doc domain.ScenarioDoc) (ScenePayload, domain.State, error) {
 //     fatal — сценарий обрывается концовкой, указанной в самой опции.
 //  3. Когда сцены закончились, концовка выбирается по накопленным флагам:
 //     нет пропущенных признаков — "safe", есть — "partial".
-func Advance(doc domain.ScenarioDoc, st domain.State, sceneID, optionID string) (Transition, error) {
+func Advance(doc models.ScenarioDoc, st models.State, sceneID, optionID string) (Transition, error) {
 	if st.SceneIndex < 0 || st.SceneIndex >= len(doc.Scenes) {
 		return Transition{}, domainErrors.ErrAttemptFinished
 	}
@@ -62,13 +62,13 @@ func Advance(doc domain.ScenarioDoc, st domain.State, sceneID, optionID string) 
 		return Transition{}, fmt.Errorf("%w: %q in scene %q", domainErrors.ErrUnknownOption, optionID, sceneID)
 	}
 
-	next := domain.State{
+	next := models.State{
 		SceneIndex: st.SceneIndex,
 		Earned:     st.Earned,
 		Flags:      append([]string(nil), st.Flags...),
 	}
 
-	if opt.Verdict == domain.VerdictSafe {
+	if opt.Verdict == models.VerdictSafe {
 		next.Earned += scene.Weight
 	} else if opt.Flag != "" {
 		next.Flags = append(next.Flags, opt.Flag)
@@ -78,7 +78,7 @@ func Advance(doc domain.ScenarioDoc, st domain.State, sceneID, optionID string) 
 		Verdict:  opt.Verdict,
 		Feedback: opt.Feedback,
 		Reaction: opt.Reaction,
-		Step: domain.AttemptStep{
+		Step: models.AttemptStep{
 			SceneID:  scene.ID,
 			OptionID: opt.ID,
 			Verdict:  opt.Verdict,
@@ -87,7 +87,7 @@ func Advance(doc domain.ScenarioDoc, st domain.State, sceneID, optionID string) 
 		},
 	}
 
-	if opt.Verdict == domain.VerdictFatal {
+	if opt.Verdict == models.VerdictFatal {
 		ending, found := doc.Endings[opt.Ending]
 		if !found {
 			return Transition{}, fmt.Errorf("%w: ending %q not found", domainErrors.ErrInvalidScenario, opt.Ending)
@@ -126,7 +126,7 @@ func Advance(doc domain.ScenarioDoc, st domain.State, sceneID, optionID string) 
 }
 
 // CurrentSceneID возвращает идентификатор сцены, на которой стоит пользователь
-func CurrentSceneID(doc domain.ScenarioDoc, st domain.State) string {
+func CurrentSceneID(doc models.ScenarioDoc, st models.State) string {
 	if st.SceneIndex < 0 || st.SceneIndex >= len(doc.Scenes) {
 		return ""
 	}

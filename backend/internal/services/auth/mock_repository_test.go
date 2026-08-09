@@ -5,25 +5,25 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
+	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/models"
 )
 
 type MockRepository struct {
-	session domain.Session
+	session models.Session
 	err     error
 }
 
 func (m *MockRepository) CreateSession(
 	ctx context.Context,
 	userID uuid.UUID,
-) (domain.Session, error) {
+) (models.Session, error) {
 	return m.session, m.err
 }
 
 func (m *MockRepository) GetSession(
 	ctx context.Context,
 	sessionID uuid.UUID,
-) (domain.Session, error) {
+) (models.Session, error) {
 	return m.session, m.err
 }
 

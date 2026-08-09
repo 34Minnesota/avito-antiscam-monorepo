@@ -1,8 +1,8 @@
 package training
 
-import "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
+import "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/models"
 
-func BuildScene(s domain.Scene) ScenePayload {
+func BuildScene(s models.Scene) ScenePayload {
 	opts := make([]OptionPayload, 0, len(s.Decision.Options))
 	for _, o := range s.Decision.Options {
 		opts = append(opts, OptionPayload{

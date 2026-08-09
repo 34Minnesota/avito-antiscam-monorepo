@@ -4,8 +4,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
 	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
+	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/models"
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/training"
 )
 
@@ -35,7 +35,7 @@ func TestStartRejectsScenarioWithoutScenes(t *testing.T) {
 func TestAdvanceSafeOptionAddsWeightAndMovesOn(t *testing.T) {
 	t.Parallel()
 	doc := testDoc()
-	tr, err := training.Advance(doc, domain.State{}, "s1", "a1")
+	tr, err := training.Advance(doc, models.State{}, "s1", "a1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -45,14 +45,14 @@ func TestAdvanceSafeOptionAddsWeightAndMovesOn(t *testing.T) {
 	if tr.State.Earned != 1 || tr.State.SceneIndex != 1 || len(tr.State.Flags) != 0 {
 		t.Fatalf("unexpected state: %+v", tr.State)
 	}
-	if tr.Verdict != domain.VerdictSafe || tr.Step.SceneID != "s1" || tr.Step.OptionID != "a1" {
+	if tr.Verdict != models.VerdictSafe || tr.Step.SceneID != "s1" || tr.Step.OptionID != "a1" {
 		t.Fatalf("unexpected step: %+v", tr.Step)
 	}
 }
 
 func TestAdvanceRiskyOptionRecordsFlagWithoutWeight(t *testing.T) {
 	t.Parallel()
-	tr, err := training.Advance(testDoc(), domain.State{}, "s1", "a2")
+	tr, err := training.Advance(testDoc(), models.State{}, "s1", "a2")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -63,7 +63,7 @@ func TestAdvanceRiskyOptionRecordsFlagWithoutWeight(t *testing.T) {
 
 func TestAdvanceDoesNotMutateInputState(t *testing.T) {
 	t.Parallel()
-	before := domain.State{SceneIndex: 0, Earned: 0, Flags: []string{"kept"}}
+	before := models.State{SceneIndex: 0, Earned: 0, Flags: []string{"kept"}}
 	if _, err := training.Advance(testDoc(), before, "s1", "a2"); err != nil {
 		t.Fatal(err)
 	}
@@ -75,14 +75,14 @@ func TestAdvanceDoesNotMutateInputState(t *testing.T) {
 func TestAdvanceFatalOptionFinishesWithItsOwnEnding(t *testing.T) {
 	t.Parallel()
 	doc := testDoc()
-	tr, err := training.Advance(doc, domain.State{}, "s1", "a3")
+	tr, err := training.Advance(doc, models.State{}, "s1", "a3")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !tr.Finished || tr.EndingKey != "lost" || tr.Ending == nil {
 		t.Fatalf("unexpected transition: %+v", tr)
 	}
-	if tr.Ending.Outcome != domain.OutcomeScammed {
+	if tr.Ending.Outcome != models.OutcomeScammed {
 		t.Fatalf("unexpected ending: %+v", tr.Ending)
 	}
 	if tr.State.SceneIndex != len(doc.Scenes) {
@@ -92,7 +92,7 @@ func TestAdvanceFatalOptionFinishesWithItsOwnEnding(t *testing.T) {
 
 func TestAdvanceRejectsOutOfOrderScene(t *testing.T) {
 	t.Parallel()
-	_, err := training.Advance(testDoc(), domain.State{}, "s2", "b1")
+	_, err := training.Advance(testDoc(), models.State{}, "s2", "b1")
 	if !errors.Is(err, domainErrors.ErrOutOfOrder) {
 		t.Fatalf("got %v", err)
 	}
@@ -100,7 +100,7 @@ func TestAdvanceRejectsOutOfOrderScene(t *testing.T) {
 
 func TestAdvanceRejectsUnknownOption(t *testing.T) {
 	t.Parallel()
-	_, err := training.Advance(testDoc(), domain.State{}, "s1", "nope")
+	_, err := training.Advance(testDoc(), models.State{}, "s1", "nope")
 	if !errors.Is(err, domainErrors.ErrUnknownOption) {
 		t.Fatalf("got %v", err)
 	}
@@ -110,7 +110,7 @@ func TestAdvanceRejectsAlreadyFinishedAttempt(t *testing.T) {
 	t.Parallel()
 	doc := testDoc()
 	for _, index := range []int{-1, len(doc.Scenes)} {
-		_, err := training.Advance(doc, domain.State{SceneIndex: index}, "s1", "a1")
+		_, err := training.Advance(doc, models.State{SceneIndex: index}, "s1", "a1")
 		if !errors.Is(err, domainErrors.ErrAttemptFinished) {
 			t.Fatalf("index %d: got %v", index, err)
 		}
@@ -120,7 +120,7 @@ func TestAdvanceRejectsAlreadyFinishedAttempt(t *testing.T) {
 func TestAdvanceOnLastScenePicksEndingByFlags(t *testing.T) {
 	t.Parallel()
 	doc := testDoc()
-	last := domain.State{SceneIndex: len(doc.Scenes) - 1}
+	last := models.State{SceneIndex: len(doc.Scenes) - 1}
 
 	clean, err := training.Advance(doc, last, "s3", "c1")
 	if err != nil {
@@ -146,13 +146,13 @@ func TestAdvanceRejectsMissingEnding(t *testing.T) {
 
 	fatalDoc := testDoc()
 	delete(fatalDoc.Endings, "lost")
-	if _, err := training.Advance(fatalDoc, domain.State{}, "s1", "a3"); !errors.Is(err, domainErrors.ErrInvalidScenario) {
+	if _, err := training.Advance(fatalDoc, models.State{}, "s1", "a3"); !errors.Is(err, domainErrors.ErrInvalidScenario) {
 		t.Fatalf("missing fatal ending: got %v", err)
 	}
 
 	finalDoc := testDoc()
 	delete(finalDoc.Endings, "safe")
-	last := domain.State{SceneIndex: len(finalDoc.Scenes) - 1}
+	last := models.State{SceneIndex: len(finalDoc.Scenes) - 1}
 	if _, err := training.Advance(finalDoc, last, "s3", "c1"); !errors.Is(err, domainErrors.ErrInvalidScenario) {
 		t.Fatalf("missing final ending: got %v", err)
 	}
@@ -161,11 +161,11 @@ func TestAdvanceRejectsMissingEnding(t *testing.T) {
 func TestCurrentSceneID(t *testing.T) {
 	t.Parallel()
 	doc := testDoc()
-	if got := training.CurrentSceneID(doc, domain.State{SceneIndex: 1}); got != "s2" {
+	if got := training.CurrentSceneID(doc, models.State{SceneIndex: 1}); got != "s2" {
 		t.Fatalf("got %q", got)
 	}
 	for _, index := range []int{-1, len(doc.Scenes)} {
-		if got := training.CurrentSceneID(doc, domain.State{SceneIndex: index}); got != "" {
+		if got := training.CurrentSceneID(doc, models.State{SceneIndex: index}); got != "" {
 			t.Fatalf("index %d: got %q", index, got)
 		}
 	}

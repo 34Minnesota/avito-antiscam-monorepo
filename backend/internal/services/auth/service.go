@@ -7,7 +7,7 @@ import (
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 
-	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
+	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/models"
 	applogger "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/logger"
 )
 
@@ -39,7 +39,7 @@ func NewService(
 func (s *Service) CreateSession(
 	ctx context.Context,
 	userID uuid.UUID,
-) (domain.Session, error) {
+) (models.Session, error) {
 
 	session, err := s.repository.CreateSession(ctx, userID)
 	if err != nil {
@@ -50,7 +50,7 @@ func (s *Service) CreateSession(
 				zap.Error(err),
 			)
 		}
-		return domain.Session{}, err
+		return models.Session{}, err
 	}
 
 	return session, nil
@@ -61,7 +61,7 @@ func (s *Service) CreateSession(
 func (s *Service) ValidateSession(
 	ctx context.Context,
 	sessionID uuid.UUID,
-) (domain.Session, error) {
+) (models.Session, error) {
 
 	session, err := s.repository.GetSession(ctx, sessionID)
 	if err != nil {
@@ -72,7 +72,7 @@ func (s *Service) ValidateSession(
 				zap.Error(err),
 			)
 		}
-		return domain.Session{}, err
+		return models.Session{}, err
 	}
 
 	if err := s.repository.UpdateLastSeen(ctx, sessionID); err != nil {
@@ -83,7 +83,7 @@ func (s *Service) ValidateSession(
 				zap.Error(err),
 			)
 		}
-		return domain.Session{}, err
+		return models.Session{}, err
 	}
 
 	session.LastSeenAt = time.Now().UTC()

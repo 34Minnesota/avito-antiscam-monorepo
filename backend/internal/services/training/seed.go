@@ -7,7 +7,7 @@ import (
 	"io/fs"
 	"path"
 
-	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
+	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/models"
 	"github.com/google/uuid"
 )
 
@@ -29,12 +29,12 @@ func Seed(ctx context.Context, repo Repository, files fs.FS, dir string) (int, e
 			return loaded, fmt.Errorf("reading %s: %w", entry.Name(), err)
 		}
 
-		var doc domain.ScenarioDoc
+		var doc models.ScenarioDoc
 		if err := json.Unmarshal(raw, &doc); err != nil {
 			return loaded, fmt.Errorf("parsing %s: %w", entry.Name(), err)
 		}
 
-		scenario := domain.Scenario{
+		scenario := models.Scenario{
 			ID:       uuid.New(),
 			IsActive: true,
 			Doc:      doc,

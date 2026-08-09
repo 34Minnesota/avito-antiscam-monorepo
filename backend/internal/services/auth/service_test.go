@@ -7,26 +7,26 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
 	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
+	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/models"
 )
 
 type mockUserProvider struct {
-	user domain.User
+	user models.User
 	err  error
 }
 
 func (m *mockUserProvider) GetUser(
 	ctx context.Context,
 	userID uuid.UUID,
-) (domain.User, error) {
+) (models.User, error) {
 	return m.user, m.err
 }
 
 func (m *mockUserProvider) GetUserByEmail(
 	ctx context.Context,
 	email string,
-) (domain.User, error) {
+) (models.User, error) {
 	return m.user, m.err
 }
 
@@ -42,13 +42,13 @@ func (m *mockPasswordVerifier) Compare(
 }
 
 func TestLoginSuccess(t *testing.T) {
-	user := domain.User{
+	user := models.User{
 		ID:           uuid.New(),
 		Email:        "user@test.ru",
 		PasswordHash: "hash",
 	}
 
-	session := domain.Session{
+	session := models.Session{
 		ID:     uuid.New(),
 		UserID: user.ID,
 	}
@@ -112,7 +112,7 @@ func TestLoginUserNotFound(t *testing.T) {
 }
 
 func TestLoginWrongPassword(t *testing.T) {
-	user := domain.User{
+	user := models.User{
 		ID:           uuid.New(),
 		Email:        "user@test.ru",
 		PasswordHash: "hash",

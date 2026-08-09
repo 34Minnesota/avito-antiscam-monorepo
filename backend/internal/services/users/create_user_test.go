@@ -9,25 +9,25 @@ import (
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 
-	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
 	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
+	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/models"
 	usersutils "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/users/utils"
 )
 
 type repositoryStub struct {
-	user   domain.User
+	user   models.User
 	err    error
 	userID uuid.UUID
 	calls  int
 }
 
-func (r *repositoryStub) CreateUser(_ context.Context, user domain.User) error {
+func (r *repositoryStub) CreateUser(_ context.Context, user models.User) error {
 	r.calls++
 	r.user = user
 	return r.err
 }
 
-func (r *repositoryStub) GetUser(_ context.Context, userID uuid.UUID) (domain.User, error) {
+func (r *repositoryStub) GetUser(_ context.Context, userID uuid.UUID) (models.User, error) {
 	r.calls++
 	r.userID = userID
 	return r.user, r.err

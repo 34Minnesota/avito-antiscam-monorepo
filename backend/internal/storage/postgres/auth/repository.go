@@ -6,7 +6,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
+	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/models"
 	postgrespool "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/storage/postgres/pool"
 )
 
@@ -23,14 +23,14 @@ func NewRepository(pool *postgrespool.Pool) *AuthRepository {
 func (r *AuthRepository) CreateSession(
 	ctx context.Context,
 	userID uuid.UUID,
-) (domain.Session, error) {
+) (models.Session, error) {
 
 	ctx, cancel := context.WithTimeout(ctx, r.pool.OpTimeout())
 	defer cancel()
 
 	now := time.Now().UTC()
 
-	session := domain.Session{
+	session := models.Session{
 		ID:         uuid.New(),
 		UserID:     userID,
 		CreatedAt:  now,
@@ -59,7 +59,7 @@ func (r *AuthRepository) CreateSession(
 		session.ExpiresAt,
 	)
 	if err != nil {
-		return domain.Session{}, err
+		return models.Session{}, err
 	}
 
 	return session, nil
@@ -68,7 +68,7 @@ func (r *AuthRepository) CreateSession(
 func (r *AuthRepository) GetSession(
 	ctx context.Context,
 	sessionID uuid.UUID,
-) (domain.Session, error) {
+) (models.Session, error) {
 
 	ctx, cancel := context.WithTimeout(ctx, r.pool.OpTimeout())
 	defer cancel()
@@ -84,7 +84,7 @@ func (r *AuthRepository) GetSession(
 		WHERE id = $1
 	`
 
-	var session domain.Session
+	var session models.Session
 
 	err := r.pool.QueryRow(
 		ctx,
@@ -99,7 +99,7 @@ func (r *AuthRepository) GetSession(
 	)
 
 	if err != nil {
-		return domain.Session{}, err
+		return models.Session{}, err
 	}
 
 	return session, nil

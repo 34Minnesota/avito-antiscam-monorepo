@@ -1,4 +1,4 @@
-package domain
+package models
 
 import (
 	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"

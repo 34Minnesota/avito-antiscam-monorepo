@@ -11,16 +11,16 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
 	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
+	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/models"
 )
 
 type progressStub struct {
-	result domain.OverallProgress
+	result models.OverallProgress
 	err    error
 }
 
-func (s progressStub) Get(context.Context, domain.UserID) (domain.OverallProgress, error) {
+func (s progressStub) Get(context.Context, models.UserID) (models.OverallProgress, error) {
 	return s.result, s.err
 }
 
@@ -34,7 +34,7 @@ func TestProgressHandlerRequiresIdentity(t *testing.T) {
 
 func TestProgressHandlerMapsSuccess(t *testing.T) {
 	t.Parallel()
-	response := performRequest(t, progressStub{result: domain.OverallProgress{Roles: []domain.RoleProgress{}}}, true)
+	response := performRequest(t, progressStub{result: models.OverallProgress{Roles: []models.RoleProgress{}}}, true)
 	if response.Code != http.StatusOK {
 		t.Fatalf("status = %d, body = %s", response.Code, response.Body.String())
 	}
@@ -50,8 +50,8 @@ func TestProgressHandlerMapsSuccess(t *testing.T) {
 func TestProgressHandlerMapsRecommendations(t *testing.T) {
 	t.Parallel()
 
-	response := performRequest(t, progressStub{result: domain.OverallProgress{
-		Recommendations: []domain.Recommendation{
+	response := performRequest(t, progressStub{result: models.OverallProgress{
+		Recommendations: []models.Recommendation{
 			{ScenarioSlug: "active-attempt", ReasonCode: "ACTIVE_ATTEMPT", ReasonText: "Continue the active attempt."},
 			{ScenarioSlug: "low-score", ReasonCode: "LOW_BEST_SCORE", ReasonText: "Improve the best score."},
 		},
@@ -85,13 +85,13 @@ func TestProgressHandlerMapsRecommendations(t *testing.T) {
 func TestProgressHandlerMapsExperience(t *testing.T) {
 	t.Parallel()
 
-	response := performRequest(t, progressStub{result: domain.OverallProgress{
-		Experience: domain.ExperienceProgress{
+	response := performRequest(t, progressStub{result: models.OverallProgress{
+		Experience: models.ExperienceProgress{
 			TotalXP:     75,
 			Level:       1,
 			CurrentXP:   75,
 			NextLevelXP: 100,
-			Achievements: []domain.Achievement{{
+			Achievements: []models.Achievement{{
 				Code:        "FIRST_COMPLETION",
 				Title:       "First step",
 				Description: "Completed the first scenario.",
@@ -137,20 +137,20 @@ func TestProgressHandlerMapsExperience(t *testing.T) {
 
 func TestProgressHandlerMapsScenarioDynamics(t *testing.T) {
 	t.Parallel()
-	initial, err := domain.NewScore(42, 100)
+	initial, err := models.NewScore(42, 100)
 	if err != nil {
 		t.Fatal(err)
 	}
-	latest, err := domain.NewScore(78, 100)
+	latest, err := models.NewScore(78, 100)
 	if err != nil {
 		t.Fatal(err)
 	}
 	improvement := 36
-	trend := domain.ProgressTrendImproving
-	response := performRequest(t, progressStub{result: domain.OverallProgress{Roles: []domain.RoleProgress{{
-		Role: domain.RoleBuyer,
-		Scenarios: []domain.ScenarioProgress{{
-			ID: uuid.New(), Slug: "buyer-one", Title: "Buyer", Role: domain.RoleBuyer,
+	trend := models.ProgressTrendImproving
+	response := performRequest(t, progressStub{result: models.OverallProgress{Roles: []models.RoleProgress{{
+		Role: models.RoleBuyer,
+		Scenarios: []models.ScenarioProgress{{
+			ID: uuid.New(), Slug: "buyer-one", Title: "Buyer", Role: models.RoleBuyer,
 			InitialScore: &initial, LatestScore: &latest, ImprovementPercentPoints: &improvement, Trend: &trend,
 		}},
 	}}}}, true)
@@ -212,12 +212,12 @@ func performRequest(t *testing.T, service ProgressGetter, authenticated bool) *h
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
 	if authenticated {
-		userID, err := domain.NewUserID(uuid.New())
+		userID, err := models.NewUserID(uuid.New())
 		if err != nil {
 			t.Fatal(err)
 		}
 		router.Use(func(c *gin.Context) {
-			c.Set(sessionContextKey, domain.Session{ID: uuid.New(), UserID: userID.UUID()})
+			c.Set(sessionContextKey, models.Session{ID: uuid.New(), UserID: userID.UUID()})
 		})
 	}
 	RegisterProgressRoutes(router.Group("/v1"), NewProgressHandler(service))

@@ -8,8 +8,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
 	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
+	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/models"
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/storage/postgres/pool"
 )
 
@@ -21,9 +21,9 @@ func NewRepository(pool *pool.Pool) *Repository {
 	return &Repository{pool: pool}
 }
 
-func (r *Repository) Load(ctx context.Context, userID domain.UserID, historyLimit int) (domain.ProgressSnapshot, error) {
+func (r *Repository) Load(ctx context.Context, userID models.UserID, historyLimit int) (models.ProgressSnapshot, error) {
 	if r == nil || r.pool == nil {
-		return domain.ProgressSnapshot{}, fmt.Errorf("%w: postgres is not configured", domainErrors.ErrDependencyUnavailable)
+		return models.ProgressSnapshot{}, fmt.Errorf("%w: postgres is not configured", domainErrors.ErrDependencyUnavailable)
 	}
 
 	ctx, cancel := context.WithTimeout(ctx, r.pool.OpTimeout())
@@ -31,19 +31,19 @@ func (r *Repository) Load(ctx context.Context, userID domain.UserID, historyLimi
 
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
-		return domain.ProgressSnapshot{}, dependencyError(err)
+		return models.ProgressSnapshot{}, dependencyError(err)
 	}
 	defer func() { _ = tx.Rollback(ctx) }() //nolint:errcheck
 
 	scenarios, indexes, err := loadScenarios(ctx, tx, userID)
 	if err != nil {
-		return domain.ProgressSnapshot{}, err
+		return models.ProgressSnapshot{}, err
 	}
 	if err := loadRecentAttempts(ctx, tx, userID, historyLimit, scenarios, indexes); err != nil {
-		return domain.ProgressSnapshot{}, err
+		return models.ProgressSnapshot{}, err
 	}
 
-	return domain.ProgressSnapshot{Scenarios: scenarios}, nil
+	return models.ProgressSnapshot{Scenarios: scenarios}, nil
 }
 
 const scenariosQuery = `
@@ -68,15 +68,15 @@ const scenariosQuery = `
 func loadScenarios(
 	ctx context.Context,
 	tx pgx.Tx,
-	userID domain.UserID,
-) ([]domain.ScenarioProgress, map[uuid.UUID]int, error) {
+	userID models.UserID,
+) ([]models.ScenarioProgress, map[uuid.UUID]int, error) {
 	rows, err := tx.Query(ctx, scenariosQuery, userID.UUID())
 	if err != nil {
 		return nil, nil, dependencyError(err)
 	}
 	defer rows.Close()
 
-	scenarios := make([]domain.ScenarioProgress, 0)
+	scenarios := make([]models.ScenarioProgress, 0)
 	indexes := make(map[uuid.UUID]int)
 
 	for rows.Next() {
@@ -96,8 +96,8 @@ func loadScenarios(
 	return scenarios, indexes, nil
 }
 
-func scanProgressScenario(rows pgx.Rows) (domain.ScenarioProgress, error) {
-	var scenario domain.ScenarioProgress
+func scanProgressScenario(rows pgx.Rows) (models.ScenarioProgress, error) {
+	var scenario models.ScenarioProgress
 	var completed, active int
 	var best, initial, latest sql.NullInt64
 	var firstSafeID uuid.NullUUID
@@ -108,11 +108,11 @@ func scanProgressScenario(rows pgx.Rows) (domain.ScenarioProgress, error) {
 	if err := rows.Scan(&scenario.ID, &scenario.Slug, &scenario.Title, &scenario.Role,
 		&scenario.AttemptsCount, &completed, &scenario.Passed, &best, &initial, &latest,
 		&firstSafeID, &firstSafeScore, &firstSafeAt, &active, &activeID); err != nil {
-		return domain.ScenarioProgress{}, dependencyError(err)
+		return models.ScenarioProgress{}, dependencyError(err)
 	}
 
 	if err := validateProgressSnapshot(scenario.Passed, completed, active); err != nil {
-		return domain.ScenarioProgress{}, err
+		return models.ScenarioProgress{}, err
 	}
 
 	scenario.Completed = completed > 0
@@ -120,27 +120,27 @@ func scanProgressScenario(rows pgx.Rows) (domain.ScenarioProgress, error) {
 	var err error
 
 	if scenario.BestScore, err = scoreFromNull(best); err != nil {
-		return domain.ScenarioProgress{}, err
+		return models.ScenarioProgress{}, err
 	}
 
 	if scenario.InitialScore, err = scoreFromNull(initial); err != nil {
-		return domain.ScenarioProgress{}, err
+		return models.ScenarioProgress{}, err
 	}
 
 	if scenario.LatestScore, err = scoreFromNull(latest); err != nil {
-		return domain.ScenarioProgress{}, err
+		return models.ScenarioProgress{}, err
 	}
 
 	if firstSafeID.Valid || firstSafeScore.Valid || firstSafeAt.Valid {
 		if !firstSafeID.Valid || !firstSafeScore.Valid || !firstSafeAt.Valid {
-			return domain.ScenarioProgress{}, inconsistentError("first safe attempt has an invalid progress snapshot")
+			return models.ScenarioProgress{}, inconsistentError("first safe attempt has an invalid progress snapshot")
 		}
-		score, err := domain.NewScore(int(firstSafeScore.Int64), 100)
+		score, err := models.NewScore(int(firstSafeScore.Int64), 100)
 		if err != nil {
-			return domain.ScenarioProgress{}, inconsistentError(err.Error())
+			return models.ScenarioProgress{}, inconsistentError(err.Error())
 		}
-		firstSafe := domain.AttemptResult{
-			ID: firstSafeID.UUID, Score: score, Outcome: domain.OutcomeSafe, CompletedAt: firstSafeAt.Time,
+		firstSafe := models.AttemptResult{
+			ID: firstSafeID.UUID, Score: score, Outcome: models.OutcomeSafe, CompletedAt: firstSafeAt.Time,
 		}
 		scenario.FirstSafeAttempt = &firstSafe
 	}
@@ -161,12 +161,12 @@ func validateProgressSnapshot(passed bool, completed, active int) error {
 	return nil
 }
 
-func scoreFromNull(value sql.NullInt64) (*domain.Score, error) {
+func scoreFromNull(value sql.NullInt64) (*models.Score, error) {
 	if !value.Valid {
 		return nil, nil
 	}
 
-	score, err := domain.NewScore(int(value.Int64), 100)
+	score, err := models.NewScore(int(value.Int64), 100)
 	if err != nil {
 		return nil, inconsistentError(err.Error())
 	}
@@ -187,7 +187,7 @@ const recentAttemptsQuery = `
 	WHERE position <= $2
 	ORDER BY scenario_id, finished_at DESC, id DESC`
 
-func loadRecentAttempts(ctx context.Context, tx pgx.Tx, userID domain.UserID, limit int, scenarios []domain.ScenarioProgress, indexes map[uuid.UUID]int) error {
+func loadRecentAttempts(ctx context.Context, tx pgx.Tx, userID models.UserID, limit int, scenarios []models.ScenarioProgress, indexes map[uuid.UUID]int) error {
 	rows, err := tx.Query(ctx, recentAttemptsQuery, userID.UUID(), limit)
 	if err != nil {
 		return dependencyError(err)
@@ -196,7 +196,7 @@ func loadRecentAttempts(ctx context.Context, tx pgx.Tx, userID domain.UserID, li
 
 	for rows.Next() {
 		var scenarioID uuid.UUID
-		var attempt domain.AttemptResult
+		var attempt models.AttemptResult
 		var points sql.NullInt64
 		var completedAt sql.NullTime
 		if err := rows.Scan(&scenarioID, &attempt.ID, &points, &attempt.Outcome, &completedAt); err != nil {
@@ -206,7 +206,7 @@ func loadRecentAttempts(ctx context.Context, tx pgx.Tx, userID domain.UserID, li
 		if !ok || !points.Valid || !completedAt.Valid {
 			return inconsistentError("finished attempt has an invalid progress snapshot")
 		}
-		score, err := domain.NewScore(int(points.Int64), 100)
+		score, err := models.NewScore(int(points.Int64), 100)
 		if err != nil {
 			return inconsistentError(err.Error())
 		}

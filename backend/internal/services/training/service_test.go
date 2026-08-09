@@ -7,8 +7,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
 	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
+	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/models"
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/training"
 )
 
@@ -18,11 +18,11 @@ func TestCatalogBuildsCardsWithPersonalStats(t *testing.T) {
 	t.Parallel()
 	first, second := uuid.New(), uuid.New()
 	repo := &repositoryStub{
-		scenarios: []domain.Scenario{testScenario(first), testScenario(second)},
+		scenarios: []models.Scenario{testScenario(first), testScenario(second)},
 		stats:     map[uuid.UUID]training.ScenarioStats{first: {BestScore: 80, AttemptsCount: 3}},
 	}
 
-	cards, err := training.New(repo, nil).Catalog(context.Background(), mustUserID(t), domain.RoleSeller)
+	cards, err := training.New(repo, nil).Catalog(context.Background(), mustUserID(t), models.RoleSeller)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -56,7 +56,7 @@ func TestStartCreatesAttemptOnFirstRun(t *testing.T) {
 	t.Parallel()
 	scenarioID := uuid.New()
 	userID := mustUserID(t)
-	repo := &repositoryStub{byID: map[uuid.UUID]domain.Scenario{scenarioID: testScenario(scenarioID)}}
+	repo := &repositoryStub{byID: map[uuid.UUID]models.Scenario{scenarioID: testScenario(scenarioID)}}
 
 	result, err := training.New(repo, nil).Start(context.Background(), userID, scenarioID)
 	if err != nil {
@@ -72,7 +72,7 @@ func TestStartCreatesAttemptOnFirstRun(t *testing.T) {
 	if created.UserID != userID || created.ScenarioID != scenarioID {
 		t.Fatalf("unexpected attempt owner: %+v", created)
 	}
-	if created.Status != domain.AttemptInProgress || created.ID != result.AttemptID {
+	if created.Status != models.AttemptInProgress || created.ID != result.AttemptID {
 		t.Fatalf("unexpected attempt: %+v", created)
 	}
 }
@@ -81,8 +81,8 @@ func TestStartReusesActiveAttempt(t *testing.T) {
 	t.Parallel()
 	scenarioID, attemptID := uuid.New(), uuid.New()
 	repo := &repositoryStub{
-		byID:   map[uuid.UUID]domain.Scenario{scenarioID: testScenario(scenarioID)},
-		active: &domain.Attempt{ID: attemptID, ScenarioID: scenarioID, State: domain.State{SceneIndex: 1}},
+		byID:   map[uuid.UUID]models.Scenario{scenarioID: testScenario(scenarioID)},
+		active: &models.Attempt{ID: attemptID, ScenarioID: scenarioID, State: models.State{SceneIndex: 1}},
 	}
 
 	result, err := training.New(repo, nil).Start(context.Background(), mustUserID(t), scenarioID)
@@ -101,8 +101,8 @@ func TestStartRejectsActiveAttemptOutsideScenes(t *testing.T) {
 	t.Parallel()
 	scenarioID := uuid.New()
 	repo := &repositoryStub{
-		byID:   map[uuid.UUID]domain.Scenario{scenarioID: testScenario(scenarioID)},
-		active: &domain.Attempt{ID: uuid.New(), ScenarioID: scenarioID, State: domain.State{SceneIndex: 99}},
+		byID:   map[uuid.UUID]models.Scenario{scenarioID: testScenario(scenarioID)},
+		active: &models.Attempt{ID: uuid.New(), ScenarioID: scenarioID, State: models.State{SceneIndex: 99}},
 	}
 
 	_, err := training.New(repo, nil).Start(context.Background(), mustUserID(t), scenarioID)
@@ -118,7 +118,7 @@ func TestStartPropagatesErrors(t *testing.T) {
 	t.Parallel()
 	scenarioID := uuid.New()
 	withScenario := func(mutate func(*repositoryStub)) *repositoryStub {
-		repo := &repositoryStub{byID: map[uuid.UUID]domain.Scenario{scenarioID: testScenario(scenarioID)}}
+		repo := &repositoryStub{byID: map[uuid.UUID]models.Scenario{scenarioID: testScenario(scenarioID)}}
 		mutate(repo)
 		return repo
 	}
@@ -142,7 +142,7 @@ func TestStartRejectsStoredScenarioWithoutScenes(t *testing.T) {
 	scenarioID := uuid.New()
 	broken := testScenario(scenarioID)
 	broken.Doc.Scenes = nil
-	repo := &repositoryStub{byID: map[uuid.UUID]domain.Scenario{scenarioID: broken}}
+	repo := &repositoryStub{byID: map[uuid.UUID]models.Scenario{scenarioID: broken}}
 
 	_, err := training.New(repo, nil).Start(context.Background(), mustUserID(t), scenarioID)
 	if !errors.Is(err, domainErrors.ErrInvalidScenario) {
@@ -155,8 +155,8 @@ func TestChooseSavesStepAndReturnsNextScene(t *testing.T) {
 	userID := mustUserID(t)
 	scenarioID, attemptID := uuid.New(), uuid.New()
 	repo := &repositoryStub{
-		byID:    map[uuid.UUID]domain.Scenario{scenarioID: testScenario(scenarioID)},
-		attempt: &domain.Attempt{ID: attemptID, UserID: userID, ScenarioID: scenarioID, Status: domain.AttemptInProgress},
+		byID:    map[uuid.UUID]models.Scenario{scenarioID: testScenario(scenarioID)},
+		attempt: &models.Attempt{ID: attemptID, UserID: userID, ScenarioID: scenarioID, Status: models.AttemptInProgress},
 	}
 
 	result, err := training.New(repo, nil).Choose(context.Background(), userID, attemptID, "s1", "a1", 0)
@@ -189,10 +189,10 @@ func TestChooseFinishesAttemptAndAttachesSummary(t *testing.T) {
 	scenarioID, attemptID := uuid.New(), uuid.New()
 	best := 40
 	repo := &repositoryStub{
-		byID: map[uuid.UUID]domain.Scenario{scenarioID: testScenario(scenarioID)},
-		attempt: &domain.Attempt{
+		byID: map[uuid.UUID]models.Scenario{scenarioID: testScenario(scenarioID)},
+		attempt: &models.Attempt{
 			ID: attemptID, UserID: userID, ScenarioID: scenarioID,
-			Status: domain.AttemptInProgress, State: domain.State{SceneIndex: 2, Earned: 3},
+			Status: models.AttemptInProgress, State: models.State{SceneIndex: 2, Earned: 3},
 		},
 		journal: steps([2]string{"s1", "a1"}, [2]string{"s2", "b1"}, [2]string{"s3", "c1"}),
 		best:    &best,
@@ -205,16 +205,16 @@ func TestChooseFinishesAttemptAndAttachesSummary(t *testing.T) {
 	if !result.Finished || result.Summary == nil {
 		t.Fatalf("unexpected result: %+v", result)
 	}
-	if result.Summary.Score != 100 || result.Summary.Outcome != domain.OutcomeSafe {
+	if result.Summary.Score != 100 || result.Summary.Outcome != models.OutcomeSafe {
 		t.Fatalf("unexpected summary: %+v", result.Summary)
 	}
 	if result.Summary.DeltaVsPrevious == nil || *result.Summary.DeltaVsPrevious != 60 {
 		t.Fatalf("delta against previous best is wrong: %+v", result.Summary.DeltaVsPrevious)
 	}
-	if repo.finishCalls != 1 || repo.finishedScore != 100 || repo.finishedOutcome != domain.OutcomeSafe {
+	if repo.finishCalls != 1 || repo.finishedScore != 100 || repo.finishedOutcome != models.OutcomeSafe {
 		t.Fatalf("attempt was not finished properly: calls=%d score=%d", repo.finishCalls, repo.finishedScore)
 	}
-	if len(repo.savedAttempts) != 1 || repo.savedAttempts[0].Status != domain.AttemptFinished {
+	if len(repo.savedAttempts) != 1 || repo.savedAttempts[0].Status != models.AttemptFinished {
 		t.Fatalf("saved attempt must be marked finished: %+v", repo.savedAttempts)
 	}
 }
@@ -225,8 +225,8 @@ func TestChooseRejectsForeignAndFinishedAttempts(t *testing.T) {
 	userID := mustUserID(t)
 
 	foreign := &repositoryStub{
-		byID:    map[uuid.UUID]domain.Scenario{scenarioID: testScenario(scenarioID)},
-		attempt: &domain.Attempt{ID: attemptID, UserID: mustUserID(t), ScenarioID: scenarioID},
+		byID:    map[uuid.UUID]models.Scenario{scenarioID: testScenario(scenarioID)},
+		attempt: &models.Attempt{ID: attemptID, UserID: mustUserID(t), ScenarioID: scenarioID},
 	}
 	_, err := training.New(foreign, nil).Choose(context.Background(), userID, attemptID, "s1", "a1", 0)
 	if !errors.Is(err, domainErrors.ErrForbidden) {
@@ -234,8 +234,8 @@ func TestChooseRejectsForeignAndFinishedAttempts(t *testing.T) {
 	}
 
 	finished := &repositoryStub{
-		byID:    map[uuid.UUID]domain.Scenario{scenarioID: testScenario(scenarioID)},
-		attempt: &domain.Attempt{ID: attemptID, UserID: userID, ScenarioID: scenarioID, Status: domain.AttemptFinished},
+		byID:    map[uuid.UUID]models.Scenario{scenarioID: testScenario(scenarioID)},
+		attempt: &models.Attempt{ID: attemptID, UserID: userID, ScenarioID: scenarioID, Status: models.AttemptFinished},
 	}
 	_, err = training.New(finished, nil).Choose(context.Background(), userID, attemptID, "s1", "a1", 0)
 	if !errors.Is(err, domainErrors.ErrAttemptFinished) {
@@ -250,10 +250,10 @@ func TestChoosePropagatesErrors(t *testing.T) {
 
 	base := func(mutate func(*repositoryStub)) *repositoryStub {
 		repo := &repositoryStub{
-			byID: map[uuid.UUID]domain.Scenario{scenarioID: testScenario(scenarioID)},
-			attempt: &domain.Attempt{
+			byID: map[uuid.UUID]models.Scenario{scenarioID: testScenario(scenarioID)},
+			attempt: &models.Attempt{
 				ID: attemptID, UserID: userID, ScenarioID: scenarioID,
-				Status: domain.AttemptInProgress, State: domain.State{SceneIndex: 2},
+				Status: models.AttemptInProgress, State: models.State{SceneIndex: 2},
 			},
 			journal: steps([2]string{"s3", "c1"}),
 		}
@@ -294,8 +294,8 @@ func TestSummaryReturnsResultWithDelta(t *testing.T) {
 	scenarioID, attemptID := uuid.New(), uuid.New()
 	best := 30
 	repo := &repositoryStub{
-		byID:    map[uuid.UUID]domain.Scenario{scenarioID: testScenario(scenarioID)},
-		attempt: &domain.Attempt{ID: attemptID, UserID: userID, ScenarioID: scenarioID, Status: domain.AttemptFinished},
+		byID:    map[uuid.UUID]models.Scenario{scenarioID: testScenario(scenarioID)},
+		attempt: &models.Attempt{ID: attemptID, UserID: userID, ScenarioID: scenarioID, Status: models.AttemptFinished},
 		journal: steps([2]string{"s1", "a2"}, [2]string{"s2", "b1"}, [2]string{"s3", "c1"}),
 		best:    &best,
 	}
@@ -304,7 +304,7 @@ func TestSummaryReturnsResultWithDelta(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if result.Score != 75 || result.Outcome != domain.OutcomePartial || len(result.MissedFlags) != 1 {
+	if result.Score != 75 || result.Outcome != models.OutcomePartial || len(result.MissedFlags) != 1 {
 		t.Fatalf("unexpected summary: %+v", result)
 	}
 	if result.DeltaVsPrevious == nil || *result.DeltaVsPrevious != 45 {
@@ -317,8 +317,8 @@ func TestSummaryWithoutPreviousAttemptsHasNoDelta(t *testing.T) {
 	userID := mustUserID(t)
 	scenarioID, attemptID := uuid.New(), uuid.New()
 	repo := &repositoryStub{
-		byID:    map[uuid.UUID]domain.Scenario{scenarioID: testScenario(scenarioID)},
-		attempt: &domain.Attempt{ID: attemptID, UserID: userID, ScenarioID: scenarioID, Status: domain.AttemptFinished},
+		byID:    map[uuid.UUID]models.Scenario{scenarioID: testScenario(scenarioID)},
+		attempt: &models.Attempt{ID: attemptID, UserID: userID, ScenarioID: scenarioID, Status: models.AttemptFinished},
 	}
 
 	result, err := training.New(repo, nil).Summary(context.Background(), userID, attemptID)
@@ -337,8 +337,8 @@ func TestSummaryPropagatesErrors(t *testing.T) {
 
 	base := func(mutate func(*repositoryStub)) *repositoryStub {
 		repo := &repositoryStub{
-			byID:    map[uuid.UUID]domain.Scenario{scenarioID: testScenario(scenarioID)},
-			attempt: &domain.Attempt{ID: attemptID, UserID: userID, ScenarioID: scenarioID, Status: domain.AttemptFinished},
+			byID:    map[uuid.UUID]models.Scenario{scenarioID: testScenario(scenarioID)},
+			attempt: &models.Attempt{ID: attemptID, UserID: userID, ScenarioID: scenarioID, Status: models.AttemptFinished},
 		}
 		mutate(repo)
 		return repo

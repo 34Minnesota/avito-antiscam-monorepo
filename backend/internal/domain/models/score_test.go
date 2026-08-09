@@ -1,12 +1,12 @@
-package domain_test
+package models_test
 
 import (
 	"errors"
 	"math"
 	"testing"
 
-	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
 	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
+	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/models"
 )
 
 func TestNewScoreValidation(t *testing.T) {
@@ -23,7 +23,7 @@ func TestNewScoreValidation(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			_, err := domain.NewScore(tt.points, tt.max)
+			_, err := models.NewScore(tt.points, tt.max)
 			if !errors.Is(err, tt.want) {
 				t.Fatalf("got %v, want %v", err, tt.want)
 			}
@@ -33,7 +33,7 @@ func TestNewScoreValidation(t *testing.T) {
 
 func TestScorePercentDoesNotOverflow(t *testing.T) {
 	t.Parallel()
-	score, err := domain.NewScore(math.MaxInt, math.MaxInt)
+	score, err := models.NewScore(math.MaxInt, math.MaxInt)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -44,7 +44,7 @@ func TestScorePercentDoesNotOverflow(t *testing.T) {
 
 func TestScoreApplyAndPercent(t *testing.T) {
 	t.Parallel()
-	score, err := domain.NewScore(691, 1000)
+	score, err := models.NewScore(691, 1000)
 	if err != nil {
 		t.Fatal(err)
 	}

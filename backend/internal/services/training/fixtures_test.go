@@ -7,66 +7,66 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
 	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
+	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/models"
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/training"
 )
 
-func testDoc() domain.ScenarioDoc {
-	return domain.ScenarioDoc{
+func testDoc() models.ScenarioDoc {
+	return models.ScenarioDoc{
 		Version:     1,
 		Slug:        "test-scenario",
-		Role:        domain.RoleSeller,
+		Role:        models.RoleSeller,
 		Category:    "test",
 		Difficulty:  2,
 		Title:       "Тестовый сценарий",
 		Description: "Описание",
-		Listing:     domain.Listing{Title: "Товар", Price: 100, Location: "Москва"},
-		Counterpart: domain.Counterpart{Name: "Игорь", Rating: 4.5, Reviews: 10},
-		Scenes: []domain.Scene{
+		Listing:     models.Listing{Title: "Товар", Price: 100, Location: "Москва"},
+		Counterpart: models.Counterpart{Name: "Игорь", Rating: 4.5, Reviews: 10},
+		Scenes: []models.Scene{
 			{
 				ID:     "s1",
 				Weight: 1,
-				Intro:  []domain.Message{{Author: domain.AuthorCounterpart, Text: "Привет"}},
-				Decision: domain.Decision{
+				Intro:  []models.Message{{Author: models.AuthorCounterpart, Text: "Привет"}},
+				Decision: models.Decision{
 					Prompt: "Что делать?",
-					Options: []domain.Option{
-						{ID: "a1", Text: "Безопасно", Verdict: domain.VerdictSafe, Feedback: "ок"},
-						{ID: "a2", Text: "Рискованно", Verdict: domain.VerdictRisky, Flag: "f1", Feedback: "так себе"},
-						{ID: "a3", Text: "Провал", Verdict: domain.VerdictFatal, Flag: "f2", Ending: "lost", Feedback: "плохо"},
+					Options: []models.Option{
+						{ID: "a1", Text: "Безопасно", Verdict: models.VerdictSafe, Feedback: "ок"},
+						{ID: "a2", Text: "Рискованно", Verdict: models.VerdictRisky, Flag: "f1", Feedback: "так себе"},
+						{ID: "a3", Text: "Провал", Verdict: models.VerdictFatal, Flag: "f2", Ending: "lost", Feedback: "плохо"},
 					},
 				},
 			},
 			{
 				ID:     "s2",
 				Weight: 2,
-				Decision: domain.Decision{
+				Decision: models.Decision{
 					Prompt: "И теперь?",
-					Options: []domain.Option{
-						{ID: "b1", Text: "Безопасно", Verdict: domain.VerdictSafe, Feedback: "ок"},
-						{ID: "b2", Text: "Рискованно", Verdict: domain.VerdictRisky, Flag: "f1", Feedback: "так себе"},
+					Options: []models.Option{
+						{ID: "b1", Text: "Безопасно", Verdict: models.VerdictSafe, Feedback: "ок"},
+						{ID: "b2", Text: "Рискованно", Verdict: models.VerdictRisky, Flag: "f1", Feedback: "так себе"},
 					},
 				},
 			},
 			{
 				ID:     "s3",
 				Weight: 1,
-				Decision: domain.Decision{
+				Decision: models.Decision{
 					Prompt: "Финал",
-					Options: []domain.Option{
-						{ID: "c1", Text: "Безопасно", Verdict: domain.VerdictSafe, Feedback: "ок"},
-						{ID: "c2", Text: "Рискованно", Verdict: domain.VerdictRisky, Flag: "ghost", Feedback: "так себе"},
+					Options: []models.Option{
+						{ID: "c1", Text: "Безопасно", Verdict: models.VerdictSafe, Feedback: "ок"},
+						{ID: "c2", Text: "Рискованно", Verdict: models.VerdictRisky, Flag: "ghost", Feedback: "так себе"},
 					},
 				},
 			},
 		},
-		Endings: map[string]domain.Ending{
-			"safe":    {Outcome: domain.OutcomeSafe, Title: "Чисто", Text: "Молодец"},
-			"partial": {Outcome: domain.OutcomePartial, Title: "Почти", Text: "Бывает"},
-			"lost":    {Outcome: domain.OutcomeScammed, Title: "Обманули", Text: "Увы"},
+		Endings: map[string]models.Ending{
+			"safe":    {Outcome: models.OutcomeSafe, Title: "Чисто", Text: "Молодец"},
+			"partial": {Outcome: models.OutcomePartial, Title: "Почти", Text: "Бывает"},
+			"lost":    {Outcome: models.OutcomeScammed, Title: "Обманули", Text: "Увы"},
 		},
-		Debrief: domain.Debrief{
-			KeyFlags: []domain.FlagInfo{
+		Debrief: models.Debrief{
+			KeyFlags: []models.FlagInfo{
 				{ID: "f1", Title: "Первый", Text: "Описание первого"},
 				{ID: "f2", Title: "Второй", Text: "Описание второго"},
 			},
@@ -75,21 +75,21 @@ func testDoc() domain.ScenarioDoc {
 	}
 }
 
-func testScenario(id uuid.UUID) domain.Scenario {
-	return domain.Scenario{ID: id, IsActive: true, Doc: testDoc()}
+func testScenario(id uuid.UUID) models.Scenario {
+	return models.Scenario{ID: id, IsActive: true, Doc: testDoc()}
 }
 
-func steps(pairs ...[2]string) []domain.AttemptStep {
-	out := make([]domain.AttemptStep, 0, len(pairs))
+func steps(pairs ...[2]string) []models.AttemptStep {
+	out := make([]models.AttemptStep, 0, len(pairs))
 	for _, p := range pairs {
-		out = append(out, domain.AttemptStep{SceneID: p[0], OptionID: p[1]})
+		out = append(out, models.AttemptStep{SceneID: p[0], OptionID: p[1]})
 	}
 	return out
 }
 
-func mustUserID(t *testing.T) domain.UserID {
+func mustUserID(t *testing.T) models.UserID {
 	t.Helper()
-	id, err := domain.NewUserID(uuid.New())
+	id, err := models.NewUserID(uuid.New())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -97,12 +97,12 @@ func mustUserID(t *testing.T) domain.UserID {
 }
 
 type repositoryStub struct {
-	scenarios []domain.Scenario
-	byID      map[uuid.UUID]domain.Scenario
+	scenarios []models.Scenario
+	byID      map[uuid.UUID]models.Scenario
 	stats     map[uuid.UUID]training.ScenarioStats
-	active    *domain.Attempt
-	attempt   *domain.Attempt
-	journal   []domain.AttemptStep
+	active    *models.Attempt
+	attempt   *models.Attempt
+	journal   []models.AttemptStep
 	best      *int
 
 	listErr    error
@@ -117,16 +117,16 @@ type repositoryStub struct {
 	bestErr    error
 	upsertErr  error
 
-	created         []domain.Attempt
-	savedSteps      []domain.AttemptStep
-	savedAttempts   []domain.Attempt
-	upserted        []domain.Scenario
+	created         []models.Attempt
+	savedSteps      []models.AttemptStep
+	savedAttempts   []models.Attempt
+	upserted        []models.Scenario
 	finishCalls     int
 	finishedScore   int
-	finishedOutcome domain.Outcome
+	finishedOutcome models.Outcome
 }
 
-func (r *repositoryStub) UpsertScenario(_ context.Context, s domain.Scenario) error {
+func (r *repositoryStub) UpsertScenario(_ context.Context, s models.Scenario) error {
 	if r.upsertErr != nil {
 		return r.upsertErr
 	}
@@ -134,25 +134,25 @@ func (r *repositoryStub) UpsertScenario(_ context.Context, s domain.Scenario) er
 	return nil
 }
 
-func (r *repositoryStub) ListScenarios(_ context.Context, _ domain.Role) ([]domain.Scenario, error) {
+func (r *repositoryStub) ListScenarios(_ context.Context, _ models.Role) ([]models.Scenario, error) {
 	return r.scenarios, r.listErr
 }
 
-func (r *repositoryStub) ScenarioByID(_ context.Context, id uuid.UUID) (domain.Scenario, error) {
+func (r *repositoryStub) ScenarioByID(_ context.Context, id uuid.UUID) (models.Scenario, error) {
 	if r.byIDErr != nil {
-		return domain.Scenario{}, r.byIDErr
+		return models.Scenario{}, r.byIDErr
 	}
 	if s, ok := r.byID[id]; ok {
 		return s, nil
 	}
-	return domain.Scenario{}, domainErrors.ErrNotFound
+	return models.Scenario{}, domainErrors.ErrNotFound
 }
 
-func (r *repositoryStub) ScenarioStats(_ context.Context, _ domain.UserID) (map[uuid.UUID]training.ScenarioStats, error) {
+func (r *repositoryStub) ScenarioStats(_ context.Context, _ models.UserID) (map[uuid.UUID]training.ScenarioStats, error) {
 	return r.stats, r.statsErr
 }
 
-func (r *repositoryStub) CreateAttempt(_ context.Context, a domain.Attempt) error {
+func (r *repositoryStub) CreateAttempt(_ context.Context, a models.Attempt) error {
 	if r.createErr != nil {
 		return r.createErr
 	}
@@ -160,31 +160,31 @@ func (r *repositoryStub) CreateAttempt(_ context.Context, a domain.Attempt) erro
 	return nil
 }
 
-func (r *repositoryStub) AttemptByID(_ context.Context, _ uuid.UUID) (domain.Attempt, error) {
+func (r *repositoryStub) AttemptByID(_ context.Context, _ uuid.UUID) (models.Attempt, error) {
 	if r.attemptErr != nil {
-		return domain.Attempt{}, r.attemptErr
+		return models.Attempt{}, r.attemptErr
 	}
 	if r.attempt == nil {
-		return domain.Attempt{}, domainErrors.ErrNotFound
+		return models.Attempt{}, domainErrors.ErrNotFound
 	}
 	return *r.attempt, nil
 }
 
-func (r *repositoryStub) ActiveAttempt(_ context.Context, _ domain.UserID, _ uuid.UUID) (domain.Attempt, error) {
+func (r *repositoryStub) ActiveAttempt(_ context.Context, _ models.UserID, _ uuid.UUID) (models.Attempt, error) {
 	if r.activeErr != nil {
-		return domain.Attempt{}, r.activeErr
+		return models.Attempt{}, r.activeErr
 	}
 	if r.active == nil {
-		return domain.Attempt{}, domainErrors.ErrNotFound
+		return models.Attempt{}, domainErrors.ErrNotFound
 	}
 	return *r.active, nil
 }
 
 func (r *repositoryStub) SaveStep(
 	_ context.Context,
-	step domain.AttemptStep,
-	a domain.Attempt,
-	_ domain.UserID,
+	step models.AttemptStep,
+	a models.Attempt,
+	_ models.UserID,
 	expectedRevision int,
 ) (int, error) {
 	if r.saveErr != nil {
@@ -199,7 +199,7 @@ func (r *repositoryStub) FinishAttempt(
 	_ context.Context,
 	_ uuid.UUID,
 	score int,
-	outcome domain.Outcome,
+	outcome models.Outcome,
 	_ time.Time,
 ) error {
 	if r.finishErr != nil {
@@ -211,10 +211,10 @@ func (r *repositoryStub) FinishAttempt(
 	return nil
 }
 
-func (r *repositoryStub) Steps(_ context.Context, _ uuid.UUID) ([]domain.AttemptStep, error) {
+func (r *repositoryStub) Steps(_ context.Context, _ uuid.UUID) ([]models.AttemptStep, error) {
 	return r.journal, r.stepsErr
 }
 
-func (r *repositoryStub) BestScore(_ context.Context, _ domain.UserID, _, _ uuid.UUID) (*int, error) {
+func (r *repositoryStub) BestScore(_ context.Context, _ models.UserID, _, _ uuid.UUID) (*int, error) {
 	return r.best, r.bestErr
 }

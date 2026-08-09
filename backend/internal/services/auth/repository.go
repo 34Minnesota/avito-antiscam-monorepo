@@ -5,7 +5,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
+	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/models"
 )
 
 // Repository описывает контракт хранения пользовательских сессий.
@@ -14,13 +14,13 @@ type Repository interface {
 	CreateSession(
 		ctx context.Context,
 		userID uuid.UUID,
-	) (domain.Session, error)
+	) (models.Session, error)
 
 	// GetSession возвращает сессию по ID.
 	GetSession(
 		ctx context.Context,
 		sessionID uuid.UUID,
-	) (domain.Session, error)
+	) (models.Session, error)
 
 	// UpdateLastSeen обновляет время последней активности.
 	UpdateLastSeen(

@@ -713,7 +713,7 @@ const docTemplate = `{
         "httptransport.LoginResponse": {
             "type": "object",
             "properties": {
-                "sessionId": {
+                "session_id": {
                     "type": "string"
                 }
             }
@@ -745,7 +745,7 @@ const docTemplate = `{
         "httptransport.RegisterResponse": {
             "type": "object",
             "properties": {
-                "sessionId": {
+                "session_id": {
                     "type": "string"
                 }
             }
@@ -792,10 +792,10 @@ const docTemplate = `{
         "httptransport.completedAttemptResultResponse": {
             "type": "object",
             "properties": {
-                "attemptId": {
+                "attempt_id": {
                     "type": "string"
                 },
-                "completedAt": {
+                "completed_at": {
                     "type": "string"
                 },
                 "outcome": {
@@ -809,16 +809,16 @@ const docTemplate = `{
         "httptransport.progressResponse": {
             "type": "object",
             "properties": {
-                "completedScenarios": {
+                "completed_scenarios": {
                     "type": "integer"
                 },
-                "completionPercent": {
+                "completion_percent": {
                     "type": "integer"
                 },
-                "passedPercent": {
+                "passed_percent": {
                     "type": "integer"
                 },
-                "passedScenarios": {
+                "passed_scenarios": {
                     "type": "integer"
                 },
                 "recommendations": {
@@ -827,7 +827,7 @@ const docTemplate = `{
                         "$ref": "#/definitions/httptransport.recommendationResponse"
                     }
                 },
-                "roleComparison": {
+                "role_comparison": {
                     "$ref": "#/definitions/httptransport.roleComparisonResponse"
                 },
                 "roles": {
@@ -836,7 +836,7 @@ const docTemplate = `{
                         "$ref": "#/definitions/httptransport.roleProgressResponse"
                     }
                 },
-                "totalScenarios": {
+                "total_scenarios": {
                     "type": "integer"
                 }
             }
@@ -844,13 +844,13 @@ const docTemplate = `{
         "httptransport.recommendationResponse": {
             "type": "object",
             "properties": {
-                "reasonCode": {
+                "reason_code": {
                     "type": "string"
                 },
-                "reasonText": {
+                "reason_text": {
                     "type": "string"
                 },
-                "scenarioSlug": {
+                "scenario_slug": {
                     "type": "string"
                 }
             }
@@ -858,10 +858,10 @@ const docTemplate = `{
         "httptransport.roleComparisonResponse": {
             "type": "object",
             "properties": {
-                "completionPercentDelta": {
+                "completion_percent_delta": {
                     "type": "integer"
                 },
-                "passedPercentDelta": {
+                "passed_percent_delta": {
                     "type": "integer"
                 }
             }
@@ -869,16 +869,16 @@ const docTemplate = `{
         "httptransport.roleProgressResponse": {
             "type": "object",
             "properties": {
-                "completedScenarios": {
+                "completed_scenarios": {
                     "type": "integer"
                 },
-                "completionPercent": {
+                "completion_percent": {
                     "type": "integer"
                 },
-                "passedPercent": {
+                "passed_percent": {
                     "type": "integer"
                 },
-                "passedScenarios": {
+                "passed_scenarios": {
                     "type": "integer"
                 },
                 "role": {
@@ -890,7 +890,7 @@ const docTemplate = `{
                         "$ref": "#/definitions/httptransport.scenarioProgressResponse"
                     }
                 },
-                "totalScenarios": {
+                "total_scenarios": {
                     "type": "integer"
                 }
             }
@@ -898,40 +898,40 @@ const docTemplate = `{
         "httptransport.scenarioProgressResponse": {
             "type": "object",
             "properties": {
-                "activeAttemptId": {
+                "active_attempt_id": {
                     "type": "string"
                 },
-                "attemptsCount": {
+                "attempts_count": {
                     "type": "integer"
                 },
-                "bestScore": {
+                "best_score": {
                     "$ref": "#/definitions/httptransport.scoreResponse"
                 },
                 "completed": {
                     "type": "boolean"
                 },
-                "firstSafeAttempt": {
+                "first_safe_attempt": {
                     "$ref": "#/definitions/httptransport.completedAttemptResultResponse"
                 },
-                "improvementPercentPoints": {
+                "improvement_percent_points": {
                     "type": "integer"
                 },
-                "initialScore": {
+                "initial_score": {
                     "$ref": "#/definitions/httptransport.scoreResponse"
                 },
-                "latestScore": {
+                "latest_score": {
                     "$ref": "#/definitions/httptransport.scoreResponse"
                 },
                 "passed": {
                     "type": "boolean"
                 },
-                "recentAttempts": {
+                "recent_attempts": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/httptransport.completedAttemptResultResponse"
                     }
                 },
-                "scenarioSlug": {
+                "scenario_slug": {
                     "type": "string"
                 },
                 "title": {
@@ -945,7 +945,7 @@ const docTemplate = `{
         "httptransport.scoreResponse": {
             "type": "object",
             "properties": {
-                "maxPoints": {
+                "max_points": {
                     "type": "integer"
                 },
                 "percent": {

@@ -62,9 +62,9 @@ func TestProgressHandlerMapsRecommendations(t *testing.T) {
 
 	var body struct {
 		Recommendations []struct {
-			ScenarioSlug string `json:"scenarioSlug"`
-			ReasonCode   string `json:"reasonCode"`
-			ReasonText   string `json:"reasonText"`
+			ScenarioSlug string `json:"scenario_slug"`
+			ReasonCode   string `json:"reason_code"`
+			ReasonText   string `json:"reason_text"`
 		} `json:"recommendations"`
 	}
 	if err := json.Unmarshal(response.Body.Bytes(), &body); err != nil {
@@ -117,14 +117,14 @@ func TestProgressHandlerMapsScenarioDynamics(t *testing.T) {
 		t.Fatalf("unexpected body: %s", response.Body.String())
 	}
 	scenario := body.Roles[0].Scenarios[0]
-	for _, field := range []string{"initialScore", "latestScore", "improvementPercentPoints", "trend"} {
+	for _, field := range []string{"initial_score", "latest_score", "improvement_percent_points", "trend"} {
 		if _, ok := scenario[field]; !ok {
 			t.Fatalf("missing %q in %s", field, response.Body.String())
 		}
 	}
 	var delta int
-	if err := json.Unmarshal(scenario["improvementPercentPoints"], &delta); err != nil || delta != 36 {
-		t.Fatalf("delta = %s, error = %v", scenario["improvementPercentPoints"], err)
+	if err := json.Unmarshal(scenario["improvement_percent_points"], &delta); err != nil || delta != 36 {
+		t.Fatalf("delta = %s, error = %v", scenario["improvement_percent_points"], err)
 	}
 	var gotTrend string
 	if err := json.Unmarshal(scenario["trend"], &gotTrend); err != nil || gotTrend != "improving" {

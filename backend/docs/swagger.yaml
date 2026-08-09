@@ -147,7 +147,7 @@ definitions:
     type: object
   httptransport.LoginResponse:
     properties:
-      sessionId:
+      session_id:
         type: string
     type: object
   httptransport.RegisterRequest:
@@ -170,7 +170,7 @@ definitions:
     type: object
   httptransport.RegisterResponse:
     properties:
-      sessionId:
+      session_id:
         type: string
     type: object
   httptransport.ScenariosResponse:
@@ -200,9 +200,9 @@ definitions:
     type: object
   httptransport.completedAttemptResultResponse:
     properties:
-      attemptId:
+      attempt_id:
         type: string
-      completedAt:
+      completed_at:
         type: string
       outcome:
         $ref: '#/definitions/domain.Outcome'
@@ -211,52 +211,52 @@ definitions:
     type: object
   httptransport.progressResponse:
     properties:
-      completedScenarios:
+      completed_scenarios:
         type: integer
-      completionPercent:
+      completion_percent:
         type: integer
-      passedPercent:
+      passed_percent:
         type: integer
-      passedScenarios:
+      passed_scenarios:
         type: integer
       recommendations:
         items:
           $ref: '#/definitions/httptransport.recommendationResponse'
         type: array
-      roleComparison:
+      role_comparison:
         $ref: '#/definitions/httptransport.roleComparisonResponse'
       roles:
         items:
           $ref: '#/definitions/httptransport.roleProgressResponse'
         type: array
-      totalScenarios:
+      total_scenarios:
         type: integer
     type: object
   httptransport.recommendationResponse:
     properties:
-      reasonCode:
+      reason_code:
         type: string
-      reasonText:
+      reason_text:
         type: string
-      scenarioSlug:
+      scenario_slug:
         type: string
     type: object
   httptransport.roleComparisonResponse:
     properties:
-      completionPercentDelta:
+      completion_percent_delta:
         type: integer
-      passedPercentDelta:
+      passed_percent_delta:
         type: integer
     type: object
   httptransport.roleProgressResponse:
     properties:
-      completedScenarios:
+      completed_scenarios:
         type: integer
-      completionPercent:
+      completion_percent:
         type: integer
-      passedPercent:
+      passed_percent:
         type: integer
-      passedScenarios:
+      passed_scenarios:
         type: integer
       role:
         $ref: '#/definitions/domain.Role'
@@ -264,34 +264,34 @@ definitions:
         items:
           $ref: '#/definitions/httptransport.scenarioProgressResponse'
         type: array
-      totalScenarios:
+      total_scenarios:
         type: integer
     type: object
   httptransport.scenarioProgressResponse:
     properties:
-      activeAttemptId:
+      active_attempt_id:
         type: string
-      attemptsCount:
+      attempts_count:
         type: integer
-      bestScore:
+      best_score:
         $ref: '#/definitions/httptransport.scoreResponse'
       completed:
         type: boolean
-      firstSafeAttempt:
+      first_safe_attempt:
         $ref: '#/definitions/httptransport.completedAttemptResultResponse'
-      improvementPercentPoints:
+      improvement_percent_points:
         type: integer
-      initialScore:
+      initial_score:
         $ref: '#/definitions/httptransport.scoreResponse'
-      latestScore:
+      latest_score:
         $ref: '#/definitions/httptransport.scoreResponse'
       passed:
         type: boolean
-      recentAttempts:
+      recent_attempts:
         items:
           $ref: '#/definitions/httptransport.completedAttemptResultResponse'
         type: array
-      scenarioSlug:
+      scenario_slug:
         type: string
       title:
         type: string
@@ -300,7 +300,7 @@ definitions:
     type: object
   httptransport.scoreResponse:
     properties:
-      maxPoints:
+      max_points:
         type: integer
       percent:
         type: integer

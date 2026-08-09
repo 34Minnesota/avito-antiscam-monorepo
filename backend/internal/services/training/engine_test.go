@@ -50,6 +50,37 @@ func TestAdvanceSafeOptionAddsWeightAndMovesOn(t *testing.T) {
 	}
 }
 
+// Диалог должен читаться подряд: сначала то, что написал пользователь,
+// потом ответ собеседника.
+func TestAdvanceStartsReactionWithUserReply(t *testing.T) {
+	t.Parallel()
+	tr, err := training.Advance(testDoc(), models.State{}, "s1", "a1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(tr.Reaction) != 2 {
+		t.Fatalf("reaction = %+v", tr.Reaction)
+	}
+	if tr.Reaction[0].Author != models.AuthorUser || tr.Reaction[0].Text != "Пишу безопасно" {
+		t.Fatalf("first message must be the user reply: %+v", tr.Reaction[0])
+	}
+	if tr.Reaction[1].Author != models.AuthorCounterpart {
+		t.Fatalf("counterpart answer must follow: %+v", tr.Reaction[1])
+	}
+}
+
+// Даже без ответа собеседника реплика пользователя попадает в чат.
+func TestAdvanceKeepsUserReplyWithoutCounterpartAnswer(t *testing.T) {
+	t.Parallel()
+	tr, err := training.Advance(testDoc(), models.State{}, "s1", "a3")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(tr.Reaction) != 1 || tr.Reaction[0].Text != "Пишу провал" {
+		t.Fatalf("reaction = %+v", tr.Reaction)
+	}
+}
+
 func TestAdvanceRiskyOptionRecordsFlagWithoutWeight(t *testing.T) {
 	t.Parallel()
 	tr, err := training.Advance(testDoc(), models.State{}, "s1", "a2")

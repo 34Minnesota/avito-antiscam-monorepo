@@ -90,6 +90,7 @@ func TestRepositoryPostgres(t *testing.T) {
 
 	t.Run("UpsertScenario accepts a repeated identical document", env.upsertIsIdempotent)
 	t.Run("UpsertScenario rejects a changed document", env.upsertRejectsChangedDocument)
+	t.Run("UpsertScenario applies a newer version", env.upsertAppliesNewerVersion)
 	t.Run("ListScenarios filters by role", env.listFiltersByRole)
 	t.Run("ScenarioByID reports missing scenario", env.scenarioNotFound)
 	t.Run("CreateAttempt stores a fresh attempt", env.createAttempt)
@@ -145,6 +146,32 @@ func (e *repoEnv) upsertRejectsChangedDocument(t *testing.T) {
 	}
 	if stored.Doc.Difficulty == changed.Doc.Difficulty {
 		t.Fatalf("difficulty was changed: %d", stored.Doc.Difficulty)
+	}
+}
+
+// Правка контента доезжает обычным сидом, если в документе поднят version.
+func (e *repoEnv) upsertAppliesNewerVersion(t *testing.T) {
+	updated := scenario(uuid.New(), "buyer-one", models.RoleBuyer, 1)
+	updated.Doc.Version = 2
+	updated.Doc.Title = "Updated scenario"
+
+	if err := e.repo.UpsertScenario(e.ctx, updated); err != nil {
+		t.Fatal(err)
+	}
+
+	stored, err := e.repo.ScenarioByID(e.ctx, e.buyerID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Строка обновляется на месте: id прежний, ссылки из attempts не рвутся.
+	if stored.ID != e.buyerID {
+		t.Fatalf("scenario id = %s, want %s", stored.ID, e.buyerID)
+	}
+	if stored.Doc.Title != "Updated scenario" {
+		t.Fatalf("title = %q", stored.Doc.Title)
+	}
+	if stored.Doc.Version != 2 {
+		t.Fatalf("version = %d", stored.Doc.Version)
 	}
 }
 

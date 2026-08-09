@@ -35,10 +35,17 @@ func (r *Repository) UpsertScenario(ctx context.Context, s models.Scenario) erro
 		return fmt.Errorf("scenario serializing %s: %w", s.Doc.Slug, err)
 	}
 
+	// Документ обновляется только при возросшем version. Так правка контента
+	// доезжает обычным сидом, но случайное расхождение на той же версии
+	// по-прежнему считается ошибкой и разбирается ниже.
 	const insert = `
 		INSERT INTO scenarios (id, doc)
 		VALUES ($1, $2)
-		ON CONFLICT (slug) DO NOTHING
+		ON CONFLICT (slug) DO UPDATE SET
+			doc        = EXCLUDED.doc,
+			updated_at = now()
+		WHERE COALESCE((scenarios.doc ->> 'version')::int, 0)
+		    < COALESCE((EXCLUDED.doc  ->> 'version')::int, 0)
 		RETURNING id`
 
 	var id uuid.UUID

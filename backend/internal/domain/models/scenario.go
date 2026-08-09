@@ -100,6 +100,7 @@ type Counterpart struct {
 type Option struct {
 	ID       string    `json:"id"`
 	Text     string    `json:"text"`
+	Reply    string    `json:"reply"`
 	Verdict  Verdict   `json:"verdict"`
 	Flag     string    `json:"flag,omitempty"`
 	Reaction []Message `json:"reaction,omitempty"`

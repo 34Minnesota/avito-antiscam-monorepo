@@ -8,6 +8,9 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-antiscam}
       POSTGRES_DB: ${POSTGRES_DB:-antiscam}
 
+    ports:
+      - "127.0.0.1:5432:5432"
+
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
@@ -67,7 +70,7 @@ services:
       - ./backend/logs:/app/logs
 
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
 
     healthcheck:
       test:
@@ -75,7 +78,7 @@ services:
           "CMD-SHELL",
           "wget -qO- http://127.0.0.1:8080/healthz >/dev/null || exit 1",
         ]
-      interval: 5s
+      interval: 30s
       timeout: 3s
       retries: 20
       start_period: 5s
@@ -93,7 +96,7 @@ services:
         condition: service_healthy
 
     ports:
-      - "3000:80"
+      - "127.0.0.1:3000:80"
 
     healthcheck:
       test:
@@ -101,7 +104,7 @@ services:
           "CMD-SHELL",
           "wget -qO- http://127.0.0.1/ >/dev/null || exit 1",
         ]
-      interval: 5s
+      interval: 30s
       timeout: 3s
       retries: 20
 

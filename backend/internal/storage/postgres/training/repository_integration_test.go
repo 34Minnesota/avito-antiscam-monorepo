@@ -12,8 +12,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
 	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
+	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/models"
 	authstorage "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/storage/postgres/auth"
 	postgrespool "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/storage/postgres/pool"
 )
@@ -78,7 +78,7 @@ type repoEnv struct {
 	auth      *authstorage.AuthRepository
 	pool      *postgrespool.Pool
 	ctx       context.Context
-	userID    domain.UserID
+	userID    models.UserID
 	sessionID uuid.UUID
 	buyerID   uuid.UUID
 	sellerID  uuid.UUID
@@ -102,12 +102,12 @@ func TestRepositoryPostgres(t *testing.T) {
 }
 
 func (e *repoEnv) upsertIsIdempotent(t *testing.T) {
-	original := scenario(e.buyerID, "buyer-one", domain.RoleBuyer, 1)
+	original := scenario(e.buyerID, "buyer-one", models.RoleBuyer, 1)
 	if err := e.repo.UpsertScenario(e.ctx, original); err != nil {
 		t.Fatal(err)
 	}
 
-	repeated := scenario(uuid.New(), "buyer-one", domain.RoleBuyer, 1)
+	repeated := scenario(uuid.New(), "buyer-one", models.RoleBuyer, 1)
 	if err := e.repo.UpsertScenario(e.ctx, repeated); err != nil {
 		t.Fatal(err)
 	}
@@ -125,7 +125,7 @@ func (e *repoEnv) upsertIsIdempotent(t *testing.T) {
 }
 
 func (e *repoEnv) upsertRejectsChangedDocument(t *testing.T) {
-	changed := scenario(uuid.New(), "buyer-one", domain.RoleBuyer, 2)
+	changed := scenario(uuid.New(), "buyer-one", models.RoleBuyer, 2)
 	changed.Doc.Title = "Changed scenario"
 
 	err := e.repo.UpsertScenario(e.ctx, changed)
@@ -149,7 +149,7 @@ func (e *repoEnv) upsertRejectsChangedDocument(t *testing.T) {
 }
 
 func (e *repoEnv) listFiltersByRole(t *testing.T) {
-	if err := e.repo.UpsertScenario(e.ctx, scenario(e.sellerID, "seller-one", domain.RoleSeller, 3)); err != nil {
+	if err := e.repo.UpsertScenario(e.ctx, scenario(e.sellerID, "seller-one", models.RoleSeller, 3)); err != nil {
 		t.Fatal(err)
 	}
 
@@ -161,7 +161,7 @@ func (e *repoEnv) listFiltersByRole(t *testing.T) {
 		t.Fatalf("all scenarios = %d", len(all))
 	}
 
-	sellers, err := e.repo.ListScenarios(e.ctx, domain.RoleSeller)
+	sellers, err := e.repo.ListScenarios(e.ctx, models.RoleSeller)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -195,12 +195,12 @@ func (e *repoEnv) createAttempt(t *testing.T) {
 		t.Fatalf("attempt must not exist yet: %v", err)
 	}
 
-	attempt := domain.Attempt{
+	attempt := models.Attempt{
 		ID:         e.attemptID,
 		UserID:     e.userID,
 		ScenarioID: e.buyerID,
-		Status:     domain.AttemptInProgress,
-		State:      domain.State{SceneIndex: 0, Flags: []string{}},
+		Status:     models.AttemptInProgress,
+		State:      models.State{SceneIndex: 0, Flags: []string{}},
 		StartedAt:  time.Now().UTC().Truncate(time.Microsecond),
 	}
 	if err := e.repo.CreateAttempt(e.ctx, attempt); err != nil {
@@ -216,7 +216,7 @@ func (e *repoEnv) lookupAttempt(t *testing.T) {
 	if stored.UserID != e.userID || stored.ScenarioID != e.buyerID {
 		t.Fatalf("unexpected owner: %+v", stored)
 	}
-	if stored.Status != domain.AttemptInProgress {
+	if stored.Status != models.AttemptInProgress {
 		t.Fatalf("status = %q", stored.Status)
 	}
 
@@ -238,11 +238,11 @@ func (e *repoEnv) saveStepKeepsStatus(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	attempt.State = domain.State{SceneIndex: 1, Earned: 1, Flags: []string{"f1"}}
+	attempt.State = models.State{SceneIndex: 1, Earned: 1, Flags: []string{"f1"}}
 
-	attempt.Status = domain.AttemptFinished
+	attempt.Status = models.AttemptFinished
 
-	step := domain.AttemptStep{
+	step := models.AttemptStep{
 		AttemptID: e.attemptID,
 		SceneID:   "s1",
 		OptionID:  "a1",
@@ -260,7 +260,7 @@ func (e *repoEnv) saveStepKeepsStatus(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if stored.Status != domain.AttemptInProgress {
+	if stored.Status != models.AttemptInProgress {
 		t.Fatalf("status must be owned by FinishAttempt, got %q", stored.Status)
 	}
 	if stored.State.SceneIndex != 1 || stored.State.Earned != 1 {
@@ -287,7 +287,7 @@ func (e *repoEnv) stepsInPlayOrder(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	second := domain.AttemptStep{
+	second := models.AttemptStep{
 		AttemptID: e.attemptID, SceneID: "s2", OptionID: "b1",
 		CreatedAt: time.Now().UTC().Truncate(time.Microsecond),
 	}
@@ -313,7 +313,7 @@ func (e *repoEnv) stepsInPlayOrder(t *testing.T) {
 
 func (e *repoEnv) finishIsIdempotent(t *testing.T) {
 	at := time.Now().UTC().Truncate(time.Microsecond)
-	if err := e.repo.FinishAttempt(e.ctx, e.attemptID, 75, domain.OutcomePartial, at); err != nil {
+	if err := e.repo.FinishAttempt(e.ctx, e.attemptID, 75, models.OutcomePartial, at); err != nil {
 		t.Fatal(err)
 	}
 
@@ -321,20 +321,20 @@ func (e *repoEnv) finishIsIdempotent(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if stored.Status != domain.AttemptFinished {
+	if stored.Status != models.AttemptFinished {
 		t.Fatalf("status = %q", stored.Status)
 	}
 	if stored.Score == nil || *stored.Score != 75 {
 		t.Fatalf("score = %+v", stored.Score)
 	}
-	if stored.Outcome == nil || *stored.Outcome != domain.OutcomePartial {
+	if stored.Outcome == nil || *stored.Outcome != models.OutcomePartial {
 		t.Fatalf("outcome = %+v", stored.Outcome)
 	}
 	if stored.FinishedAt == nil {
 		t.Fatal("finished_at must be set")
 	}
 
-	err = e.repo.FinishAttempt(e.ctx, e.attemptID, 10, domain.OutcomeScammed, at)
+	err = e.repo.FinishAttempt(e.ctx, e.attemptID, 10, models.OutcomeScammed, at)
 	if !errors.Is(err, domainErrors.ErrAttemptFinished) {
 		t.Fatalf("second finish: got %v", err)
 	}
@@ -349,9 +349,9 @@ func (e *repoEnv) finishIsIdempotent(t *testing.T) {
 }
 
 func (e *repoEnv) scenarioStats(t *testing.T) {
-	fresh := domain.Attempt{
+	fresh := models.Attempt{
 		ID: uuid.New(), UserID: e.userID, ScenarioID: e.buyerID,
-		Status: domain.AttemptInProgress, State: domain.State{}, StartedAt: time.Now().UTC(),
+		Status: models.AttemptInProgress, State: models.State{}, StartedAt: time.Now().UTC(),
 	}
 	if err := e.repo.CreateAttempt(e.ctx, fresh); err != nil {
 		t.Fatal(err)
@@ -439,7 +439,7 @@ func setup(t *testing.T) *repoEnv {
 		t.Fatal(err)
 	}
 
-	userID, err := domain.NewUserID(userUUID)
+	userID, err := models.NewUserID(userUUID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -463,22 +463,22 @@ func TestRepositoryReportsQueryFailures(t *testing.T) {
 	repo, ctx := New(env.pool), env.ctx
 	calls := map[string]func() error{
 		"UpsertScenario": func() error {
-			return repo.UpsertScenario(ctx, scenario(uuid.New(), "x", domain.RoleBuyer, 1))
+			return repo.UpsertScenario(ctx, scenario(uuid.New(), "x", models.RoleBuyer, 1))
 		},
 		"ListScenarios": func() error { _, err := repo.ListScenarios(ctx, ""); return err },
 		"ScenarioByID":  func() error { _, err := repo.ScenarioByID(ctx, uuid.New()); return err },
 		"ScenarioStats": func() error { _, err := repo.ScenarioStats(ctx, env.userID); return err },
 		"CreateAttempt": func() error {
-			return repo.CreateAttempt(ctx, domain.Attempt{ID: uuid.New(), UserID: env.userID})
+			return repo.CreateAttempt(ctx, models.Attempt{ID: uuid.New(), UserID: env.userID})
 		},
 		"AttemptByID":   func() error { _, err := repo.AttemptByID(ctx, uuid.New()); return err },
 		"ActiveAttempt": func() error { _, err := repo.ActiveAttempt(ctx, env.userID, uuid.New()); return err },
 		"SaveStep": func() error {
-			_, err := repo.SaveStep(ctx, domain.AttemptStep{}, domain.Attempt{ID: uuid.New()}, env.userID, 0)
+			_, err := repo.SaveStep(ctx, models.AttemptStep{}, models.Attempt{ID: uuid.New()}, env.userID, 0)
 			return err
 		},
 		"FinishAttempt": func() error {
-			return repo.FinishAttempt(ctx, uuid.New(), 10, domain.OutcomeSafe, time.Now())
+			return repo.FinishAttempt(ctx, uuid.New(), 10, models.OutcomeSafe, time.Now())
 		},
 		"Steps":     func() error { _, err := repo.Steps(ctx, uuid.New()); return err },
 		"BestScore": func() error { _, err := repo.BestScore(ctx, env.userID, uuid.New(), uuid.New()); return err },
@@ -506,7 +506,7 @@ func TestRepositoryRejectsCorruptedJSON(t *testing.T) {
 		t.Fatal("expected an error while listing a broken scenario")
 	}
 
-	if err := env.repo.UpsertScenario(env.ctx, scenario(env.buyerID, "buyer-one", domain.RoleBuyer, 1)); err != nil {
+	if err := env.repo.UpsertScenario(env.ctx, scenario(env.buyerID, "buyer-one", models.RoleBuyer, 1)); err != nil {
 		t.Fatal(err)
 	}
 	attemptID := uuid.New()
@@ -524,8 +524,8 @@ func TestRepositoryRejectsCorruptedJSON(t *testing.T) {
 func TestSaveStepRejectsUnknownAttempt(t *testing.T) {
 	env := setup(t)
 
-	step := domain.AttemptStep{AttemptID: uuid.New(), SceneID: "s1", OptionID: "a1", CreatedAt: time.Now().UTC()}
-	_, err := env.repo.SaveStep(env.ctx, step, domain.Attempt{ID: uuid.New(), State: domain.State{}}, env.userID, 0)
+	step := models.AttemptStep{AttemptID: uuid.New(), SceneID: "s1", OptionID: "a1", CreatedAt: time.Now().UTC()}
+	_, err := env.repo.SaveStep(env.ctx, step, models.Attempt{ID: uuid.New(), State: models.State{}}, env.userID, 0)
 	if err == nil {
 		t.Fatal("expected a foreign key violation")
 	}
@@ -553,28 +553,28 @@ func configFromDSN(dsn string) (postgrespool.Config, error) {
 	}, nil
 }
 
-func scenario(id uuid.UUID, slug string, role domain.Role, difficulty int) domain.Scenario {
-	return domain.Scenario{
+func scenario(id uuid.UUID, slug string, role models.Role, difficulty int) models.Scenario {
+	return models.Scenario{
 		ID:       id,
 		IsActive: true,
-		Doc: domain.ScenarioDoc{
+		Doc: models.ScenarioDoc{
 			Version:    1,
 			Slug:       slug,
 			Role:       role,
 			Category:   "test",
 			Difficulty: difficulty,
 			Title:      "Сценарий " + slug,
-			Scenes: []domain.Scene{{
+			Scenes: []models.Scene{{
 				ID:     "s1",
 				Weight: 1,
-				Decision: domain.Decision{
+				Decision: models.Decision{
 					Prompt:  "Что делать?",
-					Options: []domain.Option{{ID: "a1", Text: "Безопасно", Verdict: domain.VerdictSafe}},
+					Options: []models.Option{{ID: "a1", Text: "Безопасно", Verdict: models.VerdictSafe}},
 				},
 			}},
-			Endings: map[string]domain.Ending{
-				"safe":    {Outcome: domain.OutcomeSafe, Title: "Чисто"},
-				"partial": {Outcome: domain.OutcomePartial, Title: "Почти"},
+			Endings: map[string]models.Ending{
+				"safe":    {Outcome: models.OutcomeSafe, Title: "Чисто"},
+				"partial": {Outcome: models.OutcomePartial, Title: "Почти"},
 			},
 		},
 	}

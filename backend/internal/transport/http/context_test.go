@@ -7,13 +7,13 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
+	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/models"
 )
 
 func TestCurrentUserUsesSessionUserID(t *testing.T) {
 	userID := uuid.New()
 	ctx, _ := gin.CreateTestContext(httptest.NewRecorder())
-	ctx.Set(sessionContextKey, domain.Session{ID: uuid.New(), UserID: userID})
+	ctx.Set(sessionContextKey, models.Session{ID: uuid.New(), UserID: userID})
 
 	got, ok := CurrentUser(ctx)
 	if !ok {
@@ -31,10 +31,10 @@ func TestCurrentUserRejectsMissingOrInvalidSession(t *testing.T) {
 			ctx.Set(sessionContextKey, "not a session")
 		},
 		"empty session": func(ctx *gin.Context) {
-			ctx.Set(sessionContextKey, domain.Session{})
+			ctx.Set(sessionContextKey, models.Session{})
 		},
 		"session without user": func(ctx *gin.Context) {
-			ctx.Set(sessionContextKey, domain.Session{ID: uuid.New()})
+			ctx.Set(sessionContextKey, models.Session{ID: uuid.New()})
 		},
 	}
 

@@ -4,8 +4,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
 	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
+	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/models"
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/training"
 )
 
@@ -14,36 +14,36 @@ func TestEvaluateScoresRuns(t *testing.T) {
 
 	cases := []struct {
 		name    string
-		journal []domain.AttemptStep
+		journal []models.AttemptStep
 		score   int
-		outcome domain.Outcome
+		outcome models.Outcome
 		missed  int
 	}{
 		{
 			name:    "все безопасные варианты дают сто процентов",
 			journal: steps([2]string{"s1", "a1"}, [2]string{"s2", "b1"}, [2]string{"s3", "c1"}),
 			score:   100,
-			outcome: domain.OutcomeSafe,
+			outcome: models.OutcomeSafe,
 		},
 		{
 			name:    "один рискованный выбор снимает вес своей сцены",
 			journal: steps([2]string{"s1", "a2"}, [2]string{"s2", "b1"}, [2]string{"s3", "c1"}),
 			score:   75,
-			outcome: domain.OutcomePartial,
+			outcome: models.OutcomePartial,
 			missed:  1,
 		},
 		{
 			name:    "повторный признак не удваивается в разборе",
 			journal: steps([2]string{"s1", "a2"}, [2]string{"s2", "b2"}, [2]string{"s3", "c1"}),
 			score:   25,
-			outcome: domain.OutcomePartial,
+			outcome: models.OutcomePartial,
 			missed:  1,
 		},
 		{
 			name:    "fatal обрывает прохождение своей концовкой",
 			journal: steps([2]string{"s1", "a3"}),
 			score:   0,
-			outcome: domain.OutcomeScammed,
+			outcome: models.OutcomeScammed,
 			missed:  1,
 		},
 	}
@@ -76,7 +76,7 @@ func TestEvaluateSkipsFlagMissingFromDebrief(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if result.Outcome != domain.OutcomePartial {
+	if result.Outcome != models.OutcomePartial {
 		t.Fatalf("outcome = %s", result.Outcome)
 	}
 	if len(result.MissedFlags) != 0 {
@@ -104,7 +104,7 @@ func TestEvaluateEmptyJournalEndsSafe(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if result.Score != 0 || result.Outcome != domain.OutcomeSafe || result.StepsTotal != 0 {
+	if result.Score != 0 || result.Outcome != models.OutcomeSafe || result.StepsTotal != 0 {
 		t.Fatalf("unexpected result: %+v", result)
 	}
 }

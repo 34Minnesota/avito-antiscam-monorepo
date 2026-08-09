@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
 	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
+	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/models"
 )
 
 // Подсчёт итога прохождения.
@@ -18,7 +18,7 @@ type stepEffect struct {
 }
 
 // Evaluate восстанавливает итог попытки из журнала шагов.
-func Evaluate(doc domain.ScenarioDoc, steps []domain.AttemptStep) (SummaryResult, error) {
+func Evaluate(doc models.ScenarioDoc, steps []models.AttemptStep) (SummaryResult, error) {
 	var earned float64
 	var endingKey string
 
@@ -61,7 +61,7 @@ func Evaluate(doc domain.ScenarioDoc, steps []domain.AttemptStep) (SummaryResult
 
 // resolveStep восстанавливает последствия выбора по документу сценария:
 // в attempt_steps лежит только пара (scene_id, option_id).
-func resolveStep(doc domain.ScenarioDoc, step domain.AttemptStep) (stepEffect, error) {
+func resolveStep(doc models.ScenarioDoc, step models.AttemptStep) (stepEffect, error) {
 	scene, ok := doc.SceneByID(step.SceneID)
 	if !ok {
 		return stepEffect{}, fmt.Errorf(
@@ -75,13 +75,13 @@ func resolveStep(doc domain.ScenarioDoc, step domain.AttemptStep) (stepEffect, e
 	}
 
 	var effect stepEffect
-	if opt.Verdict == domain.VerdictSafe {
+	if opt.Verdict == models.VerdictSafe {
 		effect.weight = scene.Weight
 	} else {
 		effect.flag = opt.Flag
 	}
 
-	if opt.Verdict == domain.VerdictFatal {
+	if opt.Verdict == models.VerdictFatal {
 		effect.endingKey = opt.Ending
 	}
 
@@ -90,7 +90,7 @@ func resolveStep(doc domain.ScenarioDoc, step domain.AttemptStep) (stepEffect, e
 
 // pickEnding выбирает концовку: fatal задаёт её явно, иначе она следует
 // из того, набрал ли пользователь пропущенные признаки.
-func pickEnding(doc domain.ScenarioDoc, endingKey string, flagged bool) (domain.Ending, error) {
+func pickEnding(doc models.ScenarioDoc, endingKey string, flagged bool) (models.Ending, error) {
 	if endingKey == "" {
 		endingKey = endingKeySafe
 		if flagged {
@@ -100,7 +100,7 @@ func pickEnding(doc domain.ScenarioDoc, endingKey string, flagged bool) (domain.
 
 	ending, ok := doc.Endings[endingKey]
 	if !ok {
-		return domain.Ending{}, fmt.Errorf(
+		return models.Ending{}, fmt.Errorf(
 			"%w: ending %q not found", domainErrors.ErrInvalidScenario, endingKey)
 	}
 
@@ -109,8 +109,8 @@ func pickEnding(doc domain.ScenarioDoc, endingKey string, flagged bool) (domain.
 
 // describeFlags разворачивает признаки в описания из разбора, сохраняя порядок.
 // Признак без описания в разбор не попадёт, но на выбор концовки уже повлиял.
-func describeFlags(doc domain.ScenarioDoc, flags []string) []domain.FlagInfo {
-	out := make([]domain.FlagInfo, 0, len(flags))
+func describeFlags(doc models.ScenarioDoc, flags []string) []models.FlagInfo {
+	out := make([]models.FlagInfo, 0, len(flags))
 	for _, id := range flags {
 		if info, ok := doc.FlagByID(id); ok {
 			out = append(out, info)

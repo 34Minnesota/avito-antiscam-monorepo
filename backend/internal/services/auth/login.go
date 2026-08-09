@@ -3,8 +3,8 @@ package auth
 import (
 	"context"
 
-	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
 	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
+	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/models"
 )
 
 // Login авторизует пользователя по email и паролю
@@ -13,18 +13,18 @@ func (s *Service) Login(
 	ctx context.Context,
 	email string,
 	password string,
-) (domain.Session, error) {
+) (models.Session, error) {
 
 	user, err := s.users.GetUserByEmail(ctx, email)
 	if err != nil {
-		return domain.Session{}, domainErrors.ErrInvalidCredentials
+		return models.Session{}, domainErrors.ErrInvalidCredentials
 	}
 
 	if err := s.verifier.Compare(
 		user.PasswordHash,
 		password,
 	); err != nil {
-		return domain.Session{}, domainErrors.ErrInvalidCredentials
+		return models.Session{}, domainErrors.ErrInvalidCredentials
 	}
 
 	session, err := s.repository.CreateSession(
@@ -32,7 +32,7 @@ func (s *Service) Login(
 		user.ID,
 	)
 	if err != nil {
-		return domain.Session{}, err
+		return models.Session{}, err
 	}
 
 	return session, nil

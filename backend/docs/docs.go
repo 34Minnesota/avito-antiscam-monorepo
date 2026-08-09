@@ -503,164 +503,6 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "domain.Attachment": {
-            "type": "object",
-            "properties": {
-                "title": {
-                    "type": "string"
-                },
-                "type": {
-                    "type": "string"
-                }
-            }
-        },
-        "domain.Author": {
-            "type": "string",
-            "enum": [
-                "counterpart",
-                "system",
-                "user"
-            ],
-            "x-enum-comments": {
-                "AuthorCounterpart": "собеседник (потенциальный мошенник)",
-                "AuthorSystem": "служебная вставка",
-                "AuthorUser": "реплика самого пользователя"
-            },
-            "x-enum-descriptions": [
-                "собеседник (потенциальный мошенник)",
-                "служебная вставка",
-                "реплика самого пользователя"
-            ],
-            "x-enum-varnames": [
-                "AuthorCounterpart",
-                "AuthorSystem",
-                "AuthorUser"
-            ]
-        },
-        "domain.Counterpart": {
-            "type": "object",
-            "properties": {
-                "name": {
-                    "type": "string"
-                },
-                "rating": {
-                    "type": "number"
-                },
-                "registered": {
-                    "type": "string"
-                },
-                "reviews": {
-                    "type": "integer"
-                }
-            }
-        },
-        "domain.Ending": {
-            "type": "object",
-            "properties": {
-                "outcome": {
-                    "$ref": "#/definitions/domain.Outcome"
-                },
-                "text": {
-                    "type": "string"
-                },
-                "title": {
-                    "type": "string"
-                }
-            }
-        },
-        "domain.FlagInfo": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "string"
-                },
-                "text": {
-                    "type": "string"
-                },
-                "title": {
-                    "type": "string"
-                }
-            }
-        },
-        "domain.Listing": {
-            "type": "object",
-            "properties": {
-                "image": {
-                    "description": "TODO: решить вопрос с image",
-                    "type": "string"
-                },
-                "location": {
-                    "type": "string"
-                },
-                "price": {
-                    "type": "integer"
-                },
-                "title": {
-                    "type": "string"
-                }
-            }
-        },
-        "domain.Message": {
-            "type": "object",
-            "properties": {
-                "attachment": {
-                    "$ref": "#/definitions/domain.Attachment"
-                },
-                "author": {
-                    "$ref": "#/definitions/domain.Author"
-                },
-                "text": {
-                    "type": "string"
-                }
-            }
-        },
-        "domain.Outcome": {
-            "type": "string",
-            "enum": [
-                "safe",
-                "partial",
-                "scammed"
-            ],
-            "x-enum-varnames": [
-                "OutcomeSafe",
-                "OutcomePartial",
-                "OutcomeScammed"
-            ]
-        },
-        "domain.Role": {
-            "type": "string",
-            "enum": [
-                "buyer",
-                "seller"
-            ],
-            "x-enum-varnames": [
-                "RoleBuyer",
-                "RoleSeller"
-            ]
-        },
-        "domain.Verdict": {
-            "type": "string",
-            "enum": [
-                "safe",
-                "risky",
-                "fatal"
-            ],
-            "x-enum-comments": {
-                "VerdictFatal": "fatal — точка невозврата",
-                "VerdictRisky": "risky — рискованное, но не фатальное",
-                "VerdictSafe": "safe  — безопасное действие;"
-            },
-            "x-enum-descriptions": [
-                "safe  — безопасное действие;",
-                "risky — рискованное, но не фатальное",
-                "fatal — точка невозврата"
-            ],
-            "x-enum-varnames": [
-                "VerdictSafe",
-                "VerdictRisky",
-                "VerdictFatal"
-            ]
-        },
         "httptransport.ChoiceRequest": {
             "type": "object",
             "required": [
@@ -799,7 +641,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "outcome": {
-                    "$ref": "#/definitions/domain.Outcome"
+                    "$ref": "#/definitions/models.Outcome"
                 },
                 "score": {
                     "$ref": "#/definitions/httptransport.scoreResponse"
@@ -882,7 +724,7 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "role": {
-                    "$ref": "#/definitions/domain.Role"
+                    "$ref": "#/definitions/models.Role"
                 },
                 "scenarios": {
                     "type": "array",
@@ -956,6 +798,164 @@ const docTemplate = `{
                 }
             }
         },
+        "models.Attachment": {
+            "type": "object",
+            "properties": {
+                "title": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.Author": {
+            "type": "string",
+            "enum": [
+                "counterpart",
+                "system",
+                "user"
+            ],
+            "x-enum-comments": {
+                "AuthorCounterpart": "собеседник (потенциальный мошенник)",
+                "AuthorSystem": "служебная вставка",
+                "AuthorUser": "реплика самого пользователя"
+            },
+            "x-enum-descriptions": [
+                "собеседник (потенциальный мошенник)",
+                "служебная вставка",
+                "реплика самого пользователя"
+            ],
+            "x-enum-varnames": [
+                "AuthorCounterpart",
+                "AuthorSystem",
+                "AuthorUser"
+            ]
+        },
+        "models.Counterpart": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "rating": {
+                    "type": "number"
+                },
+                "registered": {
+                    "type": "string"
+                },
+                "reviews": {
+                    "type": "integer"
+                }
+            }
+        },
+        "models.Ending": {
+            "type": "object",
+            "properties": {
+                "outcome": {
+                    "$ref": "#/definitions/models.Outcome"
+                },
+                "text": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.FlagInfo": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "text": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.Listing": {
+            "type": "object",
+            "properties": {
+                "image": {
+                    "description": "TODO: решить вопрос с image",
+                    "type": "string"
+                },
+                "location": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "integer"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.Message": {
+            "type": "object",
+            "properties": {
+                "attachment": {
+                    "$ref": "#/definitions/models.Attachment"
+                },
+                "author": {
+                    "$ref": "#/definitions/models.Author"
+                },
+                "text": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.Outcome": {
+            "type": "string",
+            "enum": [
+                "safe",
+                "partial",
+                "scammed"
+            ],
+            "x-enum-varnames": [
+                "OutcomeSafe",
+                "OutcomePartial",
+                "OutcomeScammed"
+            ]
+        },
+        "models.Role": {
+            "type": "string",
+            "enum": [
+                "buyer",
+                "seller"
+            ],
+            "x-enum-varnames": [
+                "RoleBuyer",
+                "RoleSeller"
+            ]
+        },
+        "models.Verdict": {
+            "type": "string",
+            "enum": [
+                "safe",
+                "risky",
+                "fatal"
+            ],
+            "x-enum-comments": {
+                "VerdictFatal": "fatal — точка невозврата",
+                "VerdictRisky": "risky — рискованное, но не фатальное",
+                "VerdictSafe": "safe  — безопасное действие;"
+            },
+            "x-enum-descriptions": [
+                "safe  — безопасное действие;",
+                "risky — рискованное, но не фатальное",
+                "fatal — точка невозврата"
+            ],
+            "x-enum-varnames": [
+                "VerdictSafe",
+                "VerdictRisky",
+                "VerdictFatal"
+            ]
+        },
         "training.ChoiceResult": {
             "type": "object",
             "properties": {
@@ -971,7 +971,7 @@ const docTemplate = `{
                 "reaction": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/domain.Message"
+                        "$ref": "#/definitions/models.Message"
                     }
                 },
                 "revision": {
@@ -989,7 +989,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "verdict": {
-                    "$ref": "#/definitions/domain.Verdict"
+                    "$ref": "#/definitions/models.Verdict"
                 }
             }
         },
@@ -1020,7 +1020,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "role": {
-                    "$ref": "#/definitions/domain.Role"
+                    "$ref": "#/definitions/models.Role"
                 },
                 "slug": {
                     "type": "string"
@@ -1050,7 +1050,7 @@ const docTemplate = `{
                 "intro": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/domain.Message"
+                        "$ref": "#/definitions/models.Message"
                     }
                 },
                 "options": {
@@ -1074,13 +1074,13 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "counterpart": {
-                    "$ref": "#/definitions/domain.Counterpart"
+                    "$ref": "#/definitions/models.Counterpart"
                 },
                 "listing": {
-                    "$ref": "#/definitions/domain.Listing"
+                    "$ref": "#/definitions/models.Listing"
                 },
                 "role": {
-                    "$ref": "#/definitions/domain.Role"
+                    "$ref": "#/definitions/models.Role"
                 },
                 "scene": {
                     "$ref": "#/definitions/training.ScenePayload"
@@ -1100,16 +1100,16 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "ending": {
-                    "$ref": "#/definitions/domain.Ending"
+                    "$ref": "#/definitions/models.Ending"
                 },
                 "missed_flags": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/domain.FlagInfo"
+                        "$ref": "#/definitions/models.FlagInfo"
                     }
                 },
                 "outcome": {
-                    "$ref": "#/definitions/domain.Outcome"
+                    "$ref": "#/definitions/models.Outcome"
                 },
                 "score": {
                     "type": "integer"

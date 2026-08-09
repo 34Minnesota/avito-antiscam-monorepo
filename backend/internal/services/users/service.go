@@ -8,8 +8,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
 	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
+	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/models"
 )
 
 type UsersService struct {
@@ -32,8 +32,8 @@ type Clock interface {
 }
 
 type UsersRepository interface {
-	CreateUser(ctx context.Context, user domain.User) error
-	GetUser(ctx context.Context, userID uuid.UUID) (domain.User, error)
+	CreateUser(ctx context.Context, user models.User) error
+	GetUser(ctx context.Context, userID uuid.UUID) (models.User, error)
 }
 
 func NewUsersService(
@@ -51,16 +51,16 @@ func NewUsersService(
 }
 
 func validateCreateUserInput(input CreateUserInput) error {
-	if err := domain.ValidateNickname(input.Nickname); err != nil {
+	if err := models.ValidateNickname(input.Nickname); err != nil {
 		return err
 	}
 
-	if err := domain.ValidateEmail(input.Email); err != nil {
+	if err := models.ValidateEmail(input.Email); err != nil {
 		return err
 	}
 
-	if len([]rune(input.Password)) < domain.MinPasswordLength ||
-		len([]byte(input.Password)) > domain.MaxPasswordBytes {
+	if len([]rune(input.Password)) < models.MinPasswordLength ||
+		len([]byte(input.Password)) > models.MaxPasswordBytes {
 		return fmt.Errorf("invalid password length: %w", domainErrors.ErrInvalidArgument)
 	}
 

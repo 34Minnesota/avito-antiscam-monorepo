@@ -9,37 +9,31 @@ import (
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 
-	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
 	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
+	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/models"
 	applogger "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/logger"
 )
 
 type Repository interface {
-	UpsertScenario(ctx context.Context, s domain.Scenario) error
-	ListScenarios(ctx context.Context, role domain.Role) ([]domain.Scenario, error)
-	ScenarioByID(ctx context.Context, id uuid.UUID) (domain.Scenario, error)
-	ScenarioStats(ctx context.Context, userID domain.UserID) (map[uuid.UUID]ScenarioStats, error)
+	UpsertScenario(ctx context.Context, s models.Scenario) error
+	ListScenarios(ctx context.Context, role models.Role) ([]models.Scenario, error)
+	ScenarioByID(ctx context.Context, id uuid.UUID) (models.Scenario, error)
+	ScenarioStats(ctx context.Context, userID models.UserID) (map[uuid.UUID]ScenarioStats, error)
 
-	CreateAttempt(ctx context.Context, a domain.Attempt) error
-	AttemptByID(ctx context.Context, id uuid.UUID) (domain.Attempt, error)
-	ActiveAttempt(ctx context.Context, userID domain.UserID, scenarioID uuid.UUID) (domain.Attempt, error)
-	SaveStep(ctx context.Context, step domain.AttemptStep, a domain.Attempt, userID domain.UserID, expectedRevision int) (int, error)
-	FinishAttempt(ctx context.Context, id uuid.UUID, score int, outcome domain.Outcome, at time.Time) error
-	Steps(ctx context.Context, attemptID uuid.UUID) ([]domain.AttemptStep, error)
-	BestScore(ctx context.Context, userID domain.UserID, scenarioID, exclude uuid.UUID) (*int, error)
+	CreateAttempt(ctx context.Context, a models.Attempt) error
+	AttemptByID(ctx context.Context, id uuid.UUID) (models.Attempt, error)
+	ActiveAttempt(ctx context.Context, userID models.UserID, scenarioID uuid.UUID) (models.Attempt, error)
+	SaveStep(ctx context.Context, step models.AttemptStep, a models.Attempt, userID models.UserID, expectedRevision int) (int, error)
+	FinishAttempt(ctx context.Context, id uuid.UUID, score int, outcome models.Outcome, at time.Time) error
+	Steps(ctx context.Context, attemptID uuid.UUID) ([]models.AttemptStep, error)
+	BestScore(ctx context.Context, userID models.UserID, scenarioID, exclude uuid.UUID) (*int, error)
 }
 
-// Service пишет в лог бизнес-события, а не ошибки: ошибки он оборачивает
-// и отдаёт наверх, где транспорт решает, чем они обернутся для клиента.
 type Service struct {
 	repo   Repository
 	logger *applogger.Logger
 }
 
-// New создаёт сервис тренировок.
-//
-// Пустой logger заменяется на no-op: тесты создают сервис без него,
-// а проверять на nil в каждом вызове не хочется.
 func New(repo Repository, logger *applogger.Logger) *Service {
 	if logger == nil {
 		logger = &applogger.Logger{Logger: zap.NewNop()}
@@ -48,7 +42,7 @@ func New(repo Repository, logger *applogger.Logger) *Service {
 }
 
 // Catalog возвращает список сценариев с персональной статистикой пользователя.
-func (s *Service) Catalog(ctx context.Context, userID domain.UserID, role domain.Role) ([]ScenarioCard, error) {
+func (s *Service) Catalog(ctx context.Context, userID models.UserID, role models.Role) ([]ScenarioCard, error) {
 	scenarios, err := s.repo.ListScenarios(ctx, role)
 	if err != nil {
 		return nil, err
@@ -83,7 +77,7 @@ func (s *Service) Catalog(ctx context.Context, userID domain.UserID, role domain
 // Если у пользователя уже есть незавершённая попытка по этому сценарию,
 // она переиспользуется: так перезагрузка страницы не создаёт мусорных
 // попыток и не сбрасывает прогресс. Позиция восстанавливается из state.
-func (s *Service) Start(ctx context.Context, userID domain.UserID, scenarioID uuid.UUID) (StartResult, error) {
+func (s *Service) Start(ctx context.Context, userID models.UserID, scenarioID uuid.UUID) (StartResult, error) {
 	sc, err := s.repo.ScenarioByID(ctx, scenarioID)
 	if err != nil {
 		return StartResult{}, err
@@ -94,9 +88,6 @@ func (s *Service) Start(ctx context.Context, userID domain.UserID, scenarioID uu
 	case err == nil:
 		scene, ok := sc.Doc.SceneByID(CurrentSceneID(sc.Doc, existing.State))
 		if !ok {
-			// Единственное место, где ошибка и логируется, и отдаётся наверх:
-			// это не отказ запросу, а сигнал о рассогласовании данных,
-			// и диагностика ниже наверху уже недоступна.
 			s.logger.Error("active attempt points outside scenario scenes",
 				zap.String("attempt_id", existing.ID.String()),
 				zap.String("scenario_id", scenarioID.String()),
@@ -108,8 +99,6 @@ func (s *Service) Start(ctx context.Context, userID domain.UserID, scenarioID uu
 				domainErrors.ErrInvalidScenario, existing.ID)
 		}
 
-		// Возврат в незавершённую попытку и старт новой дают клиенту
-		// одинаковый ответ — различить их можно только отсюда.
 		s.logger.Info("attempt resumed",
 			zap.String("attempt_id", existing.ID.String()),
 			zap.String("scenario_id", scenarioID.String()),
@@ -128,11 +117,11 @@ func (s *Service) Start(ctx context.Context, userID domain.UserID, scenarioID uu
 		return StartResult{}, err
 	}
 
-	attempt := domain.Attempt{
+	attempt := models.Attempt{
 		ID:         uuid.New(),
 		UserID:     userID,
 		ScenarioID: scenarioID,
-		Status:     domain.AttemptInProgress,
+		Status:     models.AttemptInProgress,
 		State:      state,
 		StartedAt:  time.Now().UTC(),
 	}
@@ -149,7 +138,7 @@ func (s *Service) Start(ctx context.Context, userID domain.UserID, scenarioID uu
 	return buildStartResult(attempt.ID, sc, scene), nil
 }
 
-func buildStartResult(attemptID uuid.UUID, sc domain.Scenario, scene ScenePayload) StartResult {
+func buildStartResult(attemptID uuid.UUID, sc models.Scenario, scene ScenePayload) StartResult {
 	return StartResult{
 		AttemptID:   attemptID,
 		Listing:     sc.Doc.Listing,
@@ -164,7 +153,7 @@ func buildStartResult(attemptID uuid.UUID, sc domain.Scenario, scene ScenePayloa
 // Choose обрабатывает выбор пользователя на развилке.
 func (s *Service) Choose(
 	ctx context.Context,
-	userID domain.UserID,
+	userID models.UserID,
 	attemptID uuid.UUID,
 	sceneID, optionID string,
 	expectedRevision int,
@@ -173,7 +162,7 @@ func (s *Service) Choose(
 	if err != nil {
 		return ChoiceResult{}, err
 	}
-	if attempt.Status != domain.AttemptInProgress {
+	if attempt.Status != models.AttemptInProgress {
 		return ChoiceResult{}, domainErrors.ErrAttemptFinished
 	}
 
@@ -188,7 +177,7 @@ func (s *Service) Choose(
 
 	attempt.State = tr.State
 	if tr.Finished {
-		attempt.Status = domain.AttemptFinished
+		attempt.Status = models.AttemptFinished
 	}
 
 	newRevision, err := s.repo.SaveStep(
@@ -222,7 +211,7 @@ func (s *Service) Choose(
 }
 
 // Summary возвращает итог завершённой попытки: балл, концовку и разбор.
-func (s *Service) Summary(ctx context.Context, userID domain.UserID, attemptID uuid.UUID) (SummaryResult, error) {
+func (s *Service) Summary(ctx context.Context, userID models.UserID, attemptID uuid.UUID) (SummaryResult, error) {
 	attempt, sc, err := s.loadAttempt(ctx, userID, attemptID)
 	if err != nil {
 		return SummaryResult{}, err
@@ -244,7 +233,7 @@ func (s *Service) Summary(ctx context.Context, userID domain.UserID, attemptID u
 }
 
 // finish считает итог, сохраняет его и возвращает разбор.
-func (s *Service) finish(ctx context.Context, attempt domain.Attempt, sc domain.Scenario) (SummaryResult, error) {
+func (s *Service) finish(ctx context.Context, attempt models.Attempt, sc models.Scenario) (SummaryResult, error) {
 	steps, err := s.repo.Steps(ctx, attempt.ID)
 	if err != nil {
 		return SummaryResult{}, err
@@ -261,8 +250,6 @@ func (s *Service) finish(ctx context.Context, attempt domain.Attempt, sc domain.
 		return SummaryResult{}, err
 	}
 
-	// Продуктовое событие: по нему видно, на каких сценариях и признаках
-	// пользователи проваливаются.
 	s.logger.Info("attempt finished",
 		zap.String("attempt_id", attempt.ID.String()),
 		zap.String("scenario_id", attempt.ScenarioID.String()),
@@ -277,7 +264,7 @@ func (s *Service) finish(ctx context.Context, attempt domain.Attempt, sc domain.
 }
 
 // attachDelta добавляет к результату разницу с лучшей предыдущей попыткой
-func (s *Service) attachDelta(ctx context.Context, result *SummaryResult, attempt domain.Attempt) error {
+func (s *Service) attachDelta(ctx context.Context, result *SummaryResult, attempt models.Attempt) error {
 	prev, err := s.repo.BestScore(ctx, attempt.UserID, attempt.ScenarioID, attempt.ID)
 	if err != nil {
 		return err
@@ -289,18 +276,18 @@ func (s *Service) attachDelta(ctx context.Context, result *SummaryResult, attemp
 	return nil
 }
 
-func (s *Service) loadAttempt(ctx context.Context, userID domain.UserID, attemptID uuid.UUID) (domain.Attempt, domain.Scenario, error) {
+func (s *Service) loadAttempt(ctx context.Context, userID models.UserID, attemptID uuid.UUID) (models.Attempt, models.Scenario, error) {
 	attempt, err := s.repo.AttemptByID(ctx, attemptID)
 	if err != nil {
-		return domain.Attempt{}, domain.Scenario{}, err
+		return models.Attempt{}, models.Scenario{}, err
 	}
 	if attempt.UserID != userID {
-		return domain.Attempt{}, domain.Scenario{}, domainErrors.ErrForbidden
+		return models.Attempt{}, models.Scenario{}, domainErrors.ErrForbidden
 	}
 
 	sc, err := s.repo.ScenarioByID(ctx, attempt.ScenarioID)
 	if err != nil {
-		return domain.Attempt{}, domain.Scenario{}, err
+		return models.Attempt{}, models.Scenario{}, err
 	}
 	return attempt, sc, nil
 }

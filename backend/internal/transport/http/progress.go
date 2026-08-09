@@ -9,14 +9,14 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
 	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
+	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/models"
 )
 
 // TODO: все теги под snake_case
 
 type ProgressGetter interface {
-	Get(context.Context, domain.UserID) (domain.OverallProgress, error)
+	Get(context.Context, models.UserID) (models.OverallProgress, error)
 }
 
 type ProgressHandler struct {
@@ -90,7 +90,7 @@ type scoreResponse struct {
 type completedAttemptResultResponse struct {
 	AttemptID   uuid.UUID      `json:"attemptId"`
 	Score       scoreResponse  `json:"score"`
-	Outcome     domain.Outcome `json:"outcome"`
+	Outcome     models.Outcome `json:"outcome"`
 	CompletedAt time.Time      `json:"completedAt"`
 }
 
@@ -113,7 +113,7 @@ type scenarioProgressResponse struct {
 }
 
 type roleProgressResponse struct {
-	Role               domain.Role                `json:"role"`
+	Role               models.Role                `json:"role"`
 	TotalScenarios     int                        `json:"totalScenarios"`
 	CompletedScenarios int                        `json:"completedScenarios"`
 	PassedScenarios    int                        `json:"passedScenarios"`
@@ -144,7 +144,7 @@ type progressResponse struct {
 	Recommendations    []recommendationResponse `json:"recommendations"`
 }
 
-func mapProgress(progress domain.OverallProgress) progressResponse {
+func mapProgress(progress models.OverallProgress) progressResponse {
 	roles := make([]roleProgressResponse, 0, len(progress.Roles))
 	for _, role := range progress.Roles {
 		roles = append(roles, mapRole(role))
@@ -170,7 +170,7 @@ func mapProgress(progress domain.OverallProgress) progressResponse {
 	}
 }
 
-func mapRecommendation(recommendation domain.Recommendation) recommendationResponse {
+func mapRecommendation(recommendation models.Recommendation) recommendationResponse {
 	return recommendationResponse{
 		ScenarioSlug: recommendation.ScenarioSlug,
 		ReasonCode:   recommendation.ReasonCode,
@@ -178,7 +178,7 @@ func mapRecommendation(recommendation domain.Recommendation) recommendationRespo
 	}
 }
 
-func mapRole(role domain.RoleProgress) roleProgressResponse {
+func mapRole(role models.RoleProgress) roleProgressResponse {
 	scenarios := make([]scenarioProgressResponse, 0, len(role.Scenarios))
 	for _, scenario := range role.Scenarios {
 		scenarios = append(scenarios, mapScenario(scenario))
@@ -195,7 +195,7 @@ func mapRole(role domain.RoleProgress) roleProgressResponse {
 	}
 }
 
-func mapScenario(scenario domain.ScenarioProgress) scenarioProgressResponse {
+func mapScenario(scenario models.ScenarioProgress) scenarioProgressResponse {
 	attempts := make([]completedAttemptResultResponse, 0, len(scenario.RecentAttempts))
 	for _, attempt := range scenario.RecentAttempts {
 		attempts = append(attempts, completedAttemptResultResponse{
@@ -223,7 +223,7 @@ func mapScenario(scenario domain.ScenarioProgress) scenarioProgressResponse {
 	}
 }
 
-func mapOptionalAttempt(attempt *domain.AttemptResult) *completedAttemptResultResponse {
+func mapOptionalAttempt(attempt *models.AttemptResult) *completedAttemptResultResponse {
 	if attempt == nil {
 		return nil
 	}
@@ -236,7 +236,7 @@ func mapOptionalAttempt(attempt *domain.AttemptResult) *completedAttemptResultRe
 	}
 }
 
-func mapOptionalScore(score *domain.Score) *scoreResponse {
+func mapOptionalScore(score *models.Score) *scoreResponse {
 	if score == nil {
 		return nil
 	}
@@ -245,7 +245,7 @@ func mapOptionalScore(score *domain.Score) *scoreResponse {
 	return &mapped
 }
 
-func mapScore(score domain.Score) scoreResponse {
+func mapScore(score models.Score) scoreResponse {
 	return scoreResponse{
 		Points:    score.Points(),
 		MaxPoints: score.MaxPoints(),

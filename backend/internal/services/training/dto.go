@@ -1,7 +1,7 @@
 package training
 
 import (
-	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
+	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/models"
 	"github.com/google/uuid"
 )
 
@@ -17,7 +17,7 @@ type ScenarioStats struct {
 type ScenarioCard struct {
 	ID          uuid.UUID      `json:"id"`
 	Slug        string         `json:"slug"`
-	Role        domain.Role    `json:"role"`
+	Role        models.Role    `json:"role"`
 	Category    string         `json:"category"`
 	Difficulty  int            `json:"difficulty"`
 	Title       string         `json:"title"`
@@ -28,9 +28,9 @@ type ScenarioCard struct {
 // StartResult — ответ на старт прохождения.
 type StartResult struct {
 	AttemptID   uuid.UUID          `json:"attempt_id"`
-	Listing     domain.Listing     `json:"listing"`
-	Counterpart domain.Counterpart `json:"counterpart"`
-	Role        domain.Role        `json:"role"`
+	Listing     models.Listing     `json:"listing"`
+	Counterpart models.Counterpart `json:"counterpart"`
+	Role        models.Role        `json:"role"`
 	Title       string             `json:"title"`
 	Scene       ScenePayload       `json:"scene"`
 	ScenesTotal int                `json:"scenes_total"`
@@ -38,14 +38,14 @@ type StartResult struct {
 
 // Feedback — объяснение сделанного выбора.
 type Feedback struct {
-	Verdict domain.Verdict `json:"verdict"`
+	Verdict models.Verdict `json:"verdict"`
 	Text    string         `json:"text"`
 }
 
 // ChoiceResult — ответ на выбор пользователя.
 type ChoiceResult struct {
 	Feedback  Feedback         `json:"feedback"`
-	Reaction  []domain.Message `json:"reaction"`
+	Reaction  []models.Message `json:"reaction"`
 	NextScene *ScenePayload    `json:"next_scene"`
 	Finished  bool             `json:"finished"`
 	Summary   *SummaryResult   `json:"summary,omitempty"`
@@ -55,9 +55,9 @@ type ChoiceResult struct {
 // SummaryResult — итог прохождения: балл, концовка и разбор пропущенных признаков.
 type SummaryResult struct {
 	Score           int               `json:"score"`
-	Outcome         domain.Outcome    `json:"outcome"`
-	Ending          domain.Ending     `json:"ending"`
-	MissedFlags     []domain.FlagInfo `json:"missed_flags"`
+	Outcome         models.Outcome    `json:"outcome"`
+	Ending          models.Ending     `json:"ending"`
+	MissedFlags     []models.FlagInfo `json:"missed_flags"`
 	Takeaway        string            `json:"takeaway"`
 	StepsTotal      int               `json:"steps_total"`
 	DeltaVsPrevious *int              `json:"delta_vs_previous,omitempty"`
@@ -74,7 +74,7 @@ type OptionPayload struct {
 // ScenePayload — сцена в том виде, в каком её видит клиент.
 type ScenePayload struct {
 	SceneID string           `json:"scene_id"`
-	Intro   []domain.Message `json:"intro"`
+	Intro   []models.Message `json:"intro"`
 	Prompt  string           `json:"prompt"`
 	Options []OptionPayload  `json:"options"`
 }

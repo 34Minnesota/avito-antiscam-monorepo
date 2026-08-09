@@ -9,8 +9,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
 	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
+	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/models"
 )
 
 const HistoryLimit = 20
@@ -18,7 +18,7 @@ const HistoryLimit = 20
 const recommendationLimit = 3
 
 type Repository interface {
-	Load(context.Context, domain.UserID, int) (domain.ProgressSnapshot, error)
+	Load(context.Context, models.UserID, int) (models.ProgressSnapshot, error)
 }
 
 type Service struct{ repository Repository }
@@ -27,34 +27,34 @@ func NewService(repository Repository) Service {
 	return Service{repository: repository}
 }
 
-func (s Service) Get(ctx context.Context, userID domain.UserID) (domain.OverallProgress, error) {
+func (s Service) Get(ctx context.Context, userID models.UserID) (models.OverallProgress, error) {
 	if userID.IsZero() {
-		return domain.OverallProgress{}, domainErrors.ErrInvalidUserID
+		return models.OverallProgress{}, domainErrors.ErrInvalidUserID
 	}
 
 	if s.repository == nil {
-		return domain.OverallProgress{}, fmt.Errorf("%w: repository is not configured", domainErrors.ErrDependencyUnavailable)
+		return models.OverallProgress{}, fmt.Errorf("%w: repository is not configured", domainErrors.ErrDependencyUnavailable)
 	}
 
 	snapshot, err := s.repository.Load(ctx, userID, HistoryLimit)
 	if err != nil {
-		return domain.OverallProgress{}, err
+		return models.OverallProgress{}, err
 	}
 
 	if err := validate(snapshot); err != nil {
-		return domain.OverallProgress{}, fmt.Errorf("%w: %w", domainErrors.ErrDataInconsistent, err)
+		return models.OverallProgress{}, fmt.Errorf("%w: %w", domainErrors.ErrDataInconsistent, err)
 	}
 
 	return aggregate(snapshot), nil
 }
 
-func aggregate(snapshot domain.ProgressSnapshot) domain.OverallProgress {
-	roles := map[domain.Role]*domain.RoleProgress{
-		domain.RoleBuyer:  {Role: domain.RoleBuyer},
-		domain.RoleSeller: {Role: domain.RoleSeller},
+func aggregate(snapshot models.ProgressSnapshot) models.OverallProgress {
+	roles := map[models.Role]*models.RoleProgress{
+		models.RoleBuyer:  {Role: models.RoleBuyer},
+		models.RoleSeller: {Role: models.RoleSeller},
 	}
 
-	overall := domain.OverallProgress{}
+	overall := models.OverallProgress{}
 
 	for _, scenario := range snapshot.Scenarios {
 		if scenario.InitialScore != nil && scenario.LatestScore != nil {
@@ -62,14 +62,14 @@ func aggregate(snapshot domain.ProgressSnapshot) domain.OverallProgress {
 			latestPercent := scenario.LatestScore.Percent()
 
 			improvement := latestPercent - initialPercent
-			var trend domain.ProgressTrend
+			var trend models.ProgressTrend
 
 			if latestPercent > initialPercent {
-				trend = domain.ProgressTrendImproving
+				trend = models.ProgressTrendImproving
 			} else if latestPercent < initialPercent {
-				trend = domain.ProgressTrendDeclining
+				trend = models.ProgressTrendDeclining
 			} else {
-				trend = domain.ProgressTrendStable
+				trend = models.ProgressTrendStable
 			}
 
 			scenario.ImprovementPercentPoints = &improvement
@@ -97,7 +97,7 @@ func aggregate(snapshot domain.ProgressSnapshot) domain.OverallProgress {
 	overall.CompletionPercent = percentage(overall.CompletedScenarios, overall.TotalScenarios)
 	overall.PassedPercent = percentage(overall.PassedScenarios, overall.TotalScenarios)
 
-	for _, roleName := range []domain.Role{domain.RoleBuyer, domain.RoleSeller} {
+	for _, roleName := range []models.Role{models.RoleBuyer, models.RoleSeller} {
 		role := roles[roleName]
 		role.CompletionPercent = percentage(role.CompletedScenarios, role.TotalScenarios)
 		role.PassedPercent = percentage(role.PassedScenarios, role.TotalScenarios)
@@ -105,13 +105,13 @@ func aggregate(snapshot domain.ProgressSnapshot) domain.OverallProgress {
 		overall.Roles = append(overall.Roles, *role)
 	}
 
-	buyer := roles[domain.RoleBuyer]
-	seller := roles[domain.RoleSeller]
+	buyer := roles[models.RoleBuyer]
+	seller := roles[models.RoleSeller]
 
 	completionPercentDelta := buyer.CompletionPercent - seller.CompletionPercent
 	passedPercentDelta := buyer.PassedPercent - seller.PassedPercent
 
-	overall.RoleComparison = domain.RoleComparison{
+	overall.RoleComparison = models.RoleComparison{
 		CompletionPercentDelta: completionPercentDelta,
 		PassedPercentDelta:     passedPercentDelta,
 	}
@@ -121,12 +121,12 @@ func aggregate(snapshot domain.ProgressSnapshot) domain.OverallProgress {
 }
 
 type recommendationCandidate struct {
-	recommendation domain.Recommendation
+	recommendation models.Recommendation
 	priority       int
 	bestScore      int
 }
 
-func recommendations(scenarios []domain.ScenarioProgress) []domain.Recommendation {
+func recommendations(scenarios []models.ScenarioProgress) []models.Recommendation {
 	candidates := make([]recommendationCandidate, 0, len(scenarios))
 
 	for _, scenario := range scenarios {
@@ -155,7 +155,7 @@ func recommendations(scenarios []domain.ScenarioProgress) []domain.Recommendatio
 		candidates = candidates[:recommendationLimit]
 	}
 
-	result := make([]domain.Recommendation, 0, len(candidates))
+	result := make([]models.Recommendation, 0, len(candidates))
 	for _, candidate := range candidates {
 		result = append(result, candidate.recommendation)
 	}
@@ -163,7 +163,7 @@ func recommendations(scenarios []domain.ScenarioProgress) []domain.Recommendatio
 	return result
 }
 
-func recommendationFor(scenario domain.ScenarioProgress) (recommendationCandidate, bool) {
+func recommendationFor(scenario models.ScenarioProgress) (recommendationCandidate, bool) {
 	if scenario.ActiveAttemptID != nil {
 		return newRecommendationCandidate(scenario, "ACTIVE_ATTEMPT", "У вас есть незавершённая попытка. Продолжите сценарий.", 0), true
 	}
@@ -187,14 +187,14 @@ func recommendationFor(scenario domain.ScenarioProgress) (recommendationCandidat
 	return recommendationCandidate{}, false
 }
 
-func newRecommendationCandidate(scenario domain.ScenarioProgress, reasonCode, reasonText string, priority int) recommendationCandidate {
+func newRecommendationCandidate(scenario models.ScenarioProgress, reasonCode, reasonText string, priority int) recommendationCandidate {
 	bestScore := 101 // 101 чтобы сценарий отсортировался после тех, у которых это поле задано
 	if scenario.BestScore != nil {
 		bestScore = scenario.BestScore.Percent()
 	}
 
 	return recommendationCandidate{
-		recommendation: domain.Recommendation{
+		recommendation: models.Recommendation{
 			ScenarioSlug: scenario.Slug,
 			ReasonCode:   reasonCode,
 			ReasonText:   reasonText,
@@ -212,7 +212,7 @@ func percentage(value, total int) int {
 	return int((int64(value)*100 + int64(total)/2) / int64(total))
 }
 
-func validate(snapshot domain.ProgressSnapshot) error {
+func validate(snapshot models.ProgressSnapshot) error {
 	for _, scenario := range snapshot.Scenarios {
 		if err := validateScenario(scenario); err != nil {
 			return err
@@ -222,7 +222,7 @@ func validate(snapshot domain.ProgressSnapshot) error {
 	return nil
 }
 
-func validateScenario(scenario domain.ScenarioProgress) error {
+func validateScenario(scenario models.ScenarioProgress) error {
 	if !isValidScenarioIdentity(scenario) {
 		return domainErrors.ErrInvalidProgressData
 	}
@@ -246,18 +246,18 @@ func validateScenario(scenario domain.ScenarioProgress) error {
 	return validateAttempts(scenario.RecentAttempts)
 }
 
-func isValidScenarioIdentity(scenario domain.ScenarioProgress) bool {
+func isValidScenarioIdentity(scenario models.ScenarioProgress) bool {
 	return scenario.ID != uuid.Nil &&
 		scenario.Slug != "" &&
 		scenario.Title != "" &&
 		isValidRole(scenario.Role)
 }
 
-func isValidRole(role domain.Role) bool {
-	return role == domain.RoleBuyer || role == domain.RoleSeller
+func isValidRole(role models.Role) bool {
+	return role == models.RoleBuyer || role == models.RoleSeller
 }
 
-func isValidScenarioState(scenario domain.ScenarioProgress) bool {
+func isValidScenarioState(scenario models.ScenarioProgress) bool {
 	if scenario.AttemptsCount < 0 {
 		return false
 	}
@@ -269,7 +269,7 @@ func isValidScenarioState(scenario domain.ScenarioProgress) bool {
 	return scenario.BestScore == nil || scenario.Completed
 }
 
-func isValidScenarioScores(scenario domain.ScenarioProgress) bool {
+func isValidScenarioScores(scenario models.ScenarioProgress) bool {
 	if scenario.BestScore != nil && scenario.BestScore.MaxPoints() != 100 {
 		return false
 	}
@@ -278,7 +278,7 @@ func isValidScenarioScores(scenario domain.ScenarioProgress) bool {
 		(scenario.InitialScore == nil && scenario.LatestScore == nil)
 }
 
-func validateInitialLatestScore(initialScore, latestScore *domain.Score) error {
+func validateInitialLatestScore(initialScore, latestScore *models.Score) error {
 	if (initialScore == nil && latestScore != nil) ||
 		(initialScore != nil && latestScore == nil) {
 		return domainErrors.ErrInvalidProgressData
@@ -292,7 +292,7 @@ func validateInitialLatestScore(initialScore, latestScore *domain.Score) error {
 	return nil
 }
 
-func validateAttempts(attempts []domain.AttemptResult) error {
+func validateAttempts(attempts []models.AttemptResult) error {
 	for index, attempt := range attempts {
 		if attempt.ID == uuid.Nil || attempt.CompletedAt.IsZero() || attempt.Score.MaxPoints() != 100 || !validOutcome(attempt.Outcome) {
 			return domainErrors.ErrInvalidProgressData
@@ -306,6 +306,6 @@ func validateAttempts(attempts []domain.AttemptResult) error {
 	return nil
 }
 
-func validOutcome(outcome domain.Outcome) bool {
-	return outcome == domain.OutcomeSafe || outcome == domain.OutcomePartial || outcome == domain.OutcomeScammed
+func validOutcome(outcome models.Outcome) bool {
+	return outcome == models.OutcomeSafe || outcome == models.OutcomePartial || outcome == models.OutcomeScammed
 }

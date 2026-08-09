@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
 	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
+	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/models"
 )
 
 type CreateUserInput struct {
@@ -18,19 +18,19 @@ type CreateUserInput struct {
 func (s *UsersService) CreateUser(
 	ctx context.Context,
 	userInput CreateUserInput,
-) (domain.User, error) {
+) (models.User, error) {
 	if err := validateCreateUserInput(userInput); err != nil {
-		return domain.User{}, err
+		return models.User{}, err
 	}
 
 	userInput = normalizeCreateUserInput(userInput)
 
 	passwordHash, err := s.passwordHasher.Hash(userInput.Password)
 	if err != nil {
-		return domain.User{}, fmt.Errorf("hash password: %w", err)
+		return models.User{}, fmt.Errorf("hash password: %w", err)
 	}
 
-	user := domain.NewUser(
+	user := models.NewUser(
 		s.idGenerator.New(),
 		userInput.Nickname,
 		userInput.Email,
@@ -38,14 +38,14 @@ func (s *UsersService) CreateUser(
 		s.clock.Now().UTC(),
 	)
 	if err := user.Validate(); err != nil {
-		return domain.User{}, err
+		return models.User{}, err
 	}
 
 	if err := s.usersRepository.CreateUser(ctx, user); err != nil {
 		if errors.Is(err, domainErrors.ErrConflict) {
-			return domain.User{}, fmt.Errorf("create user: %w", domainErrors.ErrConflict)
+			return models.User{}, fmt.Errorf("create user: %w", domainErrors.ErrConflict)
 		}
-		return domain.User{}, fmt.Errorf("create user: %w", err)
+		return models.User{}, fmt.Errorf("create user: %w", err)
 	}
 
 	return user, nil

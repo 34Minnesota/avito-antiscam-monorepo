@@ -10,7 +10,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
+	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/models"
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/storage/postgres/pool"
 )
 
@@ -164,10 +164,10 @@ func insertFinishedAttempts(
 	}
 }
 
-func mustUserID(t *testing.T, id uuid.UUID) domain.UserID {
+func mustUserID(t *testing.T, id uuid.UUID) models.UserID {
 	t.Helper()
 
-	userID, err := domain.NewUserID(id)
+	userID, err := models.NewUserID(id)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -176,9 +176,9 @@ func mustUserID(t *testing.T, id uuid.UUID) domain.UserID {
 }
 
 func scenariosBySlug(
-	scenarios []domain.ScenarioProgress,
-) map[string]domain.ScenarioProgress {
-	result := make(map[string]domain.ScenarioProgress, len(scenarios))
+	scenarios []models.ScenarioProgress,
+) map[string]models.ScenarioProgress {
+	result := make(map[string]models.ScenarioProgress, len(scenarios))
 
 	for _, scenario := range scenarios {
 		result[scenario.Slug] = scenario
@@ -189,7 +189,7 @@ func scenariosBySlug(
 
 func assertPopulatedScenario(
 	t *testing.T,
-	scenario domain.ScenarioProgress,
+	scenario models.ScenarioProgress,
 ) {
 	t.Helper()
 
@@ -203,7 +203,7 @@ func assertPopulatedScenario(
 
 	if scenario.FirstSafeAttempt == nil ||
 		scenario.FirstSafeAttempt.Score.Points() != 0 ||
-		scenario.FirstSafeAttempt.Outcome != domain.OutcomeSafe {
+		scenario.FirstSafeAttempt.Outcome != models.OutcomeSafe {
 		t.Fatalf("first safe attempt = %+v", scenario.FirstSafeAttempt)
 	}
 
@@ -219,7 +219,7 @@ func assertPopulatedScenario(
 
 func assertEmptyScenario(
 	t *testing.T,
-	scenario domain.ScenarioProgress,
+	scenario models.ScenarioProgress,
 ) {
 	t.Helper()
 
@@ -233,7 +233,7 @@ func assertEmptyScenario(
 func insertScenario(t *testing.T, ctx context.Context, postgres *pool.Pool, id uuid.UUID, slug string) {
 	t.Helper()
 	doc, err := json.Marshal(map[string]any{
-		"slug": slug, "role": domain.RoleBuyer, "title": "Progress test", "difficulty": 1,
+		"slug": slug, "role": models.RoleBuyer, "title": "Progress test", "difficulty": 1,
 	})
 	if err != nil {
 		t.Fatal(err)

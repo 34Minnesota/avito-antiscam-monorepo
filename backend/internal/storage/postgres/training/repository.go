@@ -10,8 +10,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
 	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
+	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/models"
 	trainingservice "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/training"
 	postgrespool "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/storage/postgres/pool"
 )
@@ -26,7 +26,7 @@ func New(pool *postgrespool.Pool) *Repository {
 
 // UpsertScenario создаёт сценарий либо подтверждает, что существующий сценарий
 // с тем же slug содержит идентичный документ.
-func (r *Repository) UpsertScenario(ctx context.Context, s domain.Scenario) error {
+func (r *Repository) UpsertScenario(ctx context.Context, s models.Scenario) error {
 	ctx, cancel := context.WithTimeout(ctx, r.pool.OpTimeout())
 	defer cancel()
 
@@ -71,7 +71,7 @@ func (r *Repository) UpsertScenario(ctx context.Context, s domain.Scenario) erro
 }
 
 // ListScenarios возвращает активные сценарии, опционально фильтруя по роли.
-func (r *Repository) ListScenarios(ctx context.Context, role domain.Role) ([]domain.Scenario, error) {
+func (r *Repository) ListScenarios(ctx context.Context, role models.Role) ([]models.Scenario, error) {
 	ctx, cancel := context.WithTimeout(ctx, r.pool.OpTimeout())
 	defer cancel()
 
@@ -87,7 +87,7 @@ func (r *Repository) ListScenarios(ctx context.Context, role domain.Role) ([]dom
 	}
 	defer rows.Close()
 
-	scenarios := make([]domain.Scenario, 0, 8)
+	scenarios := make([]models.Scenario, 0, 8)
 	for rows.Next() {
 		s, err := scanScenario(rows)
 		if err != nil {
@@ -102,7 +102,7 @@ func (r *Repository) ListScenarios(ctx context.Context, role domain.Role) ([]dom
 }
 
 // ScenarioByID возвращает сценарий вместе с документом.
-func (r *Repository) ScenarioByID(ctx context.Context, id uuid.UUID) (domain.Scenario, error) {
+func (r *Repository) ScenarioByID(ctx context.Context, id uuid.UUID) (models.Scenario, error) {
 	ctx, cancel := context.WithTimeout(ctx, r.pool.OpTimeout())
 	defer cancel()
 
@@ -110,10 +110,10 @@ func (r *Repository) ScenarioByID(ctx context.Context, id uuid.UUID) (domain.Sce
 
 	s, err := scanScenario(r.pool.QueryRow(ctx, q, id))
 	if errors.Is(err, pgx.ErrNoRows) {
-		return domain.Scenario{}, fmt.Errorf("scenario %s: %w", id, domainErrors.ErrNotFound)
+		return models.Scenario{}, fmt.Errorf("scenario %s: %w", id, domainErrors.ErrNotFound)
 	}
 	if err != nil {
-		return domain.Scenario{}, err
+		return models.Scenario{}, err
 	}
 	return s, nil
 }
@@ -121,7 +121,7 @@ func (r *Repository) ScenarioByID(ctx context.Context, id uuid.UUID) (domain.Sce
 // ScenarioStats возвращает статистику пользователя по каждому сценарию.
 func (r *Repository) ScenarioStats(
 	ctx context.Context,
-	userID domain.UserID,
+	userID models.UserID,
 ) (map[uuid.UUID]trainingservice.ScenarioStats, error) {
 	ctx, cancel := context.WithTimeout(ctx, r.pool.OpTimeout())
 	defer cancel()
@@ -158,7 +158,7 @@ func (r *Repository) ScenarioStats(
 }
 
 // CreateAttempt создаёт новую попытку прохождения.
-func (r *Repository) CreateAttempt(ctx context.Context, a domain.Attempt) error {
+func (r *Repository) CreateAttempt(ctx context.Context, a models.Attempt) error {
 	ctx, cancel := context.WithTimeout(ctx, r.pool.OpTimeout())
 	defer cancel()
 
@@ -178,7 +178,7 @@ func (r *Repository) CreateAttempt(ctx context.Context, a domain.Attempt) error 
 }
 
 // AttemptByID возвращает попытку по идентификатору.
-func (r *Repository) AttemptByID(ctx context.Context, id uuid.UUID) (domain.Attempt, error) {
+func (r *Repository) AttemptByID(ctx context.Context, id uuid.UUID) (models.Attempt, error) {
 	ctx, cancel := context.WithTimeout(ctx, r.pool.OpTimeout())
 	defer cancel()
 
@@ -188,10 +188,10 @@ func (r *Repository) AttemptByID(ctx context.Context, id uuid.UUID) (domain.Atte
 
 	a, err := scanAttempt(r.pool.QueryRow(ctx, q, id))
 	if errors.Is(err, pgx.ErrNoRows) {
-		return domain.Attempt{}, fmt.Errorf("attempt %s: %w", id, domainErrors.ErrNotFound)
+		return models.Attempt{}, fmt.Errorf("attempt %s: %w", id, domainErrors.ErrNotFound)
 	}
 	if err != nil {
-		return domain.Attempt{}, err
+		return models.Attempt{}, err
 	}
 	return a, nil
 }
@@ -199,9 +199,9 @@ func (r *Repository) AttemptByID(ctx context.Context, id uuid.UUID) (domain.Atte
 // ActiveAttempt возвращает незавершённую попытку пользователя по сценарию.
 func (r *Repository) ActiveAttempt(
 	ctx context.Context,
-	userID domain.UserID,
+	userID models.UserID,
 	scenarioID uuid.UUID,
-) (domain.Attempt, error) {
+) (models.Attempt, error) {
 	ctx, cancel := context.WithTimeout(ctx, r.pool.OpTimeout())
 	defer cancel()
 
@@ -212,10 +212,10 @@ func (r *Repository) ActiveAttempt(
 
 	a, err := scanAttempt(r.pool.QueryRow(ctx, q, userID.UUID(), scenarioID))
 	if errors.Is(err, pgx.ErrNoRows) {
-		return domain.Attempt{}, domainErrors.ErrNotFound
+		return models.Attempt{}, domainErrors.ErrNotFound
 	}
 	if err != nil {
-		return domain.Attempt{}, err
+		return models.Attempt{}, err
 	}
 	return a, nil
 }
@@ -223,9 +223,9 @@ func (r *Repository) ActiveAttempt(
 // SaveStep фиксирует шаг и новую позицию попытки одной транзакцией.
 func (r *Repository) SaveStep(
 	ctx context.Context,
-	step domain.AttemptStep,
-	a domain.Attempt,
-	userID domain.UserID,
+	step models.AttemptStep,
+	a models.Attempt,
+	userID models.UserID,
 	expectedRevision int,
 ) (int, error) {
 	ctx, cancel := context.WithTimeout(ctx, r.pool.OpTimeout())
@@ -291,7 +291,7 @@ func (r *Repository) FinishAttempt(
 	ctx context.Context,
 	id uuid.UUID,
 	score int,
-	outcome domain.Outcome,
+	outcome models.Outcome,
 	at time.Time,
 ) error {
 	ctx, cancel := context.WithTimeout(ctx, r.pool.OpTimeout())
@@ -313,7 +313,7 @@ func (r *Repository) FinishAttempt(
 }
 
 // Steps возвращает журнал шагов попытки в порядке прохождения.
-func (r *Repository) Steps(ctx context.Context, attemptID uuid.UUID) ([]domain.AttemptStep, error) {
+func (r *Repository) Steps(ctx context.Context, attemptID uuid.UUID) ([]models.AttemptStep, error) {
 	ctx, cancel := context.WithTimeout(ctx, r.pool.OpTimeout())
 	defer cancel()
 
@@ -329,9 +329,9 @@ func (r *Repository) Steps(ctx context.Context, attemptID uuid.UUID) ([]domain.A
 	}
 	defer rows.Close()
 
-	steps := make([]domain.AttemptStep, 0, 8)
+	steps := make([]models.AttemptStep, 0, 8)
 	for rows.Next() {
-		var s domain.AttemptStep
+		var s models.AttemptStep
 		if err := rows.Scan(&s.AttemptID, &s.SceneID, &s.OptionID, &s.CreatedAt); err != nil {
 			return nil, fmt.Errorf("reading step: %w", err)
 		}
@@ -346,7 +346,7 @@ func (r *Repository) Steps(ctx context.Context, attemptID uuid.UUID) ([]domain.A
 // BestScore возвращает лучший результат пользователя по сценарию.
 func (r *Repository) BestScore(
 	ctx context.Context,
-	userID domain.UserID,
+	userID models.UserID,
 	scenarioID, exclude uuid.UUID,
 ) (*int, error) {
 	ctx, cancel := context.WithTimeout(ctx, r.pool.OpTimeout())
@@ -368,34 +368,34 @@ type row interface {
 	Scan(dest ...any) error
 }
 
-func scanScenario(r row) (domain.Scenario, error) {
+func scanScenario(r row) (models.Scenario, error) {
 	var (
-		s   domain.Scenario
+		s   models.Scenario
 		doc []byte
 	)
 	if err := r.Scan(&s.ID, &doc, &s.IsActive); err != nil {
-		return domain.Scenario{}, err
+		return models.Scenario{}, err
 	}
 	if err := json.Unmarshal(doc, &s.Doc); err != nil {
-		return domain.Scenario{}, fmt.Errorf("unmarshaling scenario document %s: %w", s.ID, err)
+		return models.Scenario{}, fmt.Errorf("unmarshaling scenario document %s: %w", s.ID, err)
 	}
 	return s, nil
 }
 
-func scanAttempt(r row) (domain.Attempt, error) {
+func scanAttempt(r row) (models.Attempt, error) {
 	var (
-		a      domain.Attempt
+		a      models.Attempt
 		state  []byte
 		userID uuid.UUID
 	)
 	err := r.Scan(&a.ID, &userID, &a.ScenarioID, &a.Status, &state,
 		&a.Score, &a.Outcome, &a.StartedAt, &a.FinishedAt, &a.Revision)
 	if err != nil {
-		return domain.Attempt{}, err
+		return models.Attempt{}, err
 	}
-	a.UserID = domain.UserID(userID)
+	a.UserID = models.UserID(userID)
 	if err := json.Unmarshal(state, &a.State); err != nil {
-		return domain.Attempt{}, fmt.Errorf("unmarshaling attempt state %s: %w", a.ID, err)
+		return models.Attempt{}, fmt.Errorf("unmarshaling attempt state %s: %w", a.ID, err)
 	}
 	return a, nil
 }

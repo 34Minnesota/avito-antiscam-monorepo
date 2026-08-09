@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 
-	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
+	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/models"
 	applogger "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/logger"
 	authservice "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/auth"
 	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/services/training"
@@ -191,7 +191,7 @@ func (s *Server) Logout(c *gin.Context) {
 		return
 	}
 
-	session, ok := value.(domain.Session)
+	session, ok := value.(models.Session)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, ErrorResponse{
 			Code:    "unauthorized",
@@ -288,8 +288,8 @@ func (s *Server) ListScenarios(c *gin.Context) {
 		return
 	}
 
-	role := domain.Role(c.Query("role"))
-	if role != "" && (role != domain.RoleBuyer && role != domain.RoleSeller) {
+	role := models.Role(c.Query("role"))
+	if role != "" && (role != models.RoleBuyer && role != models.RoleSeller) {
 		c.JSON(http.StatusBadRequest, ErrorResponse{
 			Code:    "bad_request",
 			Message: "неизвестная роль: " + string(role),

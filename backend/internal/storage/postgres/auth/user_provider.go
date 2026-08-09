@@ -5,7 +5,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain"
+	"github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/models"
 )
 
 // UserProvider описывает минимальный контракт,
@@ -14,10 +14,10 @@ type UserProvider interface {
 	GetUser(
 		ctx context.Context,
 		userID uuid.UUID,
-	) (domain.User, error)
+	) (models.User, error)
 
 	GetUserByEmail(
 		ctx context.Context,
 		email string,
-	) (domain.User, error)
+	) (models.User, error)
 }

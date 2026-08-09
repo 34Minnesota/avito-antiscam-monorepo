@@ -24,7 +24,7 @@ export const AuthPage = () => {
       const result = register
         ? await signup({ nickname, email, password }).unwrap()
         : await login({ email, password }).unwrap();
-      setSessionId(result.sessionId);
+      setSessionId(result.session_id);
       navigate('/', { replace: true });
     } catch {
       // Mutation state renders the server error.

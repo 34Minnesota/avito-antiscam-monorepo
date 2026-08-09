@@ -6,9 +6,9 @@ describe('getProgressHeadline', () => {
     expect(
       getProgressHeadline({
         completed: false,
-        activeAttemptId: 'attempt-1',
-        improvementPercentPoints: null,
-        latestScore: null,
+        active_attempt_id: 'attempt-1',
+        improvement_percent_points: null,
+        latest_score: null,
       }),
     ).toBe('Тренировка не завершена');
   });
@@ -16,9 +16,9 @@ describe('getProgressHeadline', () => {
     expect(
       getProgressHeadline({
         completed: false,
-        activeAttemptId: null,
-        improvementPercentPoints: null,
-        latestScore: null,
+        active_attempt_id: null,
+        improvement_percent_points: null,
+        latest_score: null,
       }),
     ).toBe('Ещё не пройден');
   });
@@ -26,9 +26,9 @@ describe('getProgressHeadline', () => {
     expect(
       getProgressHeadline({
         completed: true,
-        activeAttemptId: null,
-        improvementPercentPoints: 18,
-        latestScore: { points: 72, maxPoints: 100, percent: 72 },
+        active_attempt_id: null,
+        improvement_percent_points: 18,
+        latest_score: { points: 72, max_points: 100, percent: 72 },
       }),
     ).toBe('+18 баллов к первому результату');
   });
@@ -36,9 +36,9 @@ describe('getProgressHeadline', () => {
     expect(
       getProgressHeadline({
         completed: true,
-        activeAttemptId: null,
-        improvementPercentPoints: 0,
-        latestScore: { points: 72, maxPoints: 100, percent: 72 },
+        active_attempt_id: null,
+        improvement_percent_points: 0,
+        latest_score: { points: 72, max_points: 100, percent: 72 },
       }),
     ).toBe('72% — последний результат');
   });

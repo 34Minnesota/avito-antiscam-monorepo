@@ -14,7 +14,7 @@ export const ScenarioCatalog = ({ scenarios, progress = [], onStart }: Props) =>
       <ScenarioCard
         key={scenario.id}
         scenario={scenario}
-        progress={progress.find((item) => item.scenarioSlug === scenario.slug)}
+        progress={progress.find((item) => item.scenario_slug === scenario.slug)}
         onStart={() => onStart(scenario)}
       />
     ))}

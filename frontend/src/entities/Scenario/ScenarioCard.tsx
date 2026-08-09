@@ -15,7 +15,7 @@ interface Props {
 }
 
 export const ScenarioCard = ({ scenario, progress, onStart }: Props) => {
-  const active = Boolean(progress?.activeAttemptId);
+  const active = Boolean(progress?.active_attempt_id);
   const completed = Boolean(progress?.completed);
   const buttonLabel = active ? 'Продолжить' : completed ? 'Пройти ещё раз' : 'Начать';
   const headline = progress
@@ -41,7 +41,7 @@ export const ScenarioCard = ({ scenario, progress, onStart }: Props) => {
       <p>{scenario.description}</p>
       <div className={cls.meta}>
         <span>{scenario.category}</span>
-        <span>{progress?.attemptsCount ?? scenario.stats?.attempts_count ?? 0} попыток</span>
+        <span>{progress?.attempts_count ?? scenario.stats?.attempts_count ?? 0} попыток</span>
       </div>
       <div className={cls.bottom}>
         <strong>{headline}</strong>

@@ -38,10 +38,10 @@ export const DashboardPage = () => {
   const roleProgress = progress.roles.find((item) => item.role === role);
   const recommendation =
     progress.recommendations.find((item) =>
-      roleProgress?.scenarios.some((scenario) => scenario.scenarioSlug === item.scenarioSlug),
+      roleProgress?.scenarios.some((scenario) => scenario.scenario_slug === item.scenario_slug),
     ) ?? progress.recommendations[0];
   const recommendationScenario = catalog?.scenarios.find(
-    (item) => item.slug === recommendation?.scenarioSlug,
+    (item) => item.slug === recommendation?.scenario_slug,
   );
   const scenarios = catalog?.scenarios ?? [];
 
@@ -83,7 +83,7 @@ export const DashboardPage = () => {
           <section className={cls.recommendation} aria-label="Рекомендованная тренировка">
             <div>
               <span>СЛЕДУЮЩИЙ ШАГ</span>
-              <h3>{recommendation.reasonText}</h3>
+              <h3>{recommendation.reason_text}</h3>
               <p>
                 Рекомендация основана на вашем прогрессе и помогает закрыть следующий пробел в
                 навыках.

@@ -9,8 +9,8 @@ export type RoleComparison =
 export const getRoleComparison = (roles: RoleProgress[]): RoleComparison => {
   const buyer = roles.find((role) => role.role === 'buyer');
   const seller = roles.find((role) => role.role === 'seller');
-  const buyerStarted = Boolean(buyer?.completedScenarios);
-  const sellerStarted = Boolean(seller?.completedScenarios);
+  const buyerStarted = Boolean(buyer?.completed_scenarios);
+  const sellerStarted = Boolean(seller?.completed_scenarios);
 
   if (!buyerStarted && !sellerStarted)
     return { state: 'empty', value: 'Пока нет данных', note: 'Пройдите хотя бы одну тренировку' };
@@ -21,9 +21,9 @@ export const getRoleComparison = (roles: RoleProgress[]): RoleComparison => {
       note: 'Пройдите хотя бы одну тренировку в обеих ролях',
     };
 
-  const delta = (seller?.completionPercent ?? 0) - (buyer?.completionPercent ?? 0);
-  const sellerPercent = seller?.completionPercent ?? 0;
-  const buyerPercent = buyer?.completionPercent ?? 0;
+  const delta = (seller?.completion_percent ?? 0) - (buyer?.completion_percent ?? 0);
+  const sellerPercent = seller?.completion_percent ?? 0;
+  const buyerPercent = buyer?.completion_percent ?? 0;
   const note = `Продавец ${sellerPercent}% · Покупатель ${buyerPercent}%`;
 
   if (delta === 0) return { state: 'equal', value: 'Результаты равны', note };

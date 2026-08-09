@@ -4,15 +4,15 @@ import { RoleProgress } from '@/shared/api/contracts';
 
 const role = (
   name: 'buyer' | 'seller',
-  completedScenarios: number,
-  completionPercent: number,
+  completed_scenarios: number,
+  completion_percent: number,
 ): RoleProgress => ({
   role: name,
-  totalScenarios: 2,
-  completedScenarios,
-  passedScenarios: completedScenarios,
-  completionPercent,
-  passedPercent: completionPercent,
+  total_scenarios: 2,
+  completed_scenarios,
+  passed_scenarios: completed_scenarios,
+  completion_percent,
+  passed_percent: completion_percent,
   scenarios: [],
 });
 

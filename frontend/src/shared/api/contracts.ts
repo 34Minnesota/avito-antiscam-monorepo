@@ -3,7 +3,7 @@ export type Verdict = 'safe' | 'risky' | 'fatal';
 export type Outcome = 'safe' | 'partial' | 'scammed';
 
 export interface SessionResponse {
-  sessionId: string;
+  session_id: string;
 }
 export interface User {
   id: string;
@@ -90,46 +90,46 @@ export interface Summary {
 }
 export interface ScoreResponse {
   points: number;
-  maxPoints: number;
+  max_points: number;
   percent: number;
 }
 export interface CompletedAttempt {
-  attemptId: string;
+  attempt_id: string;
   score: ScoreResponse;
   outcome: Outcome;
-  completedAt: string;
+  completed_at: string;
 }
 export interface ScenarioProgress {
-  scenarioSlug: string;
+  scenario_slug: string;
   title: string;
   completed: boolean;
   passed: boolean;
-  attemptsCount: number;
-  bestScore?: ScoreResponse | null;
-  activeAttemptId?: string | null;
-  recentAttempts: CompletedAttempt[];
-  initialScore?: ScoreResponse | null;
-  latestScore?: ScoreResponse | null;
-  improvementPercentPoints?: number | null;
+  attempts_count: number;
+  best_score?: ScoreResponse | null;
+  active_attempt_id?: string | null;
+  recent_attempts: CompletedAttempt[];
+  initial_score?: ScoreResponse | null;
+  latest_score?: ScoreResponse | null;
+  improvement_percent_points?: number | null;
   trend?: 'improving' | 'stable' | 'declining' | null;
-  firstSafeAttempt?: CompletedAttempt | null;
+  first_safe_attempt?: CompletedAttempt | null;
 }
 export interface RoleProgress {
   role: Role;
-  totalScenarios: number;
-  completedScenarios: number;
-  passedScenarios: number;
-  completionPercent: number;
-  passedPercent: number;
+  total_scenarios: number;
+  completed_scenarios: number;
+  passed_scenarios: number;
+  completion_percent: number;
+  passed_percent: number;
   scenarios: ScenarioProgress[];
 }
 export interface Progress {
-  totalScenarios: number;
-  completedScenarios: number;
-  passedScenarios: number;
-  completionPercent: number;
-  passedPercent: number;
+  total_scenarios: number;
+  completed_scenarios: number;
+  passed_scenarios: number;
+  completion_percent: number;
+  passed_percent: number;
   roles: RoleProgress[];
-  roleComparison: { completionPercentDelta: number; passedPercentDelta: number };
-  recommendations: Array<{ scenarioSlug: string; reasonCode: string; reasonText: string }>;
+  role_comparison: { completion_percent_delta: number; passed_percent_delta: number };
+  recommendations: Array<{ scenario_slug: string; reason_code: string; reason_text: string }>;
 }

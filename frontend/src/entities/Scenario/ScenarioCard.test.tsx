@@ -20,13 +20,13 @@ describe('ScenarioCard', () => {
       <ScenarioCard
         scenario={scenario}
         progress={{
-          scenarioSlug: 'safe-deal',
+          scenario_slug: 'safe-deal',
           title: scenario.title,
           completed: false,
           passed: false,
-          attemptsCount: 1,
-          activeAttemptId: 'a1',
-          recentAttempts: [],
+          attempts_count: 1,
+          active_attempt_id: 'a1',
+          recent_attempts: [],
         }}
         onStart={onStart}
       />,
@@ -37,14 +37,14 @@ describe('ScenarioCard', () => {
       <ScenarioCard
         scenario={scenario}
         progress={{
-          scenarioSlug: 'safe-deal',
+          scenario_slug: 'safe-deal',
           title: scenario.title,
           completed: true,
           passed: true,
-          attemptsCount: 2,
-          activeAttemptId: null,
-          latestScore: { points: 80, maxPoints: 100, percent: 80 },
-          recentAttempts: [],
+          attempts_count: 2,
+          active_attempt_id: null,
+          latest_score: { points: 80, max_points: 100, percent: 80 },
+          recent_attempts: [],
         }}
         onStart={onStart}
       />,

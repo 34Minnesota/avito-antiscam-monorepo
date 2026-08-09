@@ -19,9 +19,9 @@ export const ProgressOverview = ({ progress, activeRole }: ProgressOverviewProps
   const comparisonContent = getRoleComparison(progress.roles);
   const recentAttempts = (role?.scenarios ?? [])
     .flatMap((scenario) =>
-      scenario.recentAttempts.map((attempt) => ({ ...attempt, title: scenario.title })),
+      scenario.recent_attempts.map((attempt) => ({ ...attempt, title: scenario.title })),
     )
-    .sort((left, right) => Date.parse(right.completedAt) - Date.parse(left.completedAt))
+    .sort((left, right) => Date.parse(right.completed_at) - Date.parse(left.completed_at))
     .slice(0, 4);
 
   return (
@@ -31,26 +31,26 @@ export const ProgressOverview = ({ progress, activeRole }: ProgressOverviewProps
           ПРОГРЕСС · {activeRole === 'seller' ? 'ПРОДАВЕЦ' : 'ПОКУПАТЕЛЬ'}
         </div>
         <div className={cls.percent}>
-          {role?.completionPercent ?? 0}
+          {role?.completion_percent ?? 0}
           <small>%</small>
         </div>
         <div
           className={cls.track}
           role="progressbar"
-          aria-valuenow={role?.completionPercent ?? 0}
+          aria-valuenow={role?.completion_percent ?? 0}
           aria-valuemin={0}
           aria-valuemax={100}
         >
-          <span style={{ width: `${role?.completionPercent ?? 0}%` }} />
+          <span style={{ width: `${role?.completion_percent ?? 0}%` }} />
         </div>
         <p>
-          {role?.completedScenarios ?? 0} из {role?.totalScenarios ?? 0} сценариев пройдено
+          {role?.completed_scenarios ?? 0} из {role?.total_scenarios ?? 0} сценариев пройдено
         </p>
       </Card>
       <Card className={cls.stat}>
         <span>Безопасные решения</span>
-        <strong>{role?.passedPercent ?? 0}%</strong>
-        <small>{role?.passedScenarios ?? 0} успешных прохождений</small>
+        <strong>{role?.passed_percent ?? 0}%</strong>
+        <small>{role?.passed_scenarios ?? 0} успешных прохождений</small>
       </Card>
       <Card className={cls.stat}>
         <span>Сравнение прогресса</span>
@@ -71,7 +71,7 @@ export const ProgressOverview = ({ progress, activeRole }: ProgressOverviewProps
         {recentAttempts.length > 0 ? (
           <div className={cls.historyList} aria-label="Последние результаты">
             {recentAttempts.map((attempt) => (
-              <div className={cls.historyItem} key={attempt.attemptId}>
+              <div className={cls.historyItem} key={attempt.attempt_id}>
                 <div>
                   <strong>{attempt.score.percent}%</strong>
                   <span>{attempt.title}</span>
@@ -84,7 +84,7 @@ export const ProgressOverview = ({ progress, activeRole }: ProgressOverviewProps
                         ? 'Частично'
                         : 'Рискованно'}
                   </span>
-                  <small>{formatAttemptDate(attempt.completedAt)}</small>
+                    <small>{formatAttemptDate(attempt.completed_at)}</small>
                 </div>
               </div>
             ))}

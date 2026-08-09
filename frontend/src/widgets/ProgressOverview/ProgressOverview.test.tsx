@@ -4,32 +4,32 @@ import { ProgressOverview } from './ProgressOverview';
 import { Progress } from '@/shared/api/contracts';
 
 const base: Progress = {
-  totalScenarios: 2,
-  completedScenarios: 0,
-  passedScenarios: 0,
-  completionPercent: 0,
-  passedPercent: 0,
+  total_scenarios: 2,
+  completed_scenarios: 0,
+  passed_scenarios: 0,
+  completion_percent: 0,
+  passed_percent: 0,
   roles: [
     {
       role: 'buyer',
-      totalScenarios: 2,
-      completedScenarios: 0,
-      passedScenarios: 0,
-      completionPercent: 0,
-      passedPercent: 0,
+      total_scenarios: 2,
+      completed_scenarios: 0,
+      passed_scenarios: 0,
+      completion_percent: 0,
+      passed_percent: 0,
       scenarios: [],
     },
     {
       role: 'seller',
-      totalScenarios: 2,
-      completedScenarios: 0,
-      passedScenarios: 0,
-      completionPercent: 0,
-      passedPercent: 0,
+      total_scenarios: 2,
+      completed_scenarios: 0,
+      passed_scenarios: 0,
+      completion_percent: 0,
+      passed_percent: 0,
       scenarios: [],
     },
   ],
-  roleComparison: { completionPercentDelta: 0, passedPercentDelta: 0 },
+  role_comparison: { completion_percent_delta: 0, passed_percent_delta: 0 },
   recommendations: [],
 };
 
@@ -41,7 +41,7 @@ describe('ProgressOverview', () => {
           ...base,
           roles: [
             base.roles[0],
-            { ...base.roles[1], completedScenarios: 1, completionPercent: 50 },
+            { ...base.roles[1], completed_scenarios: 1, completion_percent: 50 },
           ],
         }}
         activeRole="seller"
@@ -57,8 +57,8 @@ describe('ProgressOverview', () => {
         progress={{
           ...base,
           roles: [
-            { ...base.roles[0], completedScenarios: 1, completionPercent: 50 },
-            { ...base.roles[1], completedScenarios: 1, completionPercent: 75 },
+            { ...base.roles[0], completed_scenarios: 1, completion_percent: 50 },
+            { ...base.roles[1], completed_scenarios: 1, completion_percent: 75 },
           ],
         }}
         activeRole="seller"
@@ -77,27 +77,27 @@ describe('ProgressOverview', () => {
             { ...base.roles[0] },
             {
               ...base.roles[1],
-              completedScenarios: 1,
-              completionPercent: 100,
+              completed_scenarios: 1,
+              completion_percent: 100,
               scenarios: [
                 {
-                  scenarioSlug: 'safe-deal',
+                  scenario_slug: 'safe-deal',
                   title: 'Срочная предоплата',
                   completed: true,
                   passed: true,
-                  attemptsCount: 2,
-                  recentAttempts: [
+                  attempts_count: 2,
+                  recent_attempts: [
                     {
-                      attemptId: 'a2',
-                      score: { points: 95, maxPoints: 100, percent: 95 },
+                      attempt_id: 'a2',
+                      score: { points: 95, max_points: 100, percent: 95 },
                       outcome: 'safe',
-                      completedAt: '2026-08-09T10:00:00Z',
+                      completed_at: '2026-08-09T10:00:00Z',
                     },
                     {
-                      attemptId: 'a1',
-                      score: { points: 70, maxPoints: 100, percent: 70 },
+                      attempt_id: 'a1',
+                      score: { points: 70, max_points: 100, percent: 70 },
                       outcome: 'partial',
-                      completedAt: '2026-08-08T10:00:00Z',
+                      completed_at: '2026-08-08T10:00:00Z',
                     },
                   ],
                 },

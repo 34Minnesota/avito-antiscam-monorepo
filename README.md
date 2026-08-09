@@ -1,43 +1,29 @@
 # Кейс 5: «Антискам тренажер»
 
+## Запуск
 
-## Run
-
-```bash
-make db-up
-make migrate-up
-make run
-```
-
-## Run tests
+Клонируйте репозиторий и перейдите в него:
 
 ```bash
-make test
+git clone https://github.com/34Minnesota/avito-antiscam-monorepo.git
+cd avito-antiscam-monorepo
 ```
 
-## Run linter
+Создайте локальный файл конфигурации:
 
 ```bash
-make lint
+cp .env.example .env
 ```
 
-## Update swagger API documentation
+Запустите базу данных, примените миграции и поднимите API:
 
 ```bash
-make swag
+make deploy
 ```
 
+После запуска:
 
-
-Frontend:
-http://localhost:3000
-
-Backend:
-http://localhost:8080
-
-Swagger:
-http://localhost:8080/swagger/index.html
-
-Health:
-http://localhost:3000/healthz
-http://localhost:8080/healthz
+- Frontend: [http://localhost:3000](http://localhost:3000)
+- API: [http://localhost:8080](http://localhost:8080);
+- health-check: [http://localhost:8080/healthz](http://localhost:8080/healthz);
+- Swagger UI: [http://localhost:8080/swagger/index.html](http://localhost:8080/swagger/index.html).

@@ -31,7 +31,7 @@ type RegisterRequest struct {
 }
 
 type RegisterResponse struct {
-	SessionID uuid.UUID `json:"sessionId"`
+	SessionID uuid.UUID `json:"session_id"`
 }
 
 type LoginRequest struct {
@@ -40,7 +40,7 @@ type LoginRequest struct {
 }
 
 type LoginResponse struct {
-	SessionID uuid.UUID `json:"sessionId"`
+	SessionID uuid.UUID `json:"session_id"`
 }
 
 type UserResponse struct {

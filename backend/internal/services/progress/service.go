@@ -1,8 +1,10 @@
 package progress_service
 
 import (
+	"cmp"
 	"context"
 	"fmt"
+	"slices"
 	"sort"
 
 	"github.com/google/uuid"
@@ -12,6 +14,8 @@ import (
 )
 
 const HistoryLimit = 20
+
+const recommendationLimit = 3
 
 type Repository interface {
 	Load(context.Context, domain.UserID, int) (domain.ProgressSnapshot, error)
@@ -111,8 +115,93 @@ func aggregate(snapshot domain.ProgressSnapshot) domain.OverallProgress {
 		CompletionPercentDelta: completionPercentDelta,
 		PassedPercentDelta:     passedPercentDelta,
 	}
+	overall.Recommendations = recommendations(snapshot.Scenarios)
 
 	return overall
+}
+
+type recommendationCandidate struct {
+	recommendation domain.Recommendation
+	priority       int
+	bestScore      int
+}
+
+func recommendations(scenarios []domain.ScenarioProgress) []domain.Recommendation {
+	candidates := make([]recommendationCandidate, 0, len(scenarios))
+
+	for _, scenario := range scenarios {
+		candidate, ok := recommendationFor(scenario)
+		if ok {
+			candidates = append(candidates, candidate)
+		}
+	}
+
+	slices.SortFunc(candidates, func(a, b recommendationCandidate) int {
+		if n := cmp.Compare(a.priority, b.priority); n != 0 {
+			return n
+		}
+
+		if n := cmp.Compare(a.bestScore, b.bestScore); n != 0 {
+			return n
+		}
+
+		return cmp.Compare(
+			a.recommendation.ScenarioSlug,
+			b.recommendation.ScenarioSlug,
+		)
+	})
+
+	if len(candidates) > recommendationLimit {
+		candidates = candidates[:recommendationLimit]
+	}
+
+	result := make([]domain.Recommendation, 0, len(candidates))
+	for _, candidate := range candidates {
+		result = append(result, candidate.recommendation)
+	}
+
+	return result
+}
+
+func recommendationFor(scenario domain.ScenarioProgress) (recommendationCandidate, bool) {
+	if scenario.ActiveAttemptID != nil {
+		return newRecommendationCandidate(scenario, "ACTIVE_ATTEMPT", "У вас есть незавершённая попытка. Продолжите сценарий.", 0), true
+	}
+
+	if !scenario.Passed && scenario.AttemptsCount > 0 && scenario.BestScore == nil {
+		return newRecommendationCandidate(scenario, "NOT_PASSED", "Сценарий пока не пройден безопасно. Попробуйте ещё раз.", 1), true
+	}
+
+	if scenario.Completed && !scenario.Passed && scenario.BestScore != nil {
+		return newRecommendationCandidate(scenario, "LOW_BEST_SCORE", fmt.Sprintf("Лучший результат по сценарию — %d%%. Попробуйте улучшить его.", scenario.BestScore.Percent()), 2), true
+	}
+
+	if scenario.AttemptsCount == 0 {
+		return newRecommendationCandidate(scenario, "NOT_STARTED", "Сценарий ещё не пройден. Начните его.", 3), true
+	}
+
+	if scenario.Passed {
+		return newRecommendationCandidate(scenario, "REPEAT_FOR_REINFORCEMENT", "Сценарий пройден безопасно. Повторите его, чтобы закрепить навык.", 4), true
+	}
+
+	return recommendationCandidate{}, false
+}
+
+func newRecommendationCandidate(scenario domain.ScenarioProgress, reasonCode, reasonText string, priority int) recommendationCandidate {
+	bestScore := 101 // 101 чтобы сценарий отсортировался после тех, у которых это поле задано
+	if scenario.BestScore != nil {
+		bestScore = scenario.BestScore.Percent()
+	}
+
+	return recommendationCandidate{
+		recommendation: domain.Recommendation{
+			ScenarioSlug: scenario.Slug,
+			ReasonCode:   reasonCode,
+			ReasonText:   reasonText,
+		},
+		priority:  priority,
+		bestScore: bestScore,
+	}
 }
 
 func percentage(value, total int) int {

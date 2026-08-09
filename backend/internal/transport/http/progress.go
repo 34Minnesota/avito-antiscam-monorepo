@@ -13,6 +13,8 @@ import (
 	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
 )
 
+// TODO: все теги под snake_case
+
 type ProgressGetter interface {
 	Get(context.Context, domain.UserID) (domain.OverallProgress, error)
 }
@@ -25,7 +27,6 @@ func NewProgressHandler(service ProgressGetter) *ProgressHandler {
 	return &ProgressHandler{service: service}
 }
 
-// RegisterProgressRoutes ожидает маршрутизатор, защищённый middleware авторизации.
 func RegisterProgressRoutes(router gin.IRoutes, handler *ProgressHandler) {
 	router.GET("/progress", handler.Get)
 }
@@ -126,20 +127,32 @@ type roleComparisonResponse struct {
 	PassedPercentDelta     int `json:"passedPercentDelta"`
 }
 
+type recommendationResponse struct {
+	ScenarioSlug string `json:"scenarioSlug"`
+	ReasonCode   string `json:"reasonCode"`
+	ReasonText   string `json:"reasonText"`
+}
+
 type progressResponse struct {
-	TotalScenarios     int                    `json:"totalScenarios"`
-	CompletedScenarios int                    `json:"completedScenarios"`
-	PassedScenarios    int                    `json:"passedScenarios"`
-	CompletionPercent  int                    `json:"completionPercent"`
-	PassedPercent      int                    `json:"passedPercent"`
-	Roles              []roleProgressResponse `json:"roles"`
-	RoleComparison     roleComparisonResponse `json:"roleComparison"`
+	TotalScenarios     int                      `json:"totalScenarios"`
+	CompletedScenarios int                      `json:"completedScenarios"`
+	PassedScenarios    int                      `json:"passedScenarios"`
+	CompletionPercent  int                      `json:"completionPercent"`
+	PassedPercent      int                      `json:"passedPercent"`
+	Roles              []roleProgressResponse   `json:"roles"`
+	RoleComparison     roleComparisonResponse   `json:"roleComparison"`
+	Recommendations    []recommendationResponse `json:"recommendations"`
 }
 
 func mapProgress(progress domain.OverallProgress) progressResponse {
 	roles := make([]roleProgressResponse, 0, len(progress.Roles))
 	for _, role := range progress.Roles {
 		roles = append(roles, mapRole(role))
+	}
+
+	recommendations := make([]recommendationResponse, 0, len(progress.Recommendations))
+	for _, recommendation := range progress.Recommendations {
+		recommendations = append(recommendations, mapRecommendation(recommendation))
 	}
 
 	return progressResponse{
@@ -153,6 +166,15 @@ func mapProgress(progress domain.OverallProgress) progressResponse {
 			CompletionPercentDelta: progress.RoleComparison.CompletionPercentDelta,
 			PassedPercentDelta:     progress.RoleComparison.PassedPercentDelta,
 		},
+		Recommendations: recommendations,
+	}
+}
+
+func mapRecommendation(recommendation domain.Recommendation) recommendationResponse {
+	return recommendationResponse{
+		ScenarioSlug: recommendation.ScenarioSlug,
+		ReasonCode:   recommendation.ReasonCode,
+		ReasonText:   recommendation.ReasonText,
 	}
 }
 

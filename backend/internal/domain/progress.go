@@ -61,9 +61,16 @@ type OverallProgress struct {
 	PassedPercent      int
 	Roles              []RoleProgress
 	RoleComparison     RoleComparison
+	Recommendations    []Recommendation
 }
 
 type RoleComparison struct {
 	CompletionPercentDelta int
 	PassedPercentDelta     int
+}
+
+type Recommendation struct {
+	ScenarioSlug string
+	ReasonCode   string
+	ReasonText   string
 }

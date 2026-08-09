@@ -138,6 +138,78 @@ func TestGetCalculatesScenarioDynamics(t *testing.T) {
 	}
 }
 
+func TestGetRecommendationsUsesPriorityAndLimitsResults(t *testing.T) {
+	t.Parallel()
+
+	lowScore := mustScore(t, 42, 100)
+	highScore := mustScore(t, 80, 100)
+	activeAttemptID := uuid.New()
+	repo := &repositoryStub{snapshot: domain.ProgressSnapshot{Scenarios: []domain.ScenarioProgress{
+		{ID: uuid.New(), Slug: "active", Title: "Active", Role: domain.RoleBuyer, ActiveAttemptID: &activeAttemptID},
+		{ID: uuid.New(), Slug: "failed-low", Title: "Failed low", Role: domain.RoleBuyer, Completed: true, BestScore: &lowScore},
+		{ID: uuid.New(), Slug: "failed-high", Title: "Failed high", Role: domain.RoleBuyer, Completed: true, BestScore: &highScore},
+		{ID: uuid.New(), Slug: "not-started", Title: "Not started", Role: domain.RoleBuyer},
+	}}}
+
+	result, err := progress_service.NewService(repo).Get(context.Background(), mustUserID(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := []domain.Recommendation{
+		{ScenarioSlug: "active", ReasonCode: "ACTIVE_ATTEMPT"},
+		{ScenarioSlug: "failed-low", ReasonCode: "LOW_BEST_SCORE"},
+		{ScenarioSlug: "failed-high", ReasonCode: "LOW_BEST_SCORE"},
+	}
+	assertRecommendations(t, result.Recommendations, want)
+}
+
+func TestGetRecommendationsBreaksScoreTiesBySlug(t *testing.T) {
+	t.Parallel()
+
+	score := mustScore(t, 42, 100)
+	repo := &repositoryStub{snapshot: domain.ProgressSnapshot{Scenarios: []domain.ScenarioProgress{
+		{ID: uuid.New(), Slug: "zeta", Title: "Zeta", Role: domain.RoleBuyer, Completed: true, BestScore: &score},
+		{ID: uuid.New(), Slug: "alpha", Title: "Alpha", Role: domain.RoleBuyer, Completed: true, BestScore: &score},
+	}}}
+
+	result, err := progress_service.NewService(repo).Get(context.Background(), mustUserID(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := []domain.Recommendation{
+		{ScenarioSlug: "alpha", ReasonCode: "LOW_BEST_SCORE"},
+		{ScenarioSlug: "zeta", ReasonCode: "LOW_BEST_SCORE"},
+	}
+	assertRecommendations(t, result.Recommendations, want)
+}
+
+func TestGetRecommendationsSuggestsNotStartedThenPassedScenarios(t *testing.T) {
+	t.Parallel()
+
+	lowScore := mustScore(t, 60, 100)
+	highScore := mustScore(t, 80, 100)
+	repo := &repositoryStub{snapshot: domain.ProgressSnapshot{Scenarios: []domain.ScenarioProgress{
+		{ID: uuid.New(), Slug: "passed-high", Title: "Passed high", Role: domain.RoleBuyer, AttemptsCount: 1, Completed: true, Passed: true, BestScore: &highScore},
+		{ID: uuid.New(), Slug: "not-started-b", Title: "Not started B", Role: domain.RoleBuyer},
+		{ID: uuid.New(), Slug: "not-started-a", Title: "Not started A", Role: domain.RoleBuyer},
+		{ID: uuid.New(), Slug: "passed-low", Title: "Passed low", Role: domain.RoleBuyer, AttemptsCount: 1, Completed: true, Passed: true, BestScore: &lowScore},
+	}}}
+
+	result, err := progress_service.NewService(repo).Get(context.Background(), mustUserID(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := []domain.Recommendation{
+		{ScenarioSlug: "not-started-a", ReasonCode: "NOT_STARTED"},
+		{ScenarioSlug: "not-started-b", ReasonCode: "NOT_STARTED"},
+		{ScenarioSlug: "passed-low", ReasonCode: "REPEAT_FOR_REINFORCEMENT"},
+	}
+	assertRecommendations(t, result.Recommendations, want)
+}
+
 func TestGetRejectsInvalidSnapshotAndMissingDependency(t *testing.T) {
 	t.Parallel()
 	_, err := progress_service.NewService(nil).Get(context.Background(), mustUserID(t))
@@ -199,4 +271,20 @@ func equalIntPointers(actual, expected *int) bool {
 
 func equalTrendPointers(actual, expected *domain.ProgressTrend) bool {
 	return actual == nil && expected == nil || actual != nil && expected != nil && *actual == *expected
+}
+
+func assertRecommendations(t *testing.T, actual, want []domain.Recommendation) {
+	t.Helper()
+	if len(actual) != len(want) {
+		t.Fatalf("recommendations count = %d, want %d: %+v", len(actual), len(want), actual)
+	}
+	for index, expected := range want {
+		got := actual[index]
+		if got.ScenarioSlug != expected.ScenarioSlug || got.ReasonCode != expected.ReasonCode {
+			t.Fatalf("recommendation[%d] = %+v, want slug %q and reason %q", index, got, expected.ScenarioSlug, expected.ReasonCode)
+		}
+		if got.ReasonText == "" {
+			t.Fatalf("recommendation[%d] has empty reason text", index)
+		}
+	}
 }

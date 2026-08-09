@@ -44,3 +44,5 @@ migrate-down:
 		-database postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable \
 		down
 
+swag:
+	@cd backend && swag init -g ./cmd/antiscam/main.go -o ./docs

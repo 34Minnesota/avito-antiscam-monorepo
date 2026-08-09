@@ -6,6 +6,9 @@ import (
 	"github.com/google/uuid"
 )
 
+// AttemptStep — зафиксированный выбор пользователя.
+// Полный журнал шагов — источник правды и для оценки, и для разбора.
+
 type AttemptStep struct {
 	ID             uuid.UUID
 	AttemptID      uuid.UUID
@@ -28,8 +31,6 @@ func NewAttemptStep(
 	scoreDelta int,
 	createdAt time.Time,
 ) AttemptStep {
-	// TODO(owner: training-engine): проверять положительные номера шагов,
-	// неотрицательные разницы и идемпотентность client_action_id в транзакции движка попытки.
 	return AttemptStep{
 		ID:             id,
 		AttemptID:      attemptID,

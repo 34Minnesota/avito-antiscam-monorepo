@@ -13,12 +13,12 @@ const sessionHeader = "X-Session-ID"
 
 func (s *Server) SessionMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-
 		sessionID := c.GetHeader(sessionHeader)
 		if sessionID == "" {
 			s.logAuthFailure("missing session id")
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"message": "missing session id",
+			c.AbortWithStatusJSON(http.StatusUnauthorized, ErrorResponse{
+				Code:    "unauthorized",
+				Message: "missing session id",
 			})
 			return
 		}
@@ -30,8 +30,9 @@ func (s *Server) SessionMiddleware() gin.HandlerFunc {
 				zap.Error(err),
 			)
 
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"message": "invalid session id",
+			c.AbortWithStatusJSON(http.StatusUnauthorized, ErrorResponse{
+				Code:    "unauthorized",
+				Message: "invalid session id",
 			})
 			return
 		}
@@ -47,8 +48,9 @@ func (s *Server) SessionMiddleware() gin.HandlerFunc {
 				zap.Error(err),
 			)
 
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"message": "invalid session",
+			c.AbortWithStatusJSON(http.StatusUnauthorized, ErrorResponse{
+				Code:    "unauthorized",
+				Message: "invalid session",
 			})
 			return
 		}
@@ -59,8 +61,9 @@ func (s *Server) SessionMiddleware() gin.HandlerFunc {
 				zap.String("session_id", id.String()),
 			)
 
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"message": "session expired",
+			c.AbortWithStatusJSON(http.StatusUnauthorized, ErrorResponse{
+				Code:    "unauthorized",
+				Message: "session expired",
 			})
 			return
 		}
@@ -75,7 +78,6 @@ func (s *Server) SessionMiddleware() gin.HandlerFunc {
 
 func (s *Server) LoggerMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-
 		startedAt := time.Now()
 
 		c.Next()

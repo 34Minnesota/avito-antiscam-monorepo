@@ -198,6 +198,17 @@ definitions:
       nickname:
         type: string
     type: object
+  httptransport.achievementResponse:
+    properties:
+      code:
+        type: string
+      description:
+        type: string
+      earned:
+        type: boolean
+      title:
+        type: string
+    type: object
   httptransport.completedAttemptResultResponse:
     properties:
       attempt_id:
@@ -209,12 +220,29 @@ definitions:
       score:
         $ref: '#/definitions/httptransport.scoreResponse'
     type: object
+  httptransport.experienceResponse:
+    properties:
+      achievements:
+        items:
+          $ref: '#/definitions/httptransport.achievementResponse'
+        type: array
+      current_xp:
+        type: integer
+      level:
+        type: integer
+      next_level_xp:
+        type: integer
+      total_xp:
+        type: integer
+    type: object
   httptransport.progressResponse:
     properties:
       completed_scenarios:
         type: integer
       completion_percent:
         type: integer
+      experience:
+        $ref: '#/definitions/httptransport.experienceResponse'
       passed_percent:
         type: integer
       passed_scenarios:

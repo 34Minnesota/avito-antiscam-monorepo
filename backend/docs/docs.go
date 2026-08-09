@@ -789,6 +789,23 @@ const docTemplate = `{
                 }
             }
         },
+        "httptransport.achievementResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "earned": {
+                    "type": "boolean"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
         "httptransport.completedAttemptResultResponse": {
             "type": "object",
             "properties": {
@@ -806,6 +823,29 @@ const docTemplate = `{
                 }
             }
         },
+        "httptransport.experienceResponse": {
+            "type": "object",
+            "properties": {
+                "achievements": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/httptransport.achievementResponse"
+                    }
+                },
+                "current_xp": {
+                    "type": "integer"
+                },
+                "level": {
+                    "type": "integer"
+                },
+                "next_level_xp": {
+                    "type": "integer"
+                },
+                "total_xp": {
+                    "type": "integer"
+                }
+            }
+        },
         "httptransport.progressResponse": {
             "type": "object",
             "properties": {
@@ -814,6 +854,9 @@ const docTemplate = `{
                 },
                 "completion_percent": {
                     "type": "integer"
+                },
+                "experience": {
+                    "$ref": "#/definitions/httptransport.experienceResponse"
                 },
                 "passed_percent": {
                     "type": "integer"

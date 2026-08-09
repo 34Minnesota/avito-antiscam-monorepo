@@ -17,6 +17,8 @@ const HistoryLimit = 20
 
 const recommendationLimit = 3
 
+const experienceLevelSize = 100
+
 type Repository interface {
 	Load(context.Context, domain.UserID, int) (domain.ProgressSnapshot, error)
 }
@@ -116,8 +118,94 @@ func aggregate(snapshot domain.ProgressSnapshot) domain.OverallProgress {
 		PassedPercentDelta:     passedPercentDelta,
 	}
 	overall.Recommendations = recommendations(snapshot.Scenarios)
+	overall.Experience = experience(snapshot.Scenarios)
 
 	return overall
+}
+
+func experience(scenarios []domain.ScenarioProgress) domain.ExperienceProgress {
+	completedScenarios := 0
+	passedScenarios := 0
+	improvedScenarios := 0
+	perfectScenarios := 0
+	passedRoles := make(map[domain.Role]struct{})
+
+	for _, scenario := range scenarios {
+		if scenario.Completed {
+			completedScenarios++
+		}
+
+		if scenario.Passed {
+			passedScenarios++
+			passedRoles[scenario.Role] = struct{}{}
+		}
+
+		if scenario.InitialScore != nil &&
+			scenario.LatestScore != nil &&
+			scenario.LatestScore.Percent() > scenario.InitialScore.Percent() {
+			improvedScenarios++
+		}
+
+		if scenario.Passed &&
+			scenario.BestScore != nil &&
+			scenario.BestScore.Percent() == 100 {
+			perfectScenarios++
+		}
+	}
+
+	totalXP := completedScenarios*10 + passedScenarios*15 + improvedScenarios*10 + perfectScenarios*15
+	return domain.ExperienceProgress{
+		TotalXP:     totalXP,
+		Level:       totalXP/experienceLevelSize + 1,
+		CurrentXP:   totalXP % experienceLevelSize,
+		NextLevelXP: experienceLevelSize,
+		Achievements: achievements(
+			completedScenarios,
+			passedScenarios,
+			improvedScenarios,
+			len(passedRoles) == 2,
+			perfectScenarios,
+		),
+	}
+}
+
+func achievements(
+	completedScenarios, passedScenarios, improvedScenarios int,
+	bothRolesPassed bool,
+	perfectScenarios int,
+) []domain.Achievement {
+	return []domain.Achievement{
+		{
+			Code:        "FIRST_COMPLETION",
+			Title:       "Первый шаг",
+			Description: "Завершён первый сценарий.",
+			Earned:      completedScenarios > 0,
+		},
+		{
+			Code:        "FIRST_SAFE_RESULT",
+			Title:       "Безопасный исход",
+			Description: "Получен первый безопасный результат.",
+			Earned:      passedScenarios > 0,
+		},
+		{
+			Code:        "IMPROVEMENT",
+			Title:       "Работа над ошибками",
+			Description: "Результат по сценарию улучшен.",
+			Earned:      improvedScenarios > 0,
+		},
+		{
+			Code:        "BOTH_ROLES",
+			Title:       "Две роли",
+			Description: "Есть успешно пройденные сценарии покупателя и продавца.",
+			Earned:      bothRolesPassed,
+		},
+		{
+			Code:        "PERFECT_SCORE",
+			Title:       "Безупречный результат",
+			Description: "Лучший score равен 100.",
+			Earned:      perfectScenarios > 0,
+		},
+	}
 }
 
 type recommendationCandidate struct {

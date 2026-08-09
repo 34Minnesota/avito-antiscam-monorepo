@@ -210,6 +210,90 @@ func TestGetRecommendationsSuggestsNotStartedThenPassedScenarios(t *testing.T) {
 	assertRecommendations(t, result.Recommendations, want)
 }
 
+func TestGetCalculatesExperienceAndAchievements(t *testing.T) {
+	t.Parallel()
+
+	buyerInitial := mustScore(t, 60, 100)
+	buyerLatest := mustScore(t, 80, 100)
+	buyerBest := mustScore(t, 100, 100)
+	sellerBest := mustScore(t, 80, 100)
+	repo := &repositoryStub{snapshot: domain.ProgressSnapshot{Scenarios: []domain.ScenarioProgress{
+		{
+			ID: uuid.New(), Slug: "buyer", Title: "Buyer", Role: domain.RoleBuyer,
+			AttemptsCount: 2, Completed: true, Passed: true, BestScore: &buyerBest,
+			InitialScore: &buyerInitial, LatestScore: &buyerLatest,
+		},
+		{
+			ID: uuid.New(), Slug: "seller", Title: "Seller", Role: domain.RoleSeller,
+			AttemptsCount: 1, Completed: true, Passed: true, BestScore: &sellerBest,
+		},
+	}}}
+
+	result, err := progress_service.NewService(repo).Get(context.Background(), mustUserID(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	experience := result.Experience
+	if experience.TotalXP != 75 || experience.Level != 1 || experience.CurrentXP != 75 || experience.NextLevelXP != 100 {
+		t.Fatalf("unexpected experience: %+v", experience)
+	}
+	assertAchievements(t, experience.Achievements, map[string]bool{
+		"FIRST_COMPLETION":  true,
+		"FIRST_SAFE_RESULT": true,
+		"IMPROVEMENT":       true,
+		"BOTH_ROLES":        true,
+		"PERFECT_SCORE":     true,
+	})
+}
+
+func TestGetCalculatesExperienceAtLevelBoundary(t *testing.T) {
+	t.Parallel()
+
+	perfectScenario := func(slug string, role domain.Role) domain.ScenarioProgress {
+		initial := mustScore(t, 60, 100)
+		latest := mustScore(t, 80, 100)
+		best := mustScore(t, 100, 100)
+		return domain.ScenarioProgress{
+			ID: uuid.New(), Slug: slug, Title: slug, Role: role,
+			AttemptsCount: 2, Completed: true, Passed: true, BestScore: &best,
+			InitialScore: &initial, LatestScore: &latest,
+		}
+	}
+
+	tests := []struct {
+		name          string
+		scenarios     []domain.ScenarioProgress
+		wantXP        int
+		wantLevel     int
+		wantCurrentXP int
+	}{
+		{name: "zero XP", wantXP: 0, wantLevel: 1, wantCurrentXP: 0},
+		{
+			name: "100 XP",
+			scenarios: []domain.ScenarioProgress{
+				perfectScenario("buyer", domain.RoleBuyer),
+				perfectScenario("seller", domain.RoleSeller),
+			},
+			wantXP: 100, wantLevel: 2, wantCurrentXP: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			result, err := progress_service.NewService(&repositoryStub{snapshot: domain.ProgressSnapshot{Scenarios: tt.scenarios}}).Get(context.Background(), mustUserID(t))
+			if err != nil {
+				t.Fatal(err)
+			}
+			got := result.Experience
+			if got.TotalXP != tt.wantXP || got.Level != tt.wantLevel || got.CurrentXP != tt.wantCurrentXP || got.NextLevelXP != 100 {
+				t.Fatalf("experience = %+v", got)
+			}
+		})
+	}
+}
+
 func TestGetRejectsInvalidSnapshotAndMissingDependency(t *testing.T) {
 	t.Parallel()
 	_, err := progress_service.NewService(nil).Get(context.Background(), mustUserID(t))
@@ -286,5 +370,25 @@ func assertRecommendations(t *testing.T, actual, want []domain.Recommendation) {
 		if got.ReasonText == "" {
 			t.Fatalf("recommendation[%d] has empty reason text", index)
 		}
+	}
+}
+
+func assertAchievements(t *testing.T, actual []domain.Achievement, want map[string]bool) {
+	t.Helper()
+	if len(actual) != len(want) {
+		t.Fatalf("achievements count = %d, want %d: %+v", len(actual), len(want), actual)
+	}
+	for _, achievement := range actual {
+		earned, ok := want[achievement.Code]
+		if !ok || achievement.Earned != earned {
+			t.Fatalf("unexpected achievement: %+v", achievement)
+		}
+		if achievement.Title == "" || achievement.Description == "" {
+			t.Fatalf("achievement has empty metadata: %+v", achievement)
+		}
+		delete(want, achievement.Code)
+	}
+	if len(want) != 0 {
+		t.Fatalf("missing achievements: %+v", want)
 	}
 }

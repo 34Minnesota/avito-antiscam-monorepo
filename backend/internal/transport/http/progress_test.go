@@ -82,6 +82,59 @@ func TestProgressHandlerMapsRecommendations(t *testing.T) {
 	}
 }
 
+func TestProgressHandlerMapsExperience(t *testing.T) {
+	t.Parallel()
+
+	response := performRequest(t, progressStub{result: domain.OverallProgress{
+		Experience: domain.ExperienceProgress{
+			TotalXP:     75,
+			Level:       1,
+			CurrentXP:   75,
+			NextLevelXP: 100,
+			Achievements: []domain.Achievement{{
+				Code:        "FIRST_COMPLETION",
+				Title:       "First step",
+				Description: "Completed the first scenario.",
+				Earned:      true,
+			}},
+		},
+	}}, true)
+	if response.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", response.Code, response.Body.String())
+	}
+
+	var body struct {
+		TotalScenarios int `json:"total_scenarios"`
+		Experience     struct {
+			TotalXP      int `json:"total_xp"`
+			Level        int `json:"level"`
+			CurrentXP    int `json:"current_xp"`
+			NextLevelXP  int `json:"next_level_xp"`
+			Achievements []struct {
+				Code        string `json:"code"`
+				Title       string `json:"title"`
+				Description string `json:"description"`
+				Earned      bool   `json:"earned"`
+			} `json:"achievements"`
+		} `json:"experience"`
+	}
+	if err := json.Unmarshal(response.Body.Bytes(), &body); err != nil {
+		t.Fatal(err)
+	}
+	if body.TotalScenarios != 0 {
+		t.Fatalf("total_scenarios = %d", body.TotalScenarios)
+	}
+	if body.Experience.TotalXP != 75 || body.Experience.Level != 1 || body.Experience.CurrentXP != 75 || body.Experience.NextLevelXP != 100 {
+		t.Fatalf("unexpected experience: %+v", body.Experience)
+	}
+	if len(body.Experience.Achievements) != 1 {
+		t.Fatalf("achievements = %+v", body.Experience.Achievements)
+	}
+	if got := body.Experience.Achievements[0]; got.Code != "FIRST_COMPLETION" || got.Title != "First step" || got.Description != "Completed the first scenario." || !got.Earned {
+		t.Fatalf("achievement = %+v", got)
+	}
+}
+
 func TestProgressHandlerMapsScenarioDynamics(t *testing.T) {
 	t.Parallel()
 	initial, err := domain.NewScore(42, 100)

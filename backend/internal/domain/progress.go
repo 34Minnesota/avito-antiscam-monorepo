@@ -62,6 +62,7 @@ type OverallProgress struct {
 	Roles              []RoleProgress
 	RoleComparison     RoleComparison
 	Recommendations    []Recommendation
+	Experience         ExperienceProgress
 }
 
 type RoleComparison struct {
@@ -73,4 +74,19 @@ type Recommendation struct {
 	ScenarioSlug string
 	ReasonCode   string
 	ReasonText   string
+}
+
+type ExperienceProgress struct {
+	TotalXP      int
+	Level        int
+	CurrentXP    int
+	NextLevelXP  int
+	Achievements []Achievement
+}
+
+type Achievement struct {
+	Code        string
+	Title       string
+	Description string
+	Earned      bool
 }

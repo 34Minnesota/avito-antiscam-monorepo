@@ -13,8 +13,6 @@ import (
 	domainErrors "github.com/34Minnesota/avito-antiscam-monorepo/backend/internal/domain/errors"
 )
 
-// TODO: все теги под snake_case
-
 type ProgressGetter interface {
 	Get(context.Context, domain.UserID) (domain.OverallProgress, error)
 }
@@ -133,6 +131,21 @@ type recommendationResponse struct {
 	ReasonText   string `json:"reason_text"`
 }
 
+type achievementResponse struct {
+	Code        string `json:"code"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Earned      bool   `json:"earned"`
+}
+
+type experienceResponse struct {
+	TotalXP      int                   `json:"total_xp"`
+	Level        int                   `json:"level"`
+	CurrentXP    int                   `json:"current_xp"`
+	NextLevelXP  int                   `json:"next_level_xp"`
+	Achievements []achievementResponse `json:"achievements"`
+}
+
 type progressResponse struct {
 	TotalScenarios     int                      `json:"total_scenarios"`
 	CompletedScenarios int                      `json:"completed_scenarios"`
@@ -142,6 +155,7 @@ type progressResponse struct {
 	Roles              []roleProgressResponse   `json:"roles"`
 	RoleComparison     roleComparisonResponse   `json:"role_comparison"`
 	Recommendations    []recommendationResponse `json:"recommendations"`
+	Experience         experienceResponse       `json:"experience"`
 }
 
 func mapProgress(progress domain.OverallProgress) progressResponse {
@@ -153,6 +167,11 @@ func mapProgress(progress domain.OverallProgress) progressResponse {
 	recommendations := make([]recommendationResponse, 0, len(progress.Recommendations))
 	for _, recommendation := range progress.Recommendations {
 		recommendations = append(recommendations, mapRecommendation(recommendation))
+	}
+
+	achievements := make([]achievementResponse, 0, len(progress.Experience.Achievements))
+	for _, achievement := range progress.Experience.Achievements {
+		achievements = append(achievements, mapAchievement(achievement))
 	}
 
 	return progressResponse{
@@ -167,6 +186,22 @@ func mapProgress(progress domain.OverallProgress) progressResponse {
 			PassedPercentDelta:     progress.RoleComparison.PassedPercentDelta,
 		},
 		Recommendations: recommendations,
+		Experience: experienceResponse{
+			TotalXP:      progress.Experience.TotalXP,
+			Level:        progress.Experience.Level,
+			CurrentXP:    progress.Experience.CurrentXP,
+			NextLevelXP:  progress.Experience.NextLevelXP,
+			Achievements: achievements,
+		},
+	}
+}
+
+func mapAchievement(achievement domain.Achievement) achievementResponse {
+	return achievementResponse{
+		Code:        achievement.Code,
+		Title:       achievement.Title,
+		Description: achievement.Description,
+		Earned:      achievement.Earned,
 	}
 }
 

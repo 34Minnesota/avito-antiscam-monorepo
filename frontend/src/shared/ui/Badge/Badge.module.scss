@@ -1,0 +1,35 @@
+.Badge {
+  display: inline-flex;
+  align-items: center;
+  height: 26px;
+  padding: 0 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 750;
+  border: 1px solid transparent;
+}
+.neutral {
+  color: #59636e;
+  background: #f1f3f4;
+  border-color: #e3e6e8;
+}
+.good {
+  color: #07883f;
+  background: #e9fbf0;
+  border-color: #c7f1d7;
+}
+.warn {
+  color: #9a6400;
+  background: #fff7df;
+  border-color: #f4dfaa;
+}
+.danger {
+  color: #b3262b;
+  background: #fff0f0;
+  border-color: #f4c9cb;
+}
+.accent {
+  color: #006b36;
+  background: #e9fbf0;
+  border-color: #c7f1d7;
+}

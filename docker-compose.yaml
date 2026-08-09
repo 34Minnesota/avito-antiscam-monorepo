@@ -1,36 +1,110 @@
-
 services:
   postgres:
-    image: postgres:16
-
-    container_name: antiscam-postgres
-
+    image: postgres:16-alpine
     restart: unless-stopped
 
     environment:
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
-
-    ports:
-      - "5432:5432"
+      POSTGRES_USER: ${POSTGRES_USER:-antiscam}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-antiscam}
+      POSTGRES_DB: ${POSTGRES_DB:-antiscam}
 
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
 
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-antiscam} -d ${POSTGRES_DB:-antiscam}",
+        ]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
 
   postgres-migrate:
     image: migrate/migrate:v4.19.1
+
     volumes:
-      - ${PROJECT_ROOT}/backend/migrations:/migrations
+      - ./backend/migrations:/migrations:ro
+
     depends_on:
       postgres:
         condition: service_healthy
 
+    command:
+      - "-path"
+      - "/migrations"
+      - "-database"
+      - "postgres://${POSTGRES_USER:-antiscam}:${POSTGRES_PASSWORD:-antiscam}@postgres:5432/${POSTGRES_DB:-antiscam}?sslmode=disable"
+      - "up"
+
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: ${POSTGRES_USER:-antiscam}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-antiscam}
+      POSTGRES_DB: ${POSTGRES_DB:-antiscam}
+      POSTGRES_TIMEOUT: ${POSTGRES_TIMEOUT:-30s}
+
+      LOGGER_LEVEL: ${LOGGER_LEVEL:-DEBUG}
+      LOGGER_FOLDER: /app/logs
+      FOLDER: /app
+
+    depends_on:
+      postgres-migrate:
+        condition: service_completed_successfully
+
+    volumes:
+      - ./backend/logs:/app/logs
+
+    ports:
+      - "8080:8080"
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -qO- http://127.0.0.1:8080/healthz >/dev/null || exit 1",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+
+    restart: unless-stopped
+
+    depends_on:
+      backend:
+        condition: service_healthy
+
+    ports:
+      - "3000:80"
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -qO- http://127.0.0.1/ >/dev/null || exit 1",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+
 volumes:
-  postgres-data:
+  postgres_data:

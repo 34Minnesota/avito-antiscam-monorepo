@@ -1,0 +1,175 @@
+.page {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 42px 34px 80px;
+}
+.hero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+.kicker {
+  font-size: 10px;
+  letter-spacing: 0.13em;
+  color: #00a843;
+  font-weight: 850;
+}
+.hero h1 {
+  font-size: 42px;
+  letter-spacing: -0.045em;
+  margin: 8px 0;
+}
+.hero p {
+  font-size: 14px;
+  color: #69727d;
+  max-width: 650px;
+  margin: 0;
+  line-height: 1.6;
+}
+.learning {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 18px 0;
+  padding: 17px 19px;
+  border: 1px solid #d9f2e2;
+  background: #f5fff8;
+  border-radius: 16px;
+}
+.learningIcon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: #00c853;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  flex: 0 0 auto;
+}
+.learning strong {
+  font-size: 13px;
+}
+.learning p {
+  font-size: 11px;
+  line-height: 1.5;
+  color: #69727d;
+  margin: 4px 0 0;
+  max-width: 620px;
+}
+.learningSteps {
+  margin-left: auto;
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+.learningSteps span {
+  padding: 7px 9px;
+  border-radius: 8px;
+  background: #fff;
+  border: 1px solid #dcefe3;
+  color: #4e5a64;
+  font-size: 10px;
+  font-weight: 750;
+}
+.recommendation {
+  margin: 18px 0 28px;
+  padding: 18px 20px;
+  border: 1px solid #dce9df;
+  background: linear-gradient(90deg, #f2fff6, #fff);
+  border-radius: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+.recommendation span {
+  font-size: 9px;
+  letter-spacing: 0.13em;
+  color: #00a843;
+  font-weight: 850;
+}
+.recommendation h3 {
+  font-size: 15px;
+  color: #171a1f;
+  margin: 5px 0;
+}
+.recommendation p {
+  font-size: 12px;
+  color: #69727d;
+  margin: 0;
+}
+.recommendation button {
+  border: 0;
+  background: transparent;
+  color: #00983e;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.catalog {
+  margin-top: 30px;
+}
+.sectionHead {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 15px;
+}
+.sectionTitle {
+  font-size: 22px;
+  font-weight: 850;
+  letter-spacing: -0.025em;
+}
+.sectionHead p {
+  font-size: 12px;
+  color: #69727d;
+  margin: 5px 0 0;
+}
+.sectionHead > span {
+  font-size: 11px;
+  color: #8a929b;
+}
+.loading {
+  min-height: 70vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+@media (max-width: 850px) {
+  .page {
+    padding: 30px 18px 60px;
+  }
+  .hero {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .hero h1 {
+    font-size: 34px;
+  }
+  .learning {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .learningSteps {
+    width: 100%;
+    margin-left: 48px;
+  }
+  .recommendation {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .recommendation button {
+    padding: 0;
+  }
+  .sectionHead {
+    align-items: flex-start;
+    gap: 10px;
+    flex-direction: column;
+  }
+}

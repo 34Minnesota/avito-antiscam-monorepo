@@ -1,0 +1,156 @@
+.grid {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr 1fr;
+  gap: 14px;
+}
+.hero,
+.stat,
+.history {
+  padding: 22px;
+}
+.hero {
+  background: linear-gradient(135deg, #fff, #f7fff9);
+}
+.eyebrow,
+.historyEyebrow {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: #77818b;
+  font-weight: 800;
+}
+.percent {
+  font-size: 56px;
+  font-weight: 850;
+  color: #171a1f;
+  letter-spacing: -0.05em;
+  margin: 10px 0;
+}
+.percent small {
+  font-size: 22px;
+  color: #00a843;
+}
+.track {
+  height: 7px;
+  background: #e7ebed;
+  border-radius: 99px;
+  overflow: hidden;
+}
+.track span {
+  display: block;
+  height: 100%;
+  background: #00c853;
+  border-radius: 99px;
+  transition: width 0.35s ease;
+}
+.hero p {
+  font-size: 12px;
+  color: #69727d;
+  margin: 10px 0 0;
+}
+.stat {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.stat span {
+  font-size: 12px;
+  color: #69727d;
+}
+.stat strong {
+  font-size: 36px;
+  color: #171a1f;
+  margin: 7px 0;
+}
+.stat small {
+  font-size: 11px;
+  color: #8a929b;
+  line-height: 1.4;
+}
+.history {
+  grid-column: 1 / -1;
+}
+.historyHead {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.historyHead h3 {
+  margin: 6px 0 0;
+  font-size: 20px;
+  letter-spacing: -0.02em;
+}
+.historyCount {
+  font-size: 11px;
+  color: #7c858f;
+}
+.historyList {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+.historyItem {
+  border: 1px solid #e9edef;
+  border-radius: 14px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: #fcfdfd;
+}
+.historyItem > div:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.historyItem strong {
+  font-size: 26px;
+  letter-spacing: -0.04em;
+}
+.historyItem span {
+  font-size: 12px;
+  color: #59636e;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.historyMeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.historyMeta span {
+  font-size: 11px;
+  color: #1d8a4a;
+}
+.historyMeta small {
+  font-size: 10px;
+  color: #8a929b;
+}
+.historyEmpty {
+  margin: 0;
+  color: #69727d;
+  font-size: 13px;
+  line-height: 1.5;
+}
+@media (max-width: 850px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+  .hero {
+    min-height: 150px;
+  }
+  .history {
+    grid-column: auto;
+  }
+  .historyList {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (max-width: 480px) {
+  .historyList {
+    grid-template-columns: 1fr;
+  }
+}

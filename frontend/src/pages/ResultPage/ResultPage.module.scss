@@ -1,0 +1,21 @@
+.page {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+.empty {
+  min-height: 75vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  text-align: center;
+  padding: 30px;
+}
+.empty h2 {
+  margin: 14px 0 5px;
+}
+.empty p {
+  color: #69727d;
+  font-size: 13px;
+}

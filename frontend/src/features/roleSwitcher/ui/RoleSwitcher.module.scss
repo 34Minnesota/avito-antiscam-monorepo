@@ -1,0 +1,25 @@
+.Switcher {
+  display: inline-flex;
+  padding: 4px;
+  background: #f1f3f4;
+  border: 1px solid #e1e5e7;
+  border-radius: 13px;
+  gap: 4px;
+}
+.item {
+  height: 38px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #69727d;
+  padding: 0 15px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.active {
+  background: #fff;
+  color: #171a1f;
+  box-shadow: 0 3px 10px rgba(24, 32, 38, 0.08);
+}

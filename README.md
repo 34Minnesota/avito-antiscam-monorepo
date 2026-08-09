@@ -26,3 +26,18 @@ make lint
 ```bash
 make swag
 ```
+
+
+
+Frontend:
+http://localhost:3000
+
+Backend:
+http://localhost:8080
+
+Swagger:
+http://localhost:8080/swagger/index.html
+
+Health:
+http://localhost:3000/healthz
+http://localhost:8080/healthz

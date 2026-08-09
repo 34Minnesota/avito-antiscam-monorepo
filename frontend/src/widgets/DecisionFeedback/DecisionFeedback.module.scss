@@ -1,0 +1,61 @@
+.card {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  margin: 0 20px 16px;
+  padding: 14px 15px;
+  border-radius: 14px;
+  border: 1px solid;
+}
+.icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+}
+.content strong {
+  font-size: 12px;
+}
+.content p {
+  font-size: 11px;
+  line-height: 1.5;
+  color: #69727d;
+  margin: 3px 0 0;
+}
+.safe {
+  background: #f2fff6;
+  border-color: #cdeed9;
+}
+.safe .icon {
+  background: #00c853;
+  color: #fff;
+}
+.risky {
+  background: #fffaf0;
+  border-color: #f2dfb2;
+}
+.risky .icon {
+  background: #ffb020;
+  color: #fff;
+}
+.fatal {
+  background: #fff3f3;
+  border-color: #f0cdcf;
+}
+.fatal .icon {
+  background: #e5484d;
+  color: #fff;
+}
+@media (max-width: 620px) {
+  .card {
+    grid-template-columns: auto 1fr;
+  }
+  .card button {
+    grid-column: 2;
+    justify-self: start;
+  }
+}

@@ -1,0 +1,25 @@
+.Avatar {
+  flex: 0 0 auto;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 800;
+  background: linear-gradient(135deg, #00a843, #69d89a);
+}
+.s {
+  width: 32px;
+  height: 32px;
+  font-size: 12px;
+}
+.m {
+  width: 42px;
+  height: 42px;
+  font-size: 15px;
+}
+.l {
+  width: 56px;
+  height: 56px;
+  font-size: 19px;
+}

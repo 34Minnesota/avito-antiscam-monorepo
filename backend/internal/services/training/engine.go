@@ -77,7 +77,7 @@ func Advance(doc models.ScenarioDoc, st models.State, sceneID, optionID string) 
 	tr := Transition{
 		Verdict:  opt.Verdict,
 		Feedback: opt.Feedback,
-		Reaction: opt.Reaction,
+		Reaction: buildReaction(opt),
 		Step: models.AttemptStep{
 			SceneID:  scene.ID,
 			OptionID: opt.ID,
@@ -123,6 +123,16 @@ func Advance(doc models.ScenarioDoc, st models.State, sceneID, optionID string) 
 	tr.NextScene = &payload
 	tr.State = next
 	return tr, nil
+}
+
+// buildReaction собирает переписку после выбора: сначала реплика самого
+// пользователя, следом ответ собеседника. Так клиенту достаточно дописать
+// Reaction в конец чата, чтобы диалог остался связным.
+func buildReaction(opt models.Option) []models.Message {
+	out := make([]models.Message, 0, len(opt.Reaction)+1)
+	out = append(out, models.Message{Author: models.AuthorUser, Text: opt.Reply})
+
+	return append(out, opt.Reaction...)
 }
 
 // CurrentSceneID возвращает идентификатор сцены, на которой стоит пользователь

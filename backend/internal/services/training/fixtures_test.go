@@ -31,9 +31,13 @@ func testDoc() models.ScenarioDoc {
 				Decision: models.Decision{
 					Prompt: "Что делать?",
 					Options: []models.Option{
-						{ID: "a1", Text: "Безопасно", Verdict: models.VerdictSafe, Feedback: "ок"},
-						{ID: "a2", Text: "Рискованно", Verdict: models.VerdictRisky, Flag: "f1", Feedback: "так себе"},
-						{ID: "a3", Text: "Провал", Verdict: models.VerdictFatal, Flag: "f2", Ending: "lost", Feedback: "плохо"},
+						{
+							ID: "a1", Text: "Безопасно", Reply: "Пишу безопасно",
+							Verdict: models.VerdictSafe, Feedback: "ок",
+							Reaction: []models.Message{{Author: models.AuthorCounterpart, Text: "Ответ"}},
+						},
+						{ID: "a2", Text: "Рискованно", Reply: "Пишу рискованно", Verdict: models.VerdictRisky, Flag: "f1", Feedback: "так себе"},
+						{ID: "a3", Text: "Провал", Reply: "Пишу провал", Verdict: models.VerdictFatal, Flag: "f2", Ending: "lost", Feedback: "плохо"},
 					},
 				},
 			},

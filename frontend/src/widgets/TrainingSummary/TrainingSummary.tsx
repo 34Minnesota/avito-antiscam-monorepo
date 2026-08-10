@@ -40,7 +40,7 @@ export const TrainingSummary = ({ summary, onRetry, onDashboard }: TrainingSumma
         {summary.delta_vs_previous != null && (
           <div className={summary.delta_vs_previous >= 0 ? cls.deltaGood : cls.deltaBad}>
             {summary.delta_vs_previous >= 0 ? '+' : ''}
-            {summary.delta_vs_previous} баллов к прошлому результату
+            {summary.delta_vs_previous} п.п. к прошлому результату
           </div>
         )}
       </div>

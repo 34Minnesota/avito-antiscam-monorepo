@@ -1,0 +1,244 @@
+.section {
+  margin: 18px 0 28px;
+}
+.heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 12px;
+}
+.heading > div > span,
+.cardTop > span,
+.dynamicCard > span {
+  font-size: 9px;
+  letter-spacing: 0.13em;
+  color: #00a843;
+  font-weight: 850;
+}
+.heading h2 {
+  margin: 5px 0 0;
+  font-size: 22px;
+  letter-spacing: -0.025em;
+}
+.heading p {
+  margin: 0;
+  color: #69727d;
+  font-size: 12px;
+}
+.grid {
+  display: grid;
+  grid-template-columns: 1.25fr 0.8fr 1.35fr;
+  gap: 14px;
+}
+.levelCard,
+.dynamicCard,
+.skillsCard {
+  padding: 20px;
+  min-height: 158px;
+}
+.levelCard {
+  background: linear-gradient(135deg, #f1fff6, #fff);
+}
+.cardTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.cardTop strong {
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+  background: #171a1f;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+}
+.cardTop small {
+  color: #8a929b;
+  font-size: 10px;
+}
+.xpLine {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 12px 0 9px;
+}
+.xpLine b {
+  font-size: 28px;
+  letter-spacing: -0.04em;
+}
+.xpLine small {
+  color: #7b848d;
+  font-size: 10px;
+}
+.track,
+.skillTrack {
+  height: 6px;
+  border-radius: 99px;
+  overflow: hidden;
+  background: #e7ebed;
+}
+.track span,
+.skillTrack span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #00c853;
+}
+.levelCard > p,
+.dynamicCard p,
+.empty {
+  margin: 9px 0 0;
+  color: #69727d;
+  font-size: 11px;
+  line-height: 1.45;
+}
+.dynamicCard {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.dynamicCard > strong {
+  font-size: 35px;
+  margin-top: 9px;
+  letter-spacing: -0.05em;
+}
+.delta {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  margin-top: 8px;
+}
+.delta strong {
+  font-size: 35px;
+  letter-spacing: -0.05em;
+}
+.delta small {
+  color: #69727d;
+  font-size: 11px;
+}
+.skills {
+  display: grid;
+  gap: 10px;
+  margin-top: 13px;
+}
+.skill > div:first-child {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 5px;
+}
+.skill span {
+  color: #4f5963;
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.skill b {
+  font-size: 11px;
+}
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .skillsCard {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 600px) {
+  .heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .grid {
+    grid-template-columns: 1fr;
+  }
+  .skillsCard {
+    grid-column: auto;
+  }
+}
+
+.achievements {
+  margin-top: 14px;
+  padding: 20px;
+}
+.achievementHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+.achievementHead > div > span {
+  font-size: 9px;
+  letter-spacing: 0.13em;
+  color: #00a843;
+  font-weight: 850;
+}
+.achievementHead h3 {
+  margin: 5px 0 0;
+  font-size: 18px;
+  letter-spacing: -0.02em;
+}
+.achievementHead > b {
+  font-size: 12px;
+  color: #69727d;
+}
+.achievementGrid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 9px;
+  margin-top: 15px;
+}
+.achievement {
+  display: flex;
+  gap: 9px;
+  padding: 12px;
+  border: 1px solid #e7eaec;
+  border-radius: 12px;
+  background: #fafbfb;
+  min-height: 70px;
+}
+.achievement > span {
+  flex: 0 0 auto;
+  width: 25px;
+  height: 25px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: #e8ecee;
+  color: #8b949d;
+  font-size: 12px;
+  font-weight: 800;
+}
+.achievement strong {
+  display: block;
+  font-size: 11px;
+}
+.achievement p {
+  margin: 4px 0 0;
+  color: #7a838c;
+  font-size: 10px;
+  line-height: 1.35;
+}
+.achievement.earned {
+  border-color: #ccefdc;
+  background: #f3fff7;
+}
+.achievement.earned > span {
+  background: #00c853;
+  color: #fff;
+}
+@media (max-width: 1000px) {
+  .achievementGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media (max-width: 600px) {
+  .achievementGrid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -39,11 +39,11 @@ describe('getRoleComparison', () => {
   it('explains the difference between completed progress', () => {
     expect(getRoleComparison([role('buyer', 1, 40), role('seller', 1, 70)])).toMatchObject({
       state: 'ready',
-      value: 'Продавец выше на 30 баллов',
+      value: 'Продавец выше на 30 п.п.',
     });
     expect(getRoleComparison([role('buyer', 1, 70), role('seller', 1, 40)])).toMatchObject({
       state: 'ready',
-      value: 'Покупатель выше на 30 баллов',
+      value: 'Покупатель выше на 30 п.п.',
     });
   });
 });

@@ -125,6 +125,7 @@
   margin: 6px 0 0;
 }
 .chatCard {
+  min-width: 0;
   overflow: hidden;
   background: #fff;
   border: 1px solid #e1e5e7;
@@ -206,6 +207,7 @@
     grid-column: 1/-1;
   }
   .chatCard {
+    min-width: 0;
     min-height: 600px;
   }
 }
@@ -220,6 +222,7 @@
     display: none;
   }
   .chatCard {
+    min-width: 0;
     border-radius: 17px;
   }
   .chatHeader {

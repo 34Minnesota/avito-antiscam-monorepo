@@ -5,6 +5,7 @@ import { clearSessionId, getSessionId } from '@/shared/auth/session';
 import { ChoiceResult, Message, StartResult, Verdict } from '@/shared/api/contracts';
 import { isConflict, isUnauthorized } from '@/shared/api/errors';
 import { getAttemptSnapshot, saveAttemptScenario, saveAttemptSnapshot } from './storage';
+import { withStableMessageIds } from '@/shared/lib/chat/messageIds';
 
 export type TrainingStatus =
   'starting' | 'active' | 'feedback' | 'submitting' | 'finished' | 'error';
@@ -37,8 +38,9 @@ export const useTrainingSession = (scenarioId?: string) => {
       const nextSceneNumber = resumedFromPreviousScene
         ? (snapshot?.sceneNumber ?? 1) + 1
         : (snapshot?.sceneNumber ?? 1);
+      const normalizedMessages = withStableMessageIds(nextMessages, result.attempt_id);
       setTraining(result);
-      setMessages(nextMessages);
+      setMessages(normalizedMessages);
       setSceneNumber(nextSceneNumber);
       setFeedback(null);
       setPendingScene(null);
@@ -48,8 +50,8 @@ export const useTrainingSession = (scenarioId?: string) => {
       saveAttemptSnapshot(result.attempt_id, {
         sceneNumber: nextSceneNumber,
         sceneId: result.scene.scene_id,
-        messages: nextMessages,
-        revision: snapshot?.revision ?? 0,
+        messages: normalizedMessages,
+        revision: result.revision ?? snapshot?.revision ?? 0,
       });
     },
     [scenarioId],
@@ -87,7 +89,10 @@ export const useTrainingSession = (scenarioId?: string) => {
       const currentAttemptId = training.attempt_id;
       setStatus('submitting');
       setErrorMessage(null);
-      const nextMessages = [...messages, { author: 'user' as const, text }];
+      const nextMessages = withStableMessageIds(
+        [...messages, { author: 'user' as const, text }],
+        currentAttemptId,
+      );
       setMessages(nextMessages);
 
       try {
@@ -98,7 +103,10 @@ export const useTrainingSession = (scenarioId?: string) => {
           expectedRevision: getAttemptSnapshot(currentAttemptId)?.revision ?? 0,
         }).unwrap();
 
-        const withReaction = [...nextMessages, ...(result.reaction ?? [])];
+        const withReaction = withStableMessageIds(
+          [...nextMessages, ...(result.reaction ?? [])],
+          currentAttemptId,
+        );
         setMessages(withReaction);
         setFeedback(result.feedback);
         saveAttemptSnapshot(currentAttemptId, {
@@ -145,7 +153,10 @@ export const useTrainingSession = (scenarioId?: string) => {
     }
     if (!pendingScene || !training) return;
     const nextNumber = sceneNumber + 1;
-    const nextMessages = [...messages, ...(pendingScene.intro ?? [])];
+    const nextMessages = withStableMessageIds(
+      [...messages, ...(pendingScene.intro ?? [])],
+      training.attempt_id,
+    );
     setTraining((current) => (current ? { ...current, scene: pendingScene } : current));
     setMessages(nextMessages);
     setSceneNumber(nextNumber);

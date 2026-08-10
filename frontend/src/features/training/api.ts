@@ -1,9 +1,15 @@
 import { rtkApi } from '@/shared/api/rtkApi';
 import { ChoiceResult, StartResult, Summary } from '@/shared/api/contracts';
+import {
+  validateChoiceResult,
+  validateStartResult,
+  validateSummary,
+} from '@/shared/api/validation';
 
 export const trainingApi = rtkApi.injectEndpoints({
   endpoints: (build) => ({
     startAttempt: build.mutation<StartResult, string>({
+      transformResponse: validateStartResult,
       query: (scenarioId) => ({
         url: 'v1/attempts',
         method: 'POST',
@@ -15,6 +21,7 @@ export const trainingApi = rtkApi.injectEndpoints({
       ChoiceResult,
       { attemptId: string; sceneId: string; optionId: string; expectedRevision: number }
     >({
+      transformResponse: validateChoiceResult,
       query: ({ attemptId, sceneId, optionId, expectedRevision }) => ({
         url: `v1/attempts/${attemptId}/choice`,
         method: 'POST',
@@ -23,6 +30,7 @@ export const trainingApi = rtkApi.injectEndpoints({
       invalidatesTags: (result) => (result?.finished ? ['Progress', 'Scenarios'] : []),
     }),
     getSummary: build.query<Summary, string>({
+      transformResponse: validateSummary,
       query: (attemptId) => `v1/attempts/${attemptId}/summary`,
       providesTags: (_result, _error, attemptId) => [{ type: 'Summary', id: attemptId }],
     }),

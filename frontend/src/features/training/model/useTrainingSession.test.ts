@@ -7,7 +7,10 @@ const start = vi.fn();
 const choose = vi.fn();
 
 vi.mock('react-router-dom', () => ({ useNavigate: () => navigate }));
-vi.mock('@/shared/auth/session', () => ({ getSessionId: () => 'session' }));
+vi.mock('@/shared/auth/session', () => ({
+  getSessionId: () => 'session',
+  clearSessionId: vi.fn(),
+}));
 vi.mock('@/features/training/api', () => ({
   useStartAttemptMutation: () => [start],
   useSubmitChoiceMutation: () => [choose],
@@ -46,6 +49,59 @@ beforeEach(() => {
 });
 
 describe('useTrainingSession', () => {
+  it('redirects to login when starting is unauthorized', async () => {
+    start.mockReturnValueOnce(rejected({ status: 401 }));
+    renderHook(() => useTrainingSession('scenario-1'));
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/login', { replace: true }));
+  });
+
+  it('shows a recoverable error when starting fails', async () => {
+    start.mockReturnValueOnce(rejected({ status: 500 }));
+    const { result } = renderHook(() => useTrainingSession('scenario-1'));
+    await waitFor(() => expect(result.current.status).toBe('error'));
+    expect(result.current.errorMessage).toContain('Не удалось открыть сценарий');
+  });
+
+  it('shows an error when the server omits the next scene', async () => {
+    choose.mockReturnValueOnce(
+      resolved({
+        feedback: { verdict: 'risky', text: 'Проверьте ссылку.' },
+        reaction: [],
+        next_scene: null,
+        finished: false,
+        revision: 1,
+      }),
+    );
+    const { result } = renderHook(() => useTrainingSession('scenario-1'));
+    await waitFor(() => expect(result.current.training).not.toBeNull());
+    await act(async () => {
+      await result.current.chooseOption('safe', 'Проверить');
+    });
+    expect(result.current.status).toBe('error');
+    expect(result.current.errorMessage).toContain('следующую сцену');
+  });
+
+  it('redirects to login when choice is unauthorized', async () => {
+    choose.mockReturnValueOnce(rejected({ status: 401 }));
+    const { result } = renderHook(() => useTrainingSession('scenario-1'));
+    await waitFor(() => expect(result.current.training).not.toBeNull());
+    await act(async () => {
+      await result.current.chooseOption('safe', 'Проверить');
+    });
+    expect(navigate).toHaveBeenCalledWith('/login', { replace: true });
+  });
+
+  it('keeps the active scene after a generic choice error', async () => {
+    choose.mockReturnValueOnce(rejected({ status: 500 }));
+    const { result } = renderHook(() => useTrainingSession('scenario-1'));
+    await waitFor(() => expect(result.current.training).not.toBeNull());
+    await act(async () => {
+      await result.current.chooseOption('safe', 'Проверить');
+    });
+    expect(result.current.status).toBe('active');
+    expect(result.current.errorMessage).toContain('Не удалось сохранить выбор');
+  });
+
   it('starts an attempt and exposes the server scene', async () => {
     const { result } = renderHook(() => useTrainingSession('scenario-1'));
     await waitFor(() => expect(result.current.training?.attempt_id).toBe('attempt-1'));
@@ -83,6 +139,31 @@ describe('useTrainingSession', () => {
         revision: 1,
       });
     });
+  });
+
+  it('keeps the next scene hidden until feedback is acknowledged', async () => {
+    choose.mockReturnValue(
+      resolved({
+        feedback: { verdict: 'risky', text: 'Проверьте адрес сайта.' },
+        reaction: [{ author: 'counterpart', text: 'Почему вы так долго?' }],
+        next_scene: secondScene,
+        finished: false,
+        revision: 1,
+      }),
+    );
+    const { result } = renderHook(() => useTrainingSession('scenario-1'));
+    await waitFor(() => expect(result.current.training).not.toBeNull());
+
+    await act(async () => {
+      await result.current.chooseOption('safe', 'Проверить');
+    });
+    expect(result.current.status).toBe('feedback');
+    expect(result.current.training?.scene.scene_id).toBe('scene-1');
+    expect(result.current.messages.at(-1)?.text).toBe('Почему вы так долго?');
+
+    act(() => result.current.continueAfterFeedback());
+    expect(result.current.training?.scene.scene_id).toBe('scene-2');
+    expect(result.current.status).toBe('active');
   });
 
   it('recovers from a revision conflict by reloading the active attempt', async () => {

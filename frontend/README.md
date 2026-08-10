@@ -52,7 +52,19 @@ Unit/component tests находятся рядом с критической л�
 
 ## Reproducible install
 
-Репозиторий рассчитан на воспроизводимую установку через `npm ci`. Если lockfile ещё не создан в вашем окружении, один раз выполните `npm install` при доступном npm registry и закоммитьте полученный `package-lock.json`; после этого локально и в CI используйте `npm ci`.
+`package-lock.json` входит в репозиторий. Для CI и production используйте только `npm ci`; зависимости не плавают между сборками. Версия Node зафиксирована в `.nvmrc`.
+
+## Docker
+
+Из корня репозитория:
+
+```bash
+cp .env.example .env
+docker compose up --build
+```
+
+Frontend: `http://localhost:3000`
+Backend API: `http://localhost:8080`
 
 ## CI
 
@@ -65,3 +77,25 @@ Frontend использует FSD-слои `shared → entities → features →
 ### История прогресса
 
 Dashboard показывает последние завершённые попытки выбранной роли: результат, сценарий, исход и дату. На ResultPage дополнительно показывается изменение относительно предыдущего результата, если backend его предоставляет.
+
+## Progress model
+
+Frontend renders the progress returned by `GET /v1/progress` without reimplementing the
+server's XP rules.
+
+The dashboard exposes:
+
+- server-calculated XP, level and level progress;
+- earned and locked achievements;
+- personalized recommendations, including active attempts;
+- recent attempt history and the first safe attempt;
+- initial vs latest score and trend;
+- best score and attempt count per scenario;
+- role progress and comparison;
+- category-based skill summaries for the selected role.
+
+Scenario cards also expose server-provided category, difficulty and personal statistics.
+
+## Observability
+
+React ErrorBoundary и глобальные `error`/`unhandledrejection` события отправляются в единый `reportError`. По умолчанию ошибки остаются в console; для внешнего collector можно задать `VITE_ERROR_REPORT_URL`.

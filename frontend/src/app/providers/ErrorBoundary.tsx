@@ -1,4 +1,5 @@
 import { Component, ErrorInfo, ReactNode } from 'react';
+import { reportError } from '@/shared/observability';
 import cls from './ErrorBoundary.module.scss';
 
 interface Props {
@@ -16,7 +17,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error('AntiScam UI error', error, info);
+    reportError(error, { source: 'react-error-boundary', componentStack: info.componentStack });
   }
 
   private reset = () => {

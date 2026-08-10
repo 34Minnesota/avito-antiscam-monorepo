@@ -101,7 +101,7 @@ export const AuthPage = () => {
                 <label className={cls.field}>
                   <span>Имя на платформе</span>
                   <Input
-                    placeholder="Например, mops"
+                    placeholder="Например, user"
                     value={nickname}
                     onChange={(event) => setNickname(event.target.value)}
                     minLength={3}

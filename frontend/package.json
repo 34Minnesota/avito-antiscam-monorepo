@@ -13,7 +13,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:e2e:typecheck": "tsc --noEmit -p e2e/tsconfig.json"
   },
   "dependencies": {
     "@reduxjs/toolkit": "^1.9.7",

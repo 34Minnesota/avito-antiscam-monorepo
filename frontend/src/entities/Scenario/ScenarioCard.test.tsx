@@ -32,6 +32,7 @@ describe('ScenarioCard', () => {
       />,
     );
     expect(screen.getByRole('button', { name: 'Продолжить' })).toBeInTheDocument();
+    expect(screen.getByText(/Лучший результат/)).toBeInTheDocument();
 
     rerender(
       <ScenarioCard

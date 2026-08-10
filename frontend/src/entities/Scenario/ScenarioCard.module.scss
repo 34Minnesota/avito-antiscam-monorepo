@@ -74,3 +74,16 @@
     grid-template-columns: 1fr;
   }
 }
+
+.progressMeta {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 11px;
+  min-height: 18px;
+  color: #7a838c;
+  font-size: 10px;
+}
+.progressMeta b {
+  color: #171a1f;
+}

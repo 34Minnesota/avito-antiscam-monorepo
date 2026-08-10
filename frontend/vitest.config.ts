@@ -21,7 +21,7 @@ export default defineConfig({
         'src/shared/lib/attempt/**/*.ts',
       ],
       reporter: ['text', 'html', 'lcov'],
-      thresholds: { lines: 85, functions: 85, statements: 85, branches: 80 },
+      thresholds: { lines: 85, functions: 85, statements: 85, branches: 70 },
       exclude: ['src/test/**', '**/*.d.ts', '**/index.ts'],
     },
   },

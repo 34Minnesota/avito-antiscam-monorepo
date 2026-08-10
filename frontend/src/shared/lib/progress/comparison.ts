@@ -29,5 +29,5 @@ export const getRoleComparison = (roles: RoleProgress[]): RoleComparison => {
   if (delta === 0) return { state: 'equal', value: 'Результаты равны', note };
 
   const leader = delta > 0 ? 'Продавец' : 'Покупатель';
-  return { state: 'ready', value: `${leader} выше на ${Math.abs(delta)} баллов`, note };
+  return { state: 'ready', value: `${leader} выше на ${Math.abs(delta)} п.п.`, note };
 };

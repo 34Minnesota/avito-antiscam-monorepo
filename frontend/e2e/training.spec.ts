@@ -139,6 +139,7 @@ test('user can complete a training and reach the result', async ({ page }) => {
   await expect(page.getByText('Что сделать?')).toBeVisible();
   await page.getByRole('button', { name: /Проверить оплату/ }).click();
   await expect(page.getByText('Безопасное решение')).toBeVisible();
+  await expect(page.getByText('Хорошо.')).toBeVisible();
   await page.getByRole('button', { name: 'Посмотреть итог' }).click();
   await expect(page.getByText('Отлично')).toBeVisible();
 });

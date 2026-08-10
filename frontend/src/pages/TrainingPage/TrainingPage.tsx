@@ -1,5 +1,6 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import { Avatar } from '@/shared/ui/Avatar';
+import { ImageWithFallback } from '@/shared/ui/ImageWithFallback';
 import { Badge } from '@/shared/ui/Badge';
 import { Card } from '@/shared/ui/Card';
 import { Loader } from '@/shared/ui/Loader';
@@ -69,11 +70,7 @@ export const TrainingPage = () => {
           <aside>
             <Card className={cls.listing}>
               <div className={cls.photo}>
-                {listingImage ? (
-                  <img src={listingImage} alt="" />
-                ) : (
-                  <span aria-hidden="true">{isSeller ? '📦' : '🛍️'}</span>
-                )}
+                <ImageWithFallback src={listingImage} alt="" fallback={isSeller ? '📦' : '🛍️'} />
               </div>
               <Badge tone="accent">{isSeller ? 'Вы продавец' : 'Вы покупатель'}</Badge>
               <h2>{training.listing.title}</h2>

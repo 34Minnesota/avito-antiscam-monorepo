@@ -15,7 +15,10 @@ export const TrainingChat = ({ messages, counterpartName }: Props) => (
       const system = message.author === 'system';
       return (
         <div
-          key={`${message.author}-${index}-${message.text}`}
+          key={
+            message.id ??
+            `${message.author}-${message.text}-${message.attachment?.title ?? ''}-${index}`
+          }
           className={classNames(cls.row, mine && cls.mine, system && cls.system)}
         >
           {!mine && !system && <Avatar name={counterpartName} size="s" />}

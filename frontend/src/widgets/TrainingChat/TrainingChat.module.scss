@@ -88,3 +88,37 @@
   color: #8a929b;
   margin-top: 2px;
 }
+
+.row,
+.message,
+.bubble {
+  min-width: 0;
+}
+.bubble {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.attachment {
+  min-width: 0;
+}
+.attachment > div {
+  min-width: 0;
+}
+.attachment b {
+  overflow-wrap: anywhere;
+}
+@media (max-width: 600px) {
+  .Chat {
+    padding: 16px 12px;
+    gap: 12px;
+    max-height: none;
+    min-height: 320px;
+  }
+  .row {
+    max-width: 94%;
+  }
+  .bubble {
+    font-size: 13px;
+    padding: 10px 12px;
+  }
+}

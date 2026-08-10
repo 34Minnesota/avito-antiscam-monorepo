@@ -26,6 +26,7 @@ export interface ScenarioCard {
   stats?: ScenarioStats | null;
 }
 export interface Message {
+  id?: string;
   author: 'user' | 'counterpart' | 'system';
   text: string;
   attachment?: { type: string; title: string } | null;
@@ -60,6 +61,7 @@ export interface StartResult {
   title: string;
   scene: Scene;
   scenes_total: number;
+  revision?: number;
 }
 export interface ChoiceResult {
   feedback: { verdict: Verdict; text: string };
@@ -123,6 +125,27 @@ export interface RoleProgress {
   passed_percent: number;
   scenarios: ScenarioProgress[];
 }
+export interface Achievement {
+  code: string;
+  title: string;
+  description: string;
+  earned: boolean;
+}
+
+export interface ExperienceProgress {
+  total_xp: number;
+  level: number;
+  current_xp: number;
+  next_level_xp: number;
+  achievements: Achievement[];
+}
+
+export interface ProgressRecommendation {
+  scenario_slug: string;
+  reason_code: string;
+  reason_text: string;
+}
+
 export interface Progress {
   total_scenarios: number;
   completed_scenarios: number;
@@ -131,5 +154,6 @@ export interface Progress {
   passed_percent: number;
   roles: RoleProgress[];
   role_comparison: { completion_percent_delta: number; passed_percent_delta: number };
-  recommendations: Array<{ scenario_slug: string; reason_code: string; reason_text: string }>;
+  recommendations: ProgressRecommendation[];
+  experience: ExperienceProgress;
 }

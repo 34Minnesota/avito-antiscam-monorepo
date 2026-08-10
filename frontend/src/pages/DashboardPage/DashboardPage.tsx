@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { useGetMeQuery } from '@/entities/User';
 import { useGetProgressQuery } from '@/entities/Progress';
 import { useGetScenariosQuery } from '@/entities/Scenario';
+import { isUnauthorized } from '@/shared/api/errors';
 import { RoleSwitcher } from '@/features/roleSwitcher';
 import { ProgressOverview } from '@/widgets/ProgressOverview/ProgressOverview';
+import { ProgressInsights } from '@/widgets/ProgressInsights/ProgressInsights';
 import { ScenarioCatalog } from '@/widgets/ScenarioCatalog/ScenarioCatalog';
 import { AppHeader } from '@/widgets/AppHeader/AppHeader';
 import { Loader } from '@/shared/ui/Loader';
@@ -12,30 +14,93 @@ import { Role, ScenarioCard as ScenarioCardType } from '@/shared/api/contracts';
 import { getStoredRole, saveStoredRole } from '@/shared/lib/role/storage';
 import cls from './DashboardPage.module.scss';
 
+const NavigateToLogin = () => {
+  return <Navigate to="/login" replace />;
+};
+
 export const DashboardPage = () => {
   const navigate = useNavigate();
   const { data: user } = useGetMeQuery();
-  const { data: progress, isLoading: progressLoading } = useGetProgressQuery();
+  const progressQuery = useGetProgressQuery();
+  const {
+    data: progress,
+    isLoading: progressLoading,
+    isFetching: progressFetching,
+    error: progressError,
+    refetch: refetchProgress,
+  } = progressQuery;
   const [role, setRole] = useState<Role>(() => getStoredRole() ?? 'seller');
-  const { data: catalog, isLoading: catalogLoading } = useGetScenariosQuery(role);
+  const catalogQuery = useGetScenariosQuery(role);
+  const {
+    data: catalog,
+    isLoading: catalogLoading,
+    isFetching: catalogFetching,
+    error: catalogError,
+    refetch: refetchCatalog,
+  } = catalogQuery;
 
   const changeRole = (nextRole: Role) => {
     setRole(nextRole);
     saveStoredRole(nextRole);
   };
 
-  if (progressLoading || catalogLoading || !user || !progress) {
+  const dataLoading = progressLoading || catalogLoading || progressFetching || catalogFetching;
+  const unauthorized = isUnauthorized(progressError) || isUnauthorized(catalogError);
+
+  if (unauthorized) {
+    return <NavigateToLogin />;
+  }
+
+  if (dataLoading || !user) {
     return (
       <>
         <AppHeader />
-        <main className={cls.loading}>
+        <main className={cls.loading} aria-live="polite">
           <Loader />
+          <span>Загружаем ваш прогресс…</span>
+        </main>
+      </>
+    );
+  }
+
+  if (progressError || catalogError || !progress) {
+    return (
+      <>
+        <AppHeader />
+        <main className={cls.errorState} role="alert">
+          <div className={cls.errorCard}>
+            <div className={cls.kicker}>НЕ УДАЛОСЬ ЗАГРУЗИТЬ ДАННЫЕ</div>
+            <h1>Прогресс временно недоступен</h1>
+            <p>
+              Сессия сохранена. Попробуйте обновить данные — приложение не будет бесконечно
+              показывать загрузку.
+            </p>
+            <div className={cls.errorActions}>
+              <button
+                type="button"
+                onClick={() => {
+                  void refetchProgress();
+                  void refetchCatalog();
+                }}
+              >
+                Повторить
+              </button>
+              <button
+                type="button"
+                className={cls.secondaryButton}
+                onClick={() => window.location.reload()}
+              >
+                Обновить страницу
+              </button>
+            </div>
+          </div>
         </main>
       </>
     );
   }
 
   const roleProgress = progress.roles.find((item) => item.role === role);
+  const scenarios = catalog?.scenarios ?? [];
   const recommendation =
     progress.recommendations.find((item) =>
       roleProgress?.scenarios.some((scenario) => scenario.scenario_slug === item.scenario_slug),
@@ -43,7 +108,6 @@ export const DashboardPage = () => {
   const recommendationScenario = catalog?.scenarios.find(
     (item) => item.slug === recommendation?.scenario_slug,
   );
-  const scenarios = catalog?.scenarios ?? [];
 
   return (
     <>
@@ -62,6 +126,8 @@ export const DashboardPage = () => {
         </section>
 
         <ProgressOverview progress={progress} activeRole={role} />
+
+        <ProgressInsights progress={progress} role={role} scenarios={scenarios} />
 
         <section className={cls.learning}>
           <div className={cls.learningIcon}>✓</div>
@@ -93,7 +159,11 @@ export const DashboardPage = () => {
               type="button"
               onClick={() => navigate(`/training/${recommendationScenario.id}`)}
             >
-              Начать тренировку →
+              {recommendation.reason_code === 'ACTIVE_ATTEMPT'
+                ? 'Продолжить тренировку →'
+                : recommendation.reason_code === 'REPEAT_FOR_REINFORCEMENT'
+                  ? 'Повторить сценарий →'
+                  : 'Начать тренировку →'}
             </button>
           </section>
         )}

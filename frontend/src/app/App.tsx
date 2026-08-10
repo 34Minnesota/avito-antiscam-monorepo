@@ -16,7 +16,9 @@ interface ProtectedProps {
 
 const Protected = ({ children }: ProtectedProps) => {
   const hasSession = Boolean(getSessionId());
-  const { isLoading, error } = useGetMeQuery(undefined, { skip: !hasSession });
+  const { isLoading, isFetching, isSuccess, error, refetch } = useGetMeQuery(undefined, {
+    skip: !hasSession,
+  });
   const unauthorized = isUnauthorized(error);
 
   if (!hasSession || unauthorized) {
@@ -24,7 +26,7 @@ const Protected = ({ children }: ProtectedProps) => {
     return <Navigate to="/login" replace />;
   }
 
-  if (isLoading) {
+  if (isLoading || isFetching) {
     return (
       <div className={cls.loading}>
         <Loader />
@@ -32,10 +34,13 @@ const Protected = ({ children }: ProtectedProps) => {
     );
   }
 
-  if (error) {
+  if (error || !isSuccess) {
     return (
       <div className={cls.loading}>
         <div>Не удалось проверить сессию.</div>
+        <button type="button" onClick={() => void refetch()}>
+          Повторить
+        </button>
       </div>
     );
   }

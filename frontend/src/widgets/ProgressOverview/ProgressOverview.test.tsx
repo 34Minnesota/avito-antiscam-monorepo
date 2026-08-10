@@ -31,6 +31,13 @@ const base: Progress = {
   ],
   role_comparison: { completion_percent_delta: 0, passed_percent_delta: 0 },
   recommendations: [],
+  experience: {
+    total_xp: 0,
+    level: 1,
+    current_xp: 0,
+    next_level_xp: 100,
+    achievements: [],
+  },
 };
 
 describe('ProgressOverview', () => {
@@ -64,7 +71,7 @@ describe('ProgressOverview', () => {
         activeRole="seller"
       />,
     );
-    expect(screen.getByText('Продавец выше на 25 баллов')).toBeInTheDocument();
+    expect(screen.getByText('Продавец выше на 25 п.п.')).toBeInTheDocument();
     expect(screen.getByText('Продавец 75% · Покупатель 50%')).toBeInTheDocument();
   });
 
@@ -100,6 +107,12 @@ describe('ProgressOverview', () => {
                       completed_at: '2026-08-08T10:00:00Z',
                     },
                   ],
+                  first_safe_attempt: {
+                    attempt_id: 'a2',
+                    score: { points: 95, max_points: 100, percent: 95 },
+                    outcome: 'safe',
+                    completed_at: '2026-08-09T10:00:00Z',
+                  },
                 },
               ],
             },
@@ -112,6 +125,7 @@ describe('ProgressOverview', () => {
     expect(screen.getByText('Ваш прогресс в динамике')).toBeInTheDocument();
     expect(screen.getByText('95%')).toBeInTheDocument();
     expect(screen.getByText('70%')).toBeInTheDocument();
+    expect(screen.getByText('Первый безопасный результат')).toBeInTheDocument();
     expect(screen.getAllByText('Срочная предоплата')).toHaveLength(2);
   });
 

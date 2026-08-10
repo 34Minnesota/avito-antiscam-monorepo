@@ -71,6 +71,7 @@ type RoleComparison struct {
 }
 
 type Recommendation struct {
+	Role         Role
 	ScenarioSlug string
 	ReasonCode   string
 	ReasonText   string

@@ -215,9 +215,22 @@ type recommendationCandidate struct {
 }
 
 func recommendations(scenarios []models.ScenarioProgress) []models.Recommendation {
+	result := make([]models.Recommendation, 0, recommendationLimit*2)
+	for _, role := range []models.Role{models.RoleBuyer, models.RoleSeller} {
+		result = append(result, recommendationsForRole(scenarios, role)...)
+	}
+
+	return result
+}
+
+func recommendationsForRole(scenarios []models.ScenarioProgress, role models.Role) []models.Recommendation {
 	candidates := make([]recommendationCandidate, 0, len(scenarios))
 
 	for _, scenario := range scenarios {
+		if scenario.Role != role {
+			continue
+		}
+
 		candidate, ok := recommendationFor(scenario)
 		if ok {
 			candidates = append(candidates, candidate)
@@ -283,6 +296,7 @@ func newRecommendationCandidate(scenario models.ScenarioProgress, reasonCode, re
 
 	return recommendationCandidate{
 		recommendation: models.Recommendation{
+			Role:         scenario.Role,
 			ScenarioSlug: scenario.Slug,
 			ReasonCode:   reasonCode,
 			ReasonText:   reasonText,

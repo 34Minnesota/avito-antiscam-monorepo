@@ -216,7 +216,12 @@ const normalizeProgress = (value: unknown): Progress => {
     },
     recommendations: rawRecommendations.map((item) => {
       const recommendation = asRecord(item, 'ProgressRecommendation');
+      const role = recommendation.role;
+      if (role !== 'buyer' && role !== 'seller')
+        throw new Error('Invalid API response: ProgressRecommendation.role');
+
       return {
+        role,
         scenario_slug: String(recommendation.scenario_slug ?? recommendation.scenarioSlug ?? ''),
         reason_code: String(recommendation.reason_code ?? recommendation.reasonCode ?? ''),
         reason_text: String(recommendation.reason_text ?? recommendation.reasonText ?? ''),

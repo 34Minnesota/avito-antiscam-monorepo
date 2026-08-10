@@ -68,4 +68,41 @@ describe('validateProgress', () => {
     expect(result.roles[0].completion_percent).toBe(67);
     expect(result.roles[0].passed_percent).toBe(33);
   });
+
+  it('keeps the recommendation role', () => {
+    const result = validateProgress({
+      roles: [],
+      recommendations: [
+        {
+          role: 'buyer',
+          scenario_slug: 'buyer-scenario',
+          reason_code: 'NOT_STARTED',
+          reason_text: 'Начните сценарий.',
+        },
+      ],
+      experience: {},
+    });
+
+    expect(result.recommendations[0]).toMatchObject({
+      role: 'buyer',
+      scenario_slug: 'buyer-scenario',
+    });
+  });
+
+  it('rejects a recommendation with an invalid role', () => {
+    expect(() =>
+      validateProgress({
+        roles: [],
+        recommendations: [
+          {
+            role: 'admin',
+            scenario_slug: 'scenario',
+            reason_code: 'NOT_STARTED',
+            reason_text: 'Начните сценарий.',
+          },
+        ],
+        experience: {},
+      }),
+    ).toThrow('Invalid API response: ProgressRecommendation.role');
+  });
 });

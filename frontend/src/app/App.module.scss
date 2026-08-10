@@ -1,0 +1,18 @@
+.loading {
+  min-height: 100vh;
+  background: #0b101b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loading button {
+  border: 0;
+  border-radius: 10px;
+  padding: 10px 16px;
+  background: #00c853;
+  color: #fff;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}

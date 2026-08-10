@@ -1,0 +1,23 @@
+.page {
+  min-height: 100vh;
+  background: #0b101b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: #fff;
+}
+.page span {
+  font-size: 88px;
+  font-weight: 900;
+  color: #ff6b35;
+  letter-spacing: -0.08em;
+}
+.page h1 {
+  font-size: 28px;
+  margin: 0 0 7px;
+}
+.page p {
+  color: #77869d;
+  margin: 0 0 20px;
+}

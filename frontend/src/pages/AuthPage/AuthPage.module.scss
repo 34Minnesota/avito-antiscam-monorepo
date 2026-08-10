@@ -1,0 +1,142 @@
+.page {
+  min-height: 100vh;
+  background: #f6f7f8;
+  color: #171a1f;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+.glow {
+  position: absolute;
+  width: 620px;
+  height: 620px;
+  right: -220px;
+  top: -260px;
+  background: radial-gradient(circle, rgba(0, 200, 83, 0.11), transparent 68%);
+}
+.wrap {
+  width: min(1040px, calc(100% - 40px));
+  display: grid;
+  grid-template-columns: 1.05fr 0.75fr;
+  gap: 80px;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+}
+.brand {
+  padding: 20px 0;
+}
+.pitch {
+  font-size: 44px;
+  line-height: 1.08;
+  font-weight: 850;
+  letter-spacing: -0.045em;
+  max-width: 540px;
+  margin: 42px 0 34px;
+}
+.pitch span {
+  color: #00a843;
+}
+.points {
+  display: grid;
+  gap: 13px;
+}
+.points div {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+.points b {
+  font-size: 10px;
+  color: #00a843;
+  letter-spacing: 0.1em;
+}
+.points span {
+  font-size: 13px;
+  color: #69727d;
+}
+.formCard {
+  background: #fff;
+  border: 1px solid #e1e5e7;
+  border-radius: 22px;
+  padding: 28px;
+  box-shadow: 0 24px 70px rgba(24, 32, 38, 0.09);
+}
+.tabs {
+  display: flex;
+  gap: 6px;
+  padding: 4px;
+  background: #f1f3f4;
+  border-radius: 12px;
+  margin-bottom: 28px;
+}
+.tabs button {
+  flex: 1;
+  height: 38px;
+  border: 0;
+  background: transparent;
+  color: #7b848d;
+  border-radius: 9px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.tabs .active {
+  background: #fff;
+  color: #171a1f;
+  box-shadow: 0 2px 8px rgba(24, 32, 38, 0.08);
+}
+.formCard h1 {
+  font-size: 29px;
+  letter-spacing: -0.03em;
+  margin: 0 0 7px;
+}
+.formCard > p {
+  font-size: 13px;
+  color: #69727d;
+  margin: 0 0 22px;
+}
+.formCard form {
+  display: grid;
+  gap: 12px;
+}
+.field {
+  display: grid;
+  gap: 6px;
+}
+.field > span {
+  font-size: 11px;
+  font-weight: 750;
+  color: #30373e;
+}
+.error {
+  padding: 11px 12px;
+  border-radius: 11px;
+  background: #fff0f0;
+  border: 1px solid #f3c8ca;
+  color: #b3262b;
+  font-size: 12px;
+}
+.hint {
+  font-size: 10px;
+  color: #8a929b;
+  line-height: 1.5;
+  margin-top: 17px;
+}
+@media (max-width: 800px) {
+  .wrap {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .brand {
+    display: none;
+  }
+  .formCard {
+    max-width: 470px;
+    width: 100%;
+    margin: auto;
+  }
+}

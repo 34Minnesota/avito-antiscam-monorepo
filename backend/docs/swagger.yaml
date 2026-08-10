@@ -1,0 +1,771 @@
+basePath: /
+definitions:
+  httptransport.ChoiceRequest:
+    properties:
+      expected_revision:
+        minimum: 0
+        type: integer
+      option_id:
+        type: string
+      scene_id:
+        type: string
+    required:
+    - expected_revision
+    - option_id
+    - scene_id
+    type: object
+  httptransport.ErrorResponse:
+    properties:
+      code:
+        type: string
+      message:
+        type: string
+    type: object
+  httptransport.LoginRequest:
+    properties:
+      email:
+        maxLength: 254
+        type: string
+      password:
+        maxLength: 72
+        minLength: 8
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  httptransport.LoginResponse:
+    properties:
+      session_id:
+        type: string
+    type: object
+  httptransport.RegisterRequest:
+    properties:
+      email:
+        maxLength: 254
+        type: string
+      nickname:
+        maxLength: 30
+        minLength: 3
+        type: string
+      password:
+        maxLength: 72
+        minLength: 8
+        type: string
+    required:
+    - email
+    - nickname
+    - password
+    type: object
+  httptransport.RegisterResponse:
+    properties:
+      session_id:
+        type: string
+    type: object
+  httptransport.ScenariosResponse:
+    properties:
+      scenarios:
+        items:
+          $ref: '#/definitions/training.ScenarioCard'
+        type: array
+    type: object
+  httptransport.StartAttemptRequest:
+    properties:
+      scenario_id:
+        type: string
+    required:
+    - scenario_id
+    type: object
+  httptransport.UserResponse:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      nickname:
+        type: string
+    type: object
+  httptransport.achievementResponse:
+    properties:
+      code:
+        type: string
+      description:
+        type: string
+      earned:
+        type: boolean
+      title:
+        type: string
+    type: object
+  httptransport.completedAttemptResultResponse:
+    properties:
+      attempt_id:
+        type: string
+      completed_at:
+        type: string
+      outcome:
+        $ref: '#/definitions/models.Outcome'
+      score:
+        $ref: '#/definitions/httptransport.scoreResponse'
+    type: object
+  httptransport.experienceResponse:
+    properties:
+      achievements:
+        items:
+          $ref: '#/definitions/httptransport.achievementResponse'
+        type: array
+      current_xp:
+        type: integer
+      level:
+        type: integer
+      next_level_xp:
+        type: integer
+      total_xp:
+        type: integer
+    type: object
+  httptransport.progressResponse:
+    properties:
+      completed_scenarios:
+        type: integer
+      completion_percent:
+        type: integer
+      experience:
+        $ref: '#/definitions/httptransport.experienceResponse'
+      passed_percent:
+        type: integer
+      passed_scenarios:
+        type: integer
+      recommendations:
+        items:
+          $ref: '#/definitions/httptransport.recommendationResponse'
+        type: array
+      role_comparison:
+        $ref: '#/definitions/httptransport.roleComparisonResponse'
+      roles:
+        items:
+          $ref: '#/definitions/httptransport.roleProgressResponse'
+        type: array
+      total_scenarios:
+        type: integer
+    type: object
+  httptransport.recommendationResponse:
+    properties:
+      reason_code:
+        type: string
+      reason_text:
+        type: string
+      scenario_slug:
+        type: string
+    type: object
+  httptransport.roleComparisonResponse:
+    properties:
+      completion_percent_delta:
+        type: integer
+      passed_percent_delta:
+        type: integer
+    type: object
+  httptransport.roleProgressResponse:
+    properties:
+      completed_scenarios:
+        type: integer
+      completion_percent:
+        type: integer
+      passed_percent:
+        type: integer
+      passed_scenarios:
+        type: integer
+      role:
+        $ref: '#/definitions/models.Role'
+      scenarios:
+        items:
+          $ref: '#/definitions/httptransport.scenarioProgressResponse'
+        type: array
+      total_scenarios:
+        type: integer
+    type: object
+  httptransport.scenarioProgressResponse:
+    properties:
+      active_attempt_id:
+        type: string
+      attempts_count:
+        type: integer
+      best_score:
+        $ref: '#/definitions/httptransport.scoreResponse'
+      completed:
+        type: boolean
+      first_safe_attempt:
+        $ref: '#/definitions/httptransport.completedAttemptResultResponse'
+      improvement_percent_points:
+        type: integer
+      initial_score:
+        $ref: '#/definitions/httptransport.scoreResponse'
+      latest_score:
+        $ref: '#/definitions/httptransport.scoreResponse'
+      passed:
+        type: boolean
+      recent_attempts:
+        items:
+          $ref: '#/definitions/httptransport.completedAttemptResultResponse'
+        type: array
+      scenario_slug:
+        type: string
+      title:
+        type: string
+      trend:
+        type: string
+    type: object
+  httptransport.scoreResponse:
+    properties:
+      max_points:
+        type: integer
+      percent:
+        type: integer
+      points:
+        type: integer
+    type: object
+  models.Attachment:
+    properties:
+      title:
+        type: string
+      type:
+        type: string
+    type: object
+  models.Author:
+    enum:
+    - counterpart
+    - system
+    - user
+    type: string
+    x-enum-comments:
+      AuthorCounterpart: собеседник (потенциальный мошенник)
+      AuthorSystem: служебная вставка
+      AuthorUser: реплика самого пользователя
+    x-enum-descriptions:
+    - собеседник (потенциальный мошенник)
+    - служебная вставка
+    - реплика самого пользователя
+    x-enum-varnames:
+    - AuthorCounterpart
+    - AuthorSystem
+    - AuthorUser
+  models.Counterpart:
+    properties:
+      name:
+        type: string
+      rating:
+        type: number
+      registered:
+        type: string
+      reviews:
+        type: integer
+    type: object
+  models.Ending:
+    properties:
+      outcome:
+        $ref: '#/definitions/models.Outcome'
+      text:
+        type: string
+      title:
+        type: string
+    type: object
+  models.FlagInfo:
+    properties:
+      id:
+        type: string
+      text:
+        type: string
+      title:
+        type: string
+    type: object
+  models.Listing:
+    properties:
+      image:
+        description: 'TODO: решить вопрос с image'
+        type: string
+      location:
+        type: string
+      price:
+        type: integer
+      title:
+        type: string
+    type: object
+  models.Message:
+    properties:
+      attachment:
+        $ref: '#/definitions/models.Attachment'
+      author:
+        $ref: '#/definitions/models.Author'
+      text:
+        type: string
+    type: object
+  models.Outcome:
+    enum:
+    - safe
+    - partial
+    - scammed
+    type: string
+    x-enum-varnames:
+    - OutcomeSafe
+    - OutcomePartial
+    - OutcomeScammed
+  models.Role:
+    enum:
+    - buyer
+    - seller
+    type: string
+    x-enum-varnames:
+    - RoleBuyer
+    - RoleSeller
+  models.Verdict:
+    enum:
+    - safe
+    - risky
+    - fatal
+    type: string
+    x-enum-comments:
+      VerdictFatal: fatal — точка невозврата
+      VerdictRisky: risky — рискованное, но не фатальное
+      VerdictSafe: safe  — безопасное действие;
+    x-enum-descriptions:
+    - safe  — безопасное действие;
+    - risky — рискованное, но не фатальное
+    - fatal — точка невозврата
+    x-enum-varnames:
+    - VerdictSafe
+    - VerdictRisky
+    - VerdictFatal
+  training.ChoiceResult:
+    properties:
+      feedback:
+        $ref: '#/definitions/training.Feedback'
+      finished:
+        type: boolean
+      next_scene:
+        $ref: '#/definitions/training.ScenePayload'
+      reaction:
+        items:
+          $ref: '#/definitions/models.Message'
+        type: array
+      revision:
+        type: integer
+      summary:
+        $ref: '#/definitions/training.SummaryResult'
+    type: object
+  training.Feedback:
+    properties:
+      text:
+        type: string
+      verdict:
+        $ref: '#/definitions/models.Verdict'
+    type: object
+  training.OptionPayload:
+    properties:
+      id:
+        type: string
+      text:
+        type: string
+    type: object
+  training.ScenarioCard:
+    properties:
+      category:
+        type: string
+      description:
+        type: string
+      difficulty:
+        type: integer
+      id:
+        type: string
+      role:
+        $ref: '#/definitions/models.Role'
+      slug:
+        type: string
+      stats:
+        $ref: '#/definitions/training.ScenarioStats'
+      title:
+        type: string
+    type: object
+  training.ScenarioStats:
+    properties:
+      attempts_count:
+        type: integer
+      best_score:
+        type: integer
+    type: object
+  training.ScenePayload:
+    properties:
+      intro:
+        items:
+          $ref: '#/definitions/models.Message'
+        type: array
+      options:
+        items:
+          $ref: '#/definitions/training.OptionPayload'
+        type: array
+      prompt:
+        type: string
+      scene_id:
+        type: string
+    type: object
+  training.StartResult:
+    properties:
+      attempt_id:
+        type: string
+      counterpart:
+        $ref: '#/definitions/models.Counterpart'
+      listing:
+        $ref: '#/definitions/models.Listing'
+      role:
+        $ref: '#/definitions/models.Role'
+      scene:
+        $ref: '#/definitions/training.ScenePayload'
+      scenes_total:
+        type: integer
+      title:
+        type: string
+    type: object
+  training.SummaryResult:
+    properties:
+      delta_vs_previous:
+        type: integer
+      ending:
+        $ref: '#/definitions/models.Ending'
+      missed_flags:
+        items:
+          $ref: '#/definitions/models.FlagInfo'
+        type: array
+      outcome:
+        $ref: '#/definitions/models.Outcome'
+      score:
+        type: integer
+      steps_total:
+        type: integer
+      takeaway:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: API сервиса AntiScam.
+  title: AntiScam API
+  version: "1.0"
+paths:
+  /healthz:
+    get:
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: OK
+      summary: Проверка состояния сервиса
+      tags:
+      - health
+  /v1/attempts:
+    post:
+      consumes:
+      - application/json
+      description: Создаёт новую попытку прохождения сценария.
+      parameters:
+      - description: Данные сценария
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/httptransport.StartAttemptRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/training.StartResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httptransport.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/httptransport.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/httptransport.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httptransport.ErrorResponse'
+      security:
+      - SessionID: []
+      summary: Начать попытку
+      tags:
+      - attempts
+  /v1/attempts/{attemptID}/choice:
+    post:
+      consumes:
+      - application/json
+      description: Отправляет выбор пользователя для текущей сцены.
+      parameters:
+      - description: ID попытки
+        in: path
+        name: attemptID
+        required: true
+        type: string
+      - description: Выбор пользователя
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/httptransport.ChoiceRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/training.ChoiceResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httptransport.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/httptransport.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/httptransport.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/httptransport.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/httptransport.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httptransport.ErrorResponse'
+      security:
+      - SessionID: []
+      summary: Сделать выбор в попытке
+      tags:
+      - attempts
+  /v1/attempts/{attemptID}/summary:
+    get:
+      description: Возвращает итоговую информацию по попытке пользователя.
+      parameters:
+      - description: ID попытки
+        in: path
+        name: attemptID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/training.SummaryResult'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httptransport.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/httptransport.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/httptransport.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httptransport.ErrorResponse'
+      security:
+      - SessionID: []
+      summary: Получить результат попытки
+      tags:
+      - attempts
+  /v1/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Выполняет вход по email и паролю и создаёт сессию.
+      parameters:
+      - description: Учётные данные
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/httptransport.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httptransport.LoginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httptransport.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/httptransport.ErrorResponse'
+      summary: Вход в систему
+      tags:
+      - auth
+  /v1/auth/logout:
+    post:
+      description: Завершает текущую сессию.
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/httptransport.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httptransport.ErrorResponse'
+      security:
+      - SessionID: []
+      summary: Выход из системы
+      tags:
+      - auth
+  /v1/auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Создаёт пользователя и связанную с ним сессию.
+      parameters:
+      - description: Данные для регистрации
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/httptransport.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/httptransport.RegisterResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httptransport.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/httptransport.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httptransport.ErrorResponse'
+      summary: Регистрация пользователя
+      tags:
+      - auth
+  /v1/progress:
+    get:
+      description: Возвращает общий прогресс текущего авторизованного пользователя
+        по сценариям.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httptransport.progressResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/httptransport.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httptransport.ErrorResponse'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/httptransport.ErrorResponse'
+      security:
+      - SessionID: []
+      summary: Получить прогресс пользователя
+      tags:
+      - progress
+  /v1/scenarios:
+    get:
+      description: Возвращает доступные пользователю сценарии.
+      parameters:
+      - description: Роль пользователя
+        enum:
+        - buyer
+        - seller
+        in: query
+        name: role
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httptransport.ScenariosResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httptransport.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/httptransport.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httptransport.ErrorResponse'
+      security:
+      - SessionID: []
+      summary: Получить список сценариев
+      tags:
+      - training
+  /v1/users/me:
+    get:
+      description: Возвращает данные пользователя, связанного с текущей сессией.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httptransport.UserResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/httptransport.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httptransport.ErrorResponse'
+      security:
+      - SessionID: []
+      summary: Получить текущего пользователя
+      tags:
+      - users
+schemes:
+- http
+securityDefinitions:
+  SessionID:
+    in: header
+    name: X-Session-ID
+    type: apiKey
+swagger: "2.0"

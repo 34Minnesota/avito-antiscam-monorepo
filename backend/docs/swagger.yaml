@@ -167,13 +167,13 @@ definitions:
     type: object
   httptransport.roleProgressResponse:
     properties:
-      completedScenarios:
+      completed_scenarios:
         type: integer
-      completionPercent:
+      completion_percent:
         type: integer
-      passedPercent:
+      passed_percent:
         type: integer
-      passedScenarios:
+      passed_scenarios:
         type: integer
       role:
         $ref: '#/definitions/models.Role'
@@ -181,7 +181,7 @@ definitions:
         items:
           $ref: '#/definitions/httptransport.scenarioProgressResponse'
         type: array
-      totalScenarios:
+      total_scenarios:
         type: integer
     type: object
   httptransport.scenarioProgressResponse:

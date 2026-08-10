@@ -83,17 +83,12 @@ export const useTrainingSession = (scenarioId?: string) => {
   }, [scenarioId, startSession]);
 
   const chooseOption = useCallback(
-    async (optionId: string, text: string) => {
+    async (optionId: string) => {
       if (!training || status === 'submitting' || status === 'feedback' || status === 'finished')
         return;
       const currentAttemptId = training.attempt_id;
       setStatus('submitting');
       setErrorMessage(null);
-      const nextMessages = withStableMessageIds(
-        [...messages, { author: 'user' as const, text }],
-        currentAttemptId,
-      );
-      setMessages(nextMessages);
 
       try {
         const result: ChoiceResult = await choose({
@@ -103,8 +98,9 @@ export const useTrainingSession = (scenarioId?: string) => {
           expectedRevision: getAttemptSnapshot(currentAttemptId)?.revision ?? 0,
         }).unwrap();
 
+        const reaction = (result.reaction ?? []).filter((message) => message.text.trim().length > 0);
         const withReaction = withStableMessageIds(
-          [...nextMessages, ...(result.reaction ?? [])],
+          [...messages, ...reaction],
           currentAttemptId,
         );
         setMessages(withReaction);

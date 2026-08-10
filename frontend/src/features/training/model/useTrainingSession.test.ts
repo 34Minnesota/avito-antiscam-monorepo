@@ -75,7 +75,7 @@ describe('useTrainingSession', () => {
     const { result } = renderHook(() => useTrainingSession('scenario-1'));
     await waitFor(() => expect(result.current.training).not.toBeNull());
     await act(async () => {
-      await result.current.chooseOption('safe', 'Проверить');
+      await result.current.chooseOption('safe');
     });
     expect(result.current.status).toBe('error');
     expect(result.current.errorMessage).toContain('следующую сцену');
@@ -86,7 +86,7 @@ describe('useTrainingSession', () => {
     const { result } = renderHook(() => useTrainingSession('scenario-1'));
     await waitFor(() => expect(result.current.training).not.toBeNull());
     await act(async () => {
-      await result.current.chooseOption('safe', 'Проверить');
+      await result.current.chooseOption('safe');
     });
     expect(navigate).toHaveBeenCalledWith('/login', { replace: true });
   });
@@ -96,10 +96,13 @@ describe('useTrainingSession', () => {
     const { result } = renderHook(() => useTrainingSession('scenario-1'));
     await waitFor(() => expect(result.current.training).not.toBeNull());
     await act(async () => {
-      await result.current.chooseOption('safe', 'Проверить');
+      await result.current.chooseOption('safe');
     });
     expect(result.current.status).toBe('active');
     expect(result.current.errorMessage).toContain('Не удалось сохранить выбор');
+    expect(result.current.messages.map(({ author, text }) => ({ author, text }))).toEqual([
+      { author: 'counterpart', text: 'Начало' },
+    ]);
   });
 
   it('starts an attempt and exposes the server scene', async () => {
@@ -122,11 +125,11 @@ describe('useTrainingSession', () => {
     await waitFor(() => expect(result.current.training).not.toBeNull());
 
     await act(async () => {
-      void result.current.chooseOption('safe', 'Проверить');
+      void result.current.chooseOption('safe');
     });
     expect(result.current.status).toBe('submitting');
     await act(async () => {
-      void result.current.chooseOption('safe', 'Проверить ещё раз');
+      void result.current.chooseOption('safe');
     });
     expect(choose).toHaveBeenCalledTimes(1);
 
@@ -145,7 +148,10 @@ describe('useTrainingSession', () => {
     choose.mockReturnValue(
       resolved({
         feedback: { verdict: 'risky', text: 'Проверьте адрес сайта.' },
-        reaction: [{ author: 'counterpart', text: 'Почему вы так долго?' }],
+        reaction: [
+          { author: 'user', text: 'Проверю адрес сайта.' },
+          { author: 'counterpart', text: 'Почему вы так долго?' },
+        ],
         next_scene: secondScene,
         finished: false,
         revision: 1,
@@ -155,10 +161,15 @@ describe('useTrainingSession', () => {
     await waitFor(() => expect(result.current.training).not.toBeNull());
 
     await act(async () => {
-      await result.current.chooseOption('safe', 'Проверить');
+      await result.current.chooseOption('safe');
     });
     expect(result.current.status).toBe('feedback');
     expect(result.current.training?.scene.scene_id).toBe('scene-1');
+    expect(result.current.messages.map(({ author, text }) => ({ author, text }))).toEqual([
+      { author: 'counterpart', text: 'Начало' },
+      { author: 'user', text: 'Проверю адрес сайта.' },
+      { author: 'counterpart', text: 'Почему вы так долго?' },
+    ]);
     expect(result.current.messages.at(-1)?.text).toBe('Почему вы так долго?');
 
     act(() => result.current.continueAfterFeedback());
@@ -172,10 +183,36 @@ describe('useTrainingSession', () => {
     await waitFor(() => expect(result.current.training).not.toBeNull());
 
     await act(async () => {
-      await result.current.chooseOption('safe', 'Проверить');
+      await result.current.chooseOption('safe');
     });
     await waitFor(() => expect(start).toHaveBeenCalledTimes(2));
     expect(result.current.status).toBe('active');
     expect(result.current.errorMessage).toBeNull();
+  });
+
+  it('ignores empty messages returned by the server', async () => {
+    choose.mockReturnValueOnce(
+      resolved({
+        feedback: { verdict: 'safe', text: 'Готово.' },
+        reaction: [
+          { author: 'user', text: '  ' },
+          { author: 'system', text: 'Профиль заблокирован.' },
+        ],
+        next_scene: null,
+        finished: true,
+        revision: 1,
+      }),
+    );
+    const { result } = renderHook(() => useTrainingSession('scenario-1'));
+    await waitFor(() => expect(result.current.training).not.toBeNull());
+
+    await act(async () => {
+      await result.current.chooseOption('safe');
+    });
+
+    expect(result.current.messages.map(({ author, text }) => ({ author, text }))).toEqual([
+      { author: 'counterpart', text: 'Начало' },
+      { author: 'system', text: 'Профиль заблокирован.' },
+    ]);
   });
 });

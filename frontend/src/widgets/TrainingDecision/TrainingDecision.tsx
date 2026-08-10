@@ -4,7 +4,7 @@ import cls from './TrainingDecision.module.scss';
 interface Props {
   prompt: string;
   options: Option[];
-  onChoose: (id: string, text: string) => void;
+  onChoose: (id: string) => void;
   disabled?: boolean;
 }
 
@@ -19,7 +19,7 @@ export const TrainingDecision = ({ prompt, options, onChoose, disabled }: Props)
           type="button"
           disabled={disabled}
           key={option.id}
-          onClick={() => onChoose(option.id, option.text)}
+          onClick={() => onChoose(option.id)}
         >
           <span aria-hidden="true">{String.fromCharCode(65 + index)}</span>
           {option.text}

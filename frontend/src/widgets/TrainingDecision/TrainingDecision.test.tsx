@@ -26,6 +26,6 @@ describe('TrainingDecision', () => {
 
     rerender(<TrainingDecision prompt="Что сделать?" options={options} onChoose={onChoose} />);
     await user.click(screen.getByRole('button', { name: /Проверить данные/ }));
-    expect(onChoose).toHaveBeenCalledWith('safe', 'Проверить данные');
+    expect(onChoose).toHaveBeenCalledWith('safe');
   });
 });

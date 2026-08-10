@@ -103,7 +103,10 @@ test('user can complete a training and reach the result', async ({ page }) => {
         contentType: 'application/json',
         body: JSON.stringify({
           feedback: { verdict: 'safe', text: 'Вы проверили оплату до действия.' },
-          reaction: [{ author: 'counterpart', text: 'Хорошо.' }],
+          reaction: [
+            { author: 'user', text: 'Проверю оплату перед действием.' },
+            { author: 'counterpart', text: 'Хорошо.' },
+          ],
           next_scene: null,
           finished: true,
           summary: {
@@ -138,6 +141,7 @@ test('user can complete a training and reach the result', async ({ page }) => {
   await page.getByRole('button', { name: 'Начать' }).click();
   await expect(page.getByText('Что сделать?')).toBeVisible();
   await page.getByRole('button', { name: /Проверить оплату/ }).click();
+  await expect(page.getByText('Проверю оплату перед действием.')).toBeVisible();
   await expect(page.getByText('Безопасное решение')).toBeVisible();
   await expect(page.getByText('Хорошо.')).toBeVisible();
   await page.getByRole('button', { name: 'Посмотреть итог' }).click();

@@ -112,11 +112,11 @@ type scenarioProgressResponse struct {
 
 type roleProgressResponse struct {
 	Role               models.Role                `json:"role"`
-	TotalScenarios     int                        `json:"totalScenarios"`
-	CompletedScenarios int                        `json:"completedScenarios"`
-	PassedScenarios    int                        `json:"passedScenarios"`
-	CompletionPercent  int                        `json:"completionPercent"`
-	PassedPercent      int                        `json:"passedPercent"`
+	TotalScenarios     int                        `json:"total_scenarios"`
+	CompletedScenarios int                        `json:"completed_scenarios"`
+	PassedScenarios    int                        `json:"passed_scenarios"`
+	CompletionPercent  int                        `json:"completion_percent"`
+	PassedPercent      int                        `json:"passed_percent"`
 	Scenarios          []scenarioProgressResponse `json:"scenarios"`
 }
 

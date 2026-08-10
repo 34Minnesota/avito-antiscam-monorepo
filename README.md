@@ -18,13 +18,12 @@ cp .env.example .env
 Запустите базу данных, примените миграции и поднимите API:
 
 ```bash
-make db-up
-make migrate-up
-make run
+make deploy
 ```
 
 После запуска:
 
+- Frontend: [http://localhost:3000](http://localhost:3000)
 - API: [http://localhost:8080](http://localhost:8080);
 - health-check: [http://localhost:8080/healthz](http://localhost:8080/healthz);
 - Swagger UI: [http://localhost:8080/swagger/index.html](http://localhost:8080/swagger/index.html).

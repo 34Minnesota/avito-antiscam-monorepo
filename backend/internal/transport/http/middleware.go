@@ -86,6 +86,12 @@ func (s *Server) LoggerMiddleware() gin.HandlerFunc {
 			return
 		}
 
+		if c.Request.Method == http.MethodGet &&
+			c.Request.URL.Path == "/healthz" &&
+			c.Writer.Status() < http.StatusInternalServerError {
+			return
+		}
+
 		fields := []zap.Field{
 			zap.String("method", c.Request.Method),
 			zap.String("path", c.Request.URL.Path),

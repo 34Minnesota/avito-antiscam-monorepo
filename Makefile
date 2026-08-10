@@ -1,7 +1,20 @@
 include .env
 export
 
-export PROJECT_ROOT=$(shell pwd)
+COMPOSE ?= docker compose
+
+MIGRATION_DATABASE_URL := postgres://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@postgres:5432/$(POSTGRES_DB)?sslmode=disable
+
+.PHONY: up down logs test lint db-up db-down ps run migrate-create migrate-up migrate-down swag
+
+deploy:
+	@MSYS_NO_PATHCONV=1 $(COMPOSE) up -d --build
+
+undeploy:
+	@$(COMPOSE) down
+
+logs:
+	@$(COMPOSE) logs -f --tail=100
 
 test:
 	@cd backend && go test ./... -cover
@@ -10,13 +23,13 @@ lint:
 	@cd backend && golangci-lint run ./... --fix
 
 db-up:
-	@docker compose up -d postgres
+	@MSYS_NO_PATHCONV=1 $(COMPOSE) up -d postgres
 
 db-down:
-	@docker compose down postgres
+	@$(COMPOSE) stop postgres
 
 ps:
-	@docker compose ps
+	@$(COMPOSE) ps
 
 run:
 	@cd backend && go run ./cmd/antiscam
@@ -26,22 +39,19 @@ migrate-create:
 		echo "No seq parameter found. Usage: make migrate-create seq=init"; \
 		exit 1; \
 	fi; \
-	MSYS_NO_PATHCONV=1 docker compose run --rm postgres-migrate \
+	MSYS_NO_PATHCONV=1 $(COMPOSE) run --rm postgres-migrate \
 		create \
 		-ext sql \
 		-dir /migrations \
 		-seq "$(seq)"
 
 migrate-up:
-	@MSYS_NO_PATHCONV=1 docker compose run --rm postgres-migrate \
-		-path /migrations \
-		-database postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable \
-		up
+	@MSYS_NO_PATHCONV=1 $(COMPOSE) run --rm postgres-migrate
 
 migrate-down:
-	@MSYS_NO_PATHCONV=1 docker compose run --rm postgres-migrate \
+	@MSYS_NO_PATHCONV=1 $(COMPOSE) run --rm postgres-migrate \
 		-path /migrations \
-		-database postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable \
+		-database $(MIGRATION_DATABASE_URL) \
 		down
 
 swag:

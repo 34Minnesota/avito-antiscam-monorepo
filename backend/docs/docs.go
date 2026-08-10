@@ -754,16 +754,16 @@ const docTemplate = `{
         "httptransport.roleProgressResponse": {
             "type": "object",
             "properties": {
-                "completedScenarios": {
+                "completed_scenarios": {
                     "type": "integer"
                 },
-                "completionPercent": {
+                "completion_percent": {
                     "type": "integer"
                 },
-                "passedPercent": {
+                "passed_percent": {
                     "type": "integer"
                 },
-                "passedScenarios": {
+                "passed_scenarios": {
                     "type": "integer"
                 },
                 "role": {
@@ -775,7 +775,7 @@ const docTemplate = `{
                         "$ref": "#/definitions/httptransport.scenarioProgressResponse"
                     }
                 },
-                "totalScenarios": {
+                "total_scenarios": {
                     "type": "integer"
                 }
             }

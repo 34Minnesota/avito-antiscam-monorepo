@@ -1,0 +1,28 @@
+.Logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.mark {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: #00c853;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 900;
+  box-shadow: 0 7px 18px rgba(0, 200, 83, 0.2);
+}
+.title {
+  color: #171a1f;
+  font-weight: 850;
+  letter-spacing: -0.02em;
+}
+.caption {
+  color: #87909a;
+  font-size: 8px;
+  letter-spacing: 0.13em;
+  margin-top: 1px;
+}

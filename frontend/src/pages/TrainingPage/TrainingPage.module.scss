@@ -1,0 +1,238 @@
+.page {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 22px 28px 60px;
+}
+.loading {
+  min-height: 70vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.error {
+  padding: 20px;
+  border: 1px solid #f0d1d3;
+  border-radius: 16px;
+  color: #b3262b;
+  background: #fff;
+}
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+.back {
+  background: none;
+  border: 0;
+  color: #69727d;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.back:hover {
+  color: #171a1f;
+}
+.progress {
+  font-size: 11px;
+  color: #171a1f;
+  font-weight: 800;
+}
+.progress span {
+  color: #8a929b;
+  font-weight: 500;
+}
+.layout {
+  display: grid;
+  grid-template-columns: 290px minmax(0, 1fr);
+  gap: 16px;
+}
+.layout aside {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.listing {
+  padding: 16px;
+}
+.photo {
+  height: 145px;
+  border-radius: 15px;
+  background: linear-gradient(135deg, #f1f4f5, #e8f8ee);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 58px;
+  margin-bottom: 14px;
+}
+.listing h2 {
+  font-size: 16px;
+  color: #171a1f;
+  line-height: 1.3;
+  margin: 13px 0 6px;
+}
+.listing > strong {
+  font-size: 22px;
+  color: #171a1f;
+}
+.listing > p {
+  font-size: 11px;
+  color: #69727d;
+  margin: 5px 0 0;
+}
+.person {
+  padding: 16px;
+}
+.personHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.personHead b,
+.personHead span {
+  display: block;
+}
+.personHead b {
+  font-size: 13px;
+  color: #171a1f;
+}
+.personHead span {
+  font-size: 10px;
+  color: #69727d;
+  margin-top: 3px;
+}
+.personMeta {
+  font-size: 10px;
+  color: #8a929b;
+  border-top: 1px solid #edf0f1;
+  margin-top: 14px;
+  padding-top: 12px;
+}
+.tip {
+  padding: 16px;
+  border-radius: 16px;
+  background: #f5fff8;
+  border: 1px solid #d7f0e0;
+}
+.tip b {
+  font-size: 11px;
+  color: #008b3a;
+}
+.tip p {
+  font-size: 11px;
+  line-height: 1.5;
+  color: #69727d;
+  margin: 6px 0 0;
+}
+.chatCard {
+  min-width: 0;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid #e1e5e7;
+  border-radius: 20px;
+  min-height: 650px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 30px rgba(24, 32, 38, 0.05);
+}
+.chatHeader {
+  height: 67px;
+  padding: 0 20px;
+  border-bottom: 1px solid #edf0f1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.chatHeader b,
+.chatHeader span {
+  display: block;
+}
+.chatHeader b {
+  font-size: 13px;
+  color: #171a1f;
+}
+.chatHeader > div span {
+  font-size: 10px;
+  color: #8a929b;
+  margin-top: 3px;
+}
+.secure {
+  font-size: 9px !important;
+  color: #07883f !important;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.errorButton {
+  display: block;
+  margin: 14px auto 0;
+  border: 0;
+  border-radius: 10px;
+  padding: 10px 14px;
+  background: #00c853;
+  color: #fff;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+.inlineError {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  border-radius: 13px;
+  border: 1px solid #f0d1d3;
+  background: #fff5f5;
+  color: #b3262b;
+  font-size: 12px;
+}
+.inlineError button {
+  border: 0;
+  background: transparent;
+  color: #b3262b;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+  .layout aside {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .tip {
+    grid-column: 1/-1;
+  }
+  .chatCard {
+    min-width: 0;
+    min-height: 600px;
+  }
+}
+@media (max-width: 600px) {
+  .page {
+    padding: 16px 12px 40px;
+  }
+  .layout aside {
+    display: flex;
+  }
+  .secure {
+    display: none;
+  }
+  .chatCard {
+    min-width: 0;
+    border-radius: 17px;
+  }
+  .chatHeader {
+    padding: 0 14px;
+  }
+}
+.photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+  display: block;
+}

@@ -98,11 +98,10 @@ export const useTrainingSession = (scenarioId?: string) => {
           expectedRevision: getAttemptSnapshot(currentAttemptId)?.revision ?? 0,
         }).unwrap();
 
-        const reaction = (result.reaction ?? []).filter((message) => message.text.trim().length > 0);
-        const withReaction = withStableMessageIds(
-          [...messages, ...reaction],
-          currentAttemptId,
+        const reaction = (result.reaction ?? []).filter(
+          (message) => message.text.trim().length > 0,
         );
+        const withReaction = withStableMessageIds([...messages, ...reaction], currentAttemptId);
         setMessages(withReaction);
         setFeedback(result.feedback);
         saveAttemptSnapshot(currentAttemptId, {

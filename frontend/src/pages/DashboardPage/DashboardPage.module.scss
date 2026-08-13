@@ -1,8 +1,10 @@
 .page {
-  max-width: 1180px;
+  width: min(1180px, calc(100% - 48px));
   margin: 0 auto;
-  padding: 42px 34px 80px;
+  padding: 42px 0 80px;
+  box-sizing: border-box;
 }
+
 .hero {
   display: flex;
   align-items: flex-end;
@@ -10,39 +12,50 @@
   gap: 24px;
   margin-bottom: 24px;
 }
+
+.hero > div {
+  min-width: 0;
+}
+
 .kicker {
   font-size: 10px;
   letter-spacing: 0.13em;
-  color: #00a843;
+  color: var(--primary);
   font-weight: 850;
 }
+
 .hero h1 {
   font-size: 42px;
+  line-height: 1.08;
   letter-spacing: -0.045em;
   margin: 8px 0;
 }
+
 .hero p {
   font-size: 14px;
-  color: #69727d;
+  color: var(--muted);
   max-width: 650px;
   margin: 0;
   line-height: 1.6;
 }
+
 .learning {
   display: flex;
   align-items: center;
   gap: 14px;
   margin: 18px 0;
   padding: 17px 19px;
-  border: 1px solid #d9f2e2;
-  background: #f5fff8;
+  border: 1px solid var(--primary-border);
+  background: var(--primary-soft);
   border-radius: 16px;
+  min-width: 0;
 }
+
 .learningIcon {
   width: 34px;
   height: 34px;
   border-radius: 10px;
-  background: #00c853;
+  background: var(--primary);
   color: #fff;
   display: flex;
   align-items: center;
@@ -50,187 +63,222 @@
   font-weight: 900;
   flex: 0 0 auto;
 }
+
 .learning strong {
   font-size: 13px;
 }
+
 .learning p {
   font-size: 11px;
   line-height: 1.5;
-  color: #69727d;
+  color: var(--muted);
   margin: 4px 0 0;
   max-width: 620px;
 }
+
 .learningSteps {
   margin-left: auto;
   display: flex;
   gap: 7px;
   flex-wrap: wrap;
+  flex: 0 0 auto;
 }
+
 .learningSteps span {
   padding: 7px 9px;
   border-radius: 8px;
   background: #fff;
-  border: 1px solid #dcefe3;
+  border: 1px solid var(--primary-border);
   color: #4e5a64;
   font-size: 10px;
   font-weight: 750;
+  white-space: nowrap;
 }
+
 .recommendation {
   margin: 18px 0 28px;
   padding: 18px 20px;
-  border: 1px solid #dce9df;
-  background: linear-gradient(90deg, #f2fff6, #fff);
+  border: 1px solid var(--primary-border);
+  background: linear-gradient(90deg, var(--primary-soft), #fff);
   border-radius: 16px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 20px;
+  min-width: 0;
 }
+
+.recommendation > div {
+  min-width: 0;
+}
+
 .recommendation span {
   font-size: 9px;
   letter-spacing: 0.13em;
-  color: #00a843;
+  color: var(--primary);
   font-weight: 850;
 }
+
 .recommendation h3 {
   font-size: 15px;
-  color: #171a1f;
+  line-height: 1.35;
+  color: var(--text);
   margin: 5px 0;
+  overflow-wrap: anywhere;
 }
+
 .recommendation p {
   font-size: 12px;
-  color: #69727d;
+  color: var(--muted);
   margin: 0;
+  line-height: 1.5;
 }
+
 .recommendation button {
   border: 0;
   background: transparent;
-  color: #00983e;
+  color: var(--primary-dark);
   font: inherit;
   font-size: 12px;
   font-weight: 800;
   cursor: pointer;
   white-space: nowrap;
+  flex: 0 0 auto;
+  transition:
+    color 160ms ease,
+    transform 160ms ease;
 }
+
+.recommendation button:hover {
+  color: var(--primary);
+  transform: translateX(2px);
+}
+
 .catalog {
   margin-top: 30px;
+  min-width: 0;
 }
+
 .sectionHead {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
+  gap: 16px;
   margin-bottom: 15px;
+  min-width: 0;
 }
+
+.sectionHead > div {
+  min-width: 0;
+}
+
 .sectionTitle {
   font-size: 22px;
+  line-height: 1.2;
   font-weight: 850;
   letter-spacing: -0.025em;
 }
+
 .sectionHead p {
   font-size: 12px;
-  color: #69727d;
+  color: var(--muted);
   margin: 5px 0 0;
+  line-height: 1.5;
 }
+
 .sectionHead > span {
   font-size: 11px;
-  color: #8a929b;
+  color: var(--muted-light);
+  white-space: nowrap;
+  flex: 0 0 auto;
 }
+
 .loading {
   min-height: 70vh;
   display: flex;
   align-items: center;
   justify-content: center;
 }
+
+@media (max-width: 1200px) {
+  .page {
+    width: calc(100% - 32px);
+  }
+}
+
 @media (max-width: 850px) {
   .page {
-    padding: 30px 18px 60px;
+    width: calc(100% - 32px);
+    padding: 30px 0 60px;
   }
+
   .hero {
     align-items: flex-start;
     flex-direction: column;
   }
+
   .hero h1 {
     font-size: 34px;
   }
+
   .learning {
     align-items: flex-start;
     flex-wrap: wrap;
   }
+
   .learningSteps {
     width: 100%;
     margin-left: 48px;
   }
+
   .recommendation {
     align-items: flex-start;
     flex-direction: column;
   }
+
   .recommendation button {
     padding: 0;
   }
+
   .sectionHead {
     align-items: flex-start;
-    gap: 10px;
     flex-direction: column;
+    gap: 10px;
   }
 }
 
-.loading {
-  min-height: 55vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  color: #69727d;
-}
+@media (max-width: 600px) {
+  .page {
+    width: calc(100% - 24px);
+    padding: 24px 0 48px;
+  }
 
-.errorState {
-  min-height: 60vh;
-  display: grid;
-  place-items: center;
-  padding: 32px 20px;
-}
+  .hero h1 {
+    font-size: 30px;
+  }
 
-.errorCard {
-  width: min(620px, 100%);
-  padding: 32px;
-  border: 1px solid #e1e5e8;
-  border-radius: 22px;
-  background: #fff;
-  box-shadow: 0 18px 45px rgba(20, 28, 36, 0.08);
-}
+  .hero p {
+    font-size: 13px;
+  }
 
-.errorCard h1 {
-  margin: 8px 0;
-  font-size: clamp(28px, 4vw, 42px);
-  letter-spacing: -0.04em;
-}
+  .learning {
+    padding: 14px;
+  }
 
-.errorCard p {
-  margin: 0;
-  color: #69727d;
-  line-height: 1.55;
-}
+  .learningSteps {
+    margin-left: 0;
+  }
 
-.errorActions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 22px;
-}
+  .learningSteps span {
+    flex: 1 1 auto;
+    text-align: center;
+  }
 
-.errorActions button {
-  border: 0;
-  border-radius: 12px;
-  padding: 12px 18px;
-  background: #00c853;
-  color: #fff;
-  font: inherit;
-  font-weight: 800;
-  cursor: pointer;
-}
+  .recommendation {
+    padding: 16px;
+  }
 
-.errorActions .secondaryButton {
-  background: #f1f3f4;
-  color: #20252a;
+  .sectionTitle {
+    font-size: 20px;
+  }
 }

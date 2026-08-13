@@ -12,7 +12,7 @@
 
 .header span,
 .position {
-  color: #00a843;
+  color: var(--primary);
   font-size: 9px;
   font-weight: 850;
   letter-spacing: 0.13em;
@@ -42,7 +42,7 @@
   min-width: 0;
   padding: 20px;
   flex-direction: column;
-  background: linear-gradient(145deg, #f2fff6, #fff 62%);
+  background: linear-gradient(135deg, #f1f4f5, var(--primary-soft));
   border-color: #dce9df;
 }
 

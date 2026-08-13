@@ -14,7 +14,15 @@
   height: 620px;
   right: -220px;
   top: -260px;
-  background: radial-gradient(circle, rgba(0, 200, 83, 0.11), transparent 68%);
+  .glow {
+    position: absolute;
+    width: 620px;
+    height: 620px;
+    right: -220px;
+    top: -260px;
+    background: radial-gradient(circle, rgba(0, 170, 255, 0.12), transparent 68%);
+    pointer-events: none;
+  }
 }
 .wrap {
   width: min(1040px, calc(100% - 40px));
@@ -37,7 +45,7 @@
   margin: 42px 0 34px;
 }
 .pitch span {
-  color: #00a843;
+  color: var(--primary);
 }
 .points {
   display: grid;
@@ -50,7 +58,7 @@
 }
 .points b {
   font-size: 10px;
-  color: #00a843;
+  color: var(--primary);
   letter-spacing: 0.1em;
 }
 .points span {

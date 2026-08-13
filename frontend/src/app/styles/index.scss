@@ -9,21 +9,51 @@
     BlinkMacSystemFont,
     'Segoe UI',
     sans-serif;
+
   color: #171a1f;
   background: #f6f7f8;
+
   font-synthesis: none;
   text-rendering: optimizeLegibility;
+
+  /* Base */
   --bg: #f6f7f8;
   --surface: #ffffff;
   --surface-muted: #f1f3f4;
+
+  /* Text */
   --text: #171a1f;
   --muted: #69727d;
+  --muted-light: #8a929b;
+
+  /* Borders */
   --border: #e3e6e8;
-  --green: #00c853;
-  --green-dark: #00a843;
-  --green-soft: #e9fbf0;
+  --border-strong: #d5dadd;
+
+  /* Primary / Avito blue */
+  --primary: #00aaff;
+  --primary-dark: #0095df;
+  --primary-soft: #e8f7ff;
+  --primary-border: #bfe9fa;
+
+  /* Compatibility aliases */
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-dark);
+  --color-primary-soft: var(--primary-soft);
+  --color-success: var(--primary);
+
+  /* Semantic states */
   --orange: #ffb020;
+  --orange-soft: #fff7df;
+
   --red: #e5484d;
+  --red-soft: #fff0f0;
+
+  /* Progress ring */
+  --summary-ring-bg: #f5f7f8;
+  --summary-ring-track: #dfe7eb;
+
+  --accent-orange: #ff6b35;
 }
 
 html,
@@ -41,11 +71,10 @@ input {
 }
 button:focus-visible,
 input:focus-visible {
-  outline: 3px solid rgba(0, 200, 83, 0.22);
-  outline-offset: 2px;
+  outline: 3px solid rgba(0, 170, 255, 0.25);
 }
 ::selection {
-  background: rgba(0, 200, 83, 0.18);
+  background: rgba(0, 170, 255, 0.18);
 }
 ::-webkit-scrollbar {
   width: 8px;

@@ -15,6 +15,6 @@
   color: #98a0a8;
 }
 .Input:focus {
-  border-color: #00c853;
-  box-shadow: 0 0 0 3px rgba(0, 200, 83, 0.1);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(0, 170, 255, 0.1);
 }

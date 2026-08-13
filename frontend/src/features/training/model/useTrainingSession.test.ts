@@ -1,6 +1,7 @@
 import { renderHook, act, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { useTrainingSession } from './useTrainingSession';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { getCounterpartTypingDelay, useTrainingSession } from './useTrainingSession';
+import { getAttemptSnapshot } from './storage';
 
 const navigate = vi.fn();
 const start = vi.fn();
@@ -46,6 +47,18 @@ beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
   start.mockReturnValue(resolved(startResult));
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+  vi.restoreAllMocks();
+});
+
+describe('getCounterpartTypingDelay', () => {
+  it('keeps the delay inside the configured range', () => {
+    expect(getCounterpartTypingDelay(() => 0)).toBe(800);
+    expect(getCounterpartTypingDelay(() => 1)).toBe(1800);
+  });
 });
 
 describe('useTrainingSession', () => {
@@ -150,7 +163,10 @@ describe('useTrainingSession', () => {
         feedback: { verdict: 'risky', text: 'Проверьте адрес сайта.' },
         reaction: [
           { author: 'user', text: 'Проверю адрес сайта.' },
+          { author: 'system', text: 'Адрес сайта проверяется.' },
           { author: 'counterpart', text: 'Почему вы так долго?' },
+          { author: 'system', text: 'Проверка завершена.' },
+          { author: 'counterpart', text: 'Давайте быстрее.' },
         ],
         next_scene: secondScene,
         finished: false,
@@ -159,22 +175,75 @@ describe('useTrainingSession', () => {
     );
     const { result } = renderHook(() => useTrainingSession('scenario-1'));
     await waitFor(() => expect(result.current.training).not.toBeNull());
+    vi.spyOn(Math, 'random').mockReturnValue(0);
+    vi.useFakeTimers();
 
     await act(async () => {
-      await result.current.chooseOption('safe');
+      void result.current.chooseOption('safe');
     });
-    expect(result.current.status).toBe('feedback');
+    expect(result.current.status).toBe('typing');
+    expect(result.current.isCounterpartTyping).toBe(true);
+    expect(result.current.feedback).toBeNull();
     expect(result.current.training?.scene.scene_id).toBe('scene-1');
     expect(result.current.messages.map(({ author, text }) => ({ author, text }))).toEqual([
       { author: 'counterpart', text: 'Начало' },
       { author: 'user', text: 'Проверю адрес сайта.' },
-      { author: 'counterpart', text: 'Почему вы так долго?' },
+      { author: 'system', text: 'Адрес сайта проверяется.' },
     ]);
-    expect(result.current.messages.at(-1)?.text).toBe('Почему вы так долго?');
+    expect(
+      getAttemptSnapshot('attempt-1')?.messages.map(({ author, text }) => ({ author, text })),
+    ).toEqual([
+      { author: 'counterpart', text: 'Начало' },
+      { author: 'user', text: 'Проверю адрес сайта.' },
+      { author: 'system', text: 'Адрес сайта проверяется.' },
+      { author: 'counterpart', text: 'Почему вы так долго?' },
+      { author: 'system', text: 'Проверка завершена.' },
+      { author: 'counterpart', text: 'Давайте быстрее.' },
+    ]);
+    expect(getAttemptSnapshot('attempt-1')?.revision).toBe(1);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(799);
+    });
+    expect(result.current.status).toBe('typing');
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1);
+    });
+    expect(result.current.status).toBe('feedback');
+    expect(result.current.isCounterpartTyping).toBe(false);
+    expect(result.current.messages.at(-1)?.text).toBe('Давайте быстрее.');
 
     act(() => result.current.continueAfterFeedback());
     expect(result.current.training?.scene.scene_id).toBe('scene-2');
     expect(result.current.status).toBe('active');
+  });
+
+  it('cancels the pending typing timer when unmounted', async () => {
+    choose.mockReturnValueOnce(
+      resolved({
+        feedback: { verdict: 'safe', text: 'Готово.' },
+        reaction: [
+          { author: 'user', text: 'Проверю.' },
+          { author: 'counterpart', text: 'Жду.' },
+        ],
+        next_scene: secondScene,
+        finished: false,
+        revision: 1,
+      }),
+    );
+    const { result, unmount } = renderHook(() => useTrainingSession('scenario-1'));
+    await waitFor(() => expect(result.current.training).not.toBeNull());
+    vi.useFakeTimers();
+
+    await act(async () => {
+      void result.current.chooseOption('safe');
+    });
+    expect(result.current.status).toBe('typing');
+    const timerCountWhileTyping = vi.getTimerCount();
+
+    unmount();
+    expect(vi.getTimerCount()).toBe(timerCountWhileTyping - 1);
   });
 
   it('recovers from a revision conflict by reloading the active attempt', async () => {

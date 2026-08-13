@@ -141,6 +141,7 @@ export interface ExperienceProgress {
 }
 
 export interface ProgressRecommendation {
+  role: Role;
   scenario_slug: string;
   reason_code: string;
   reason_text: string;

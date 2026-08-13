@@ -52,8 +52,8 @@ func TestProgressHandlerMapsRecommendations(t *testing.T) {
 
 	response := performRequest(t, progressStub{result: models.OverallProgress{
 		Recommendations: []models.Recommendation{
-			{ScenarioSlug: "active-attempt", ReasonCode: "ACTIVE_ATTEMPT", ReasonText: "Continue the active attempt."},
-			{ScenarioSlug: "low-score", ReasonCode: "LOW_BEST_SCORE", ReasonText: "Improve the best score."},
+			{Role: models.RoleBuyer, ScenarioSlug: "active-attempt", ReasonCode: "ACTIVE_ATTEMPT", ReasonText: "Continue the active attempt."},
+			{Role: models.RoleSeller, ScenarioSlug: "low-score", ReasonCode: "LOW_BEST_SCORE", ReasonText: "Improve the best score."},
 		},
 	}}, true)
 	if response.Code != http.StatusOK {
@@ -62,9 +62,10 @@ func TestProgressHandlerMapsRecommendations(t *testing.T) {
 
 	var body struct {
 		Recommendations []struct {
-			ScenarioSlug string `json:"scenario_slug"`
-			ReasonCode   string `json:"reason_code"`
-			ReasonText   string `json:"reason_text"`
+			Role         models.Role `json:"role"`
+			ScenarioSlug string      `json:"scenario_slug"`
+			ReasonCode   string      `json:"reason_code"`
+			ReasonText   string      `json:"reason_text"`
 		} `json:"recommendations"`
 	}
 	if err := json.Unmarshal(response.Body.Bytes(), &body); err != nil {
@@ -74,10 +75,10 @@ func TestProgressHandlerMapsRecommendations(t *testing.T) {
 	if len(body.Recommendations) != 2 {
 		t.Fatalf("recommendations = %+v", body.Recommendations)
 	}
-	if got := body.Recommendations[0]; got.ScenarioSlug != "active-attempt" || got.ReasonCode != "ACTIVE_ATTEMPT" || got.ReasonText != "Continue the active attempt." {
+	if got := body.Recommendations[0]; got.Role != models.RoleBuyer || got.ScenarioSlug != "active-attempt" || got.ReasonCode != "ACTIVE_ATTEMPT" || got.ReasonText != "Continue the active attempt." {
 		t.Fatalf("first recommendation = %+v", got)
 	}
-	if got := body.Recommendations[1]; got.ScenarioSlug != "low-score" || got.ReasonCode != "LOW_BEST_SCORE" || got.ReasonText != "Improve the best score." {
+	if got := body.Recommendations[1]; got.Role != models.RoleSeller || got.ScenarioSlug != "low-score" || got.ReasonCode != "LOW_BEST_SCORE" || got.ReasonText != "Improve the best score." {
 		t.Fatalf("second recommendation = %+v", got)
 	}
 }

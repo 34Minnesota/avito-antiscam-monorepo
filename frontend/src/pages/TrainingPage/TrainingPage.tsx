@@ -106,8 +106,12 @@ export const TrainingPage = () => {
               </div>
               <span className={cls.secure}>● защищённая тренировка</span>
             </div>
-            <TrainingChat messages={messages} counterpartName={training.counterpart.name} />
-            {feedback ? (
+            <TrainingChat
+              messages={messages}
+              counterpartName={training.counterpart.name}
+              isCounterpartTyping={session.isCounterpartTyping}
+            />
+            {status === 'typing' ? null : feedback ? (
               <DecisionFeedback
                 verdict={feedback.verdict}
                 text={feedback.text}

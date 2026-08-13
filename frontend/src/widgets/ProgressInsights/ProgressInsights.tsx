@@ -28,7 +28,6 @@ export const ProgressInsights = ({ progress, role, scenarios }: Props) => {
           <span>РОСТ НАВЫКА</span>
           <h2>Ваш прогресс в обучении</h2>
         </div>
-        <p>Опыт и уровни считаются сервером, а навыки — по результатам выбранной роли.</p>
       </div>
 
       <div className={cls.grid}>

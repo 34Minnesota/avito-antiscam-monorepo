@@ -13,7 +13,7 @@
 .dynamicCard > span {
   font-size: 9px;
   letter-spacing: 0.13em;
-  color: #00a843;
+  color: var(--primary);
   font-weight: 850;
 }
 .heading h2 {
@@ -38,7 +38,7 @@
   min-height: 158px;
 }
 .levelCard {
-  background: linear-gradient(135deg, #f1fff6, #fff);
+  background: linear-gradient(135deg, var(--primary-soft), #fff);
 }
 .cardTop {
   display: flex;
@@ -86,7 +86,7 @@
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: #00c853;
+  background: var(--primary);
 }
 .levelCard > p,
 .dynamicCard p,
@@ -175,7 +175,7 @@
 .achievementHead > div > span {
   font-size: 9px;
   letter-spacing: 0.13em;
-  color: #00a843;
+  color: var(--primary);
   font-weight: 850;
 }
 .achievementHead h3 {
@@ -225,11 +225,11 @@
   line-height: 1.35;
 }
 .achievement.earned {
-  border-color: #ccefdc;
-  background: #f3fff7;
+  border-color: #cbd2d6;
+  background: var(--primary-soft);
 }
 .achievement.earned > span {
-  background: #00c853;
+  background: var(--primary);
   color: #fff;
 }
 @media (max-width: 1000px) {

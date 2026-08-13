@@ -735,6 +735,9 @@ const docTemplate = `{
                 "reason_text": {
                     "type": "string"
                 },
+                "role": {
+                    "$ref": "#/definitions/models.Role"
+                },
                 "scenario_slug": {
                     "type": "string"
                 }

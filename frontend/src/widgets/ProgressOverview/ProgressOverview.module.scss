@@ -11,7 +11,7 @@
   overflow: hidden;
 }
 .hero {
-  background: linear-gradient(135deg, #fff, #f7fff9);
+  background: linear-gradient(135deg, #fff, --primary-soft);
 }
 .eyebrow,
 .historyEyebrow {
@@ -29,7 +29,7 @@
 }
 .percent small {
   font-size: 22px;
-  color: #00a843;
+  color: var(--primary);
 }
 .track {
   height: 7px;
@@ -40,7 +40,7 @@
 .track span {
   display: block;
   height: 100%;
-  background: #00c853;
+  background: var(--primary);
   border-radius: 99px;
   transition: width 0.35s ease;
 }
@@ -128,7 +128,7 @@
 }
 .historyMeta span {
   font-size: 11px;
-  color: #1d8a4a;
+  color: var(--primary);
 }
 .historyMeta small {
   font-size: 10px;
@@ -159,16 +159,16 @@
     grid-template-columns: 1fr;
   }
 }
-
+// e3e6e8
 .firstSafe {
   display: flex;
   align-items: center;
   gap: 9px;
   margin-top: 12px;
   padding: 9px 11px;
-  border: 1px solid #d7f1e1;
+  border: 1px solid #e3e6e8;
   border-radius: 10px;
-  background: #f5fff8;
+  background: var(--primary-soft);
 }
 .firstSafe > span {
   width: 24px;
@@ -176,7 +176,7 @@
   display: grid;
   place-items: center;
   border-radius: 7px;
-  background: #00c853;
+  background: var(--primary);
   color: #fff;
   font-weight: 800;
   font-size: 11px;

@@ -21,14 +21,14 @@
 .difficulty {
   font-size: 11px;
   letter-spacing: 2px;
-  color: #00a843;
+  color: var(--primary);
 }
 .icon {
   width: 50px;
   height: 50px;
   border-radius: 15px;
-  background: #effaf3;
-  color: #00a843;
+  background: --primary-soft;
+  color: var(--primary);
   display: flex;
   align-items: center;
   justify-content: center;

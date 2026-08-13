@@ -157,9 +157,9 @@ func TestGetRecommendationsUsesPriorityAndLimitsResults(t *testing.T) {
 	}
 
 	want := []models.Recommendation{
-		{ScenarioSlug: "active", ReasonCode: "ACTIVE_ATTEMPT"},
-		{ScenarioSlug: "failed-low", ReasonCode: "LOW_BEST_SCORE"},
-		{ScenarioSlug: "failed-high", ReasonCode: "LOW_BEST_SCORE"},
+		{Role: models.RoleBuyer, ScenarioSlug: "active", ReasonCode: "ACTIVE_ATTEMPT"},
+		{Role: models.RoleBuyer, ScenarioSlug: "failed-low", ReasonCode: "LOW_BEST_SCORE"},
+		{Role: models.RoleBuyer, ScenarioSlug: "failed-high", ReasonCode: "LOW_BEST_SCORE"},
 	}
 	assertRecommendations(t, result.Recommendations, want)
 }
@@ -179,8 +179,8 @@ func TestGetRecommendationsBreaksScoreTiesBySlug(t *testing.T) {
 	}
 
 	want := []models.Recommendation{
-		{ScenarioSlug: "alpha", ReasonCode: "LOW_BEST_SCORE"},
-		{ScenarioSlug: "zeta", ReasonCode: "LOW_BEST_SCORE"},
+		{Role: models.RoleBuyer, ScenarioSlug: "alpha", ReasonCode: "LOW_BEST_SCORE"},
+		{Role: models.RoleBuyer, ScenarioSlug: "zeta", ReasonCode: "LOW_BEST_SCORE"},
 	}
 	assertRecommendations(t, result.Recommendations, want)
 }
@@ -203,9 +203,41 @@ func TestGetRecommendationsSuggestsNotStartedThenPassedScenarios(t *testing.T) {
 	}
 
 	want := []models.Recommendation{
-		{ScenarioSlug: "not-started-a", ReasonCode: "NOT_STARTED"},
-		{ScenarioSlug: "not-started-b", ReasonCode: "NOT_STARTED"},
-		{ScenarioSlug: "passed-low", ReasonCode: "REPEAT_FOR_REINFORCEMENT"},
+		{Role: models.RoleBuyer, ScenarioSlug: "not-started-a", ReasonCode: "NOT_STARTED"},
+		{Role: models.RoleBuyer, ScenarioSlug: "not-started-b", ReasonCode: "NOT_STARTED"},
+		{Role: models.RoleBuyer, ScenarioSlug: "passed-low", ReasonCode: "REPEAT_FOR_REINFORCEMENT"},
+	}
+	assertRecommendations(t, result.Recommendations, want)
+}
+
+func TestGetRecommendationsLimitsEachRoleSeparately(t *testing.T) {
+	t.Parallel()
+
+	activeBuyer := uuid.New()
+	activeSeller := uuid.New()
+	repo := &repositoryStub{snapshot: models.ProgressSnapshot{Scenarios: []models.ScenarioProgress{
+		{ID: uuid.New(), Slug: "buyer-active", Title: "Buyer active", Role: models.RoleBuyer, ActiveAttemptID: &activeBuyer},
+		{ID: uuid.New(), Slug: "buyer-a", Title: "Buyer A", Role: models.RoleBuyer},
+		{ID: uuid.New(), Slug: "buyer-b", Title: "Buyer B", Role: models.RoleBuyer},
+		{ID: uuid.New(), Slug: "buyer-c", Title: "Buyer C", Role: models.RoleBuyer},
+		{ID: uuid.New(), Slug: "seller-active", Title: "Seller active", Role: models.RoleSeller, ActiveAttemptID: &activeSeller},
+		{ID: uuid.New(), Slug: "seller-a", Title: "Seller A", Role: models.RoleSeller},
+		{ID: uuid.New(), Slug: "seller-b", Title: "Seller B", Role: models.RoleSeller},
+		{ID: uuid.New(), Slug: "seller-c", Title: "Seller C", Role: models.RoleSeller},
+	}}}
+
+	result, err := progress_service.NewService(repo).Get(context.Background(), mustUserID(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := []models.Recommendation{
+		{Role: models.RoleBuyer, ScenarioSlug: "buyer-active", ReasonCode: "ACTIVE_ATTEMPT"},
+		{Role: models.RoleBuyer, ScenarioSlug: "buyer-a", ReasonCode: "NOT_STARTED"},
+		{Role: models.RoleBuyer, ScenarioSlug: "buyer-b", ReasonCode: "NOT_STARTED"},
+		{Role: models.RoleSeller, ScenarioSlug: "seller-active", ReasonCode: "ACTIVE_ATTEMPT"},
+		{Role: models.RoleSeller, ScenarioSlug: "seller-a", ReasonCode: "NOT_STARTED"},
+		{Role: models.RoleSeller, ScenarioSlug: "seller-b", ReasonCode: "NOT_STARTED"},
 	}
 	assertRecommendations(t, result.Recommendations, want)
 }
@@ -364,7 +396,7 @@ func assertRecommendations(t *testing.T, actual, want []models.Recommendation) {
 	}
 	for index, expected := range want {
 		got := actual[index]
-		if got.ScenarioSlug != expected.ScenarioSlug || got.ReasonCode != expected.ReasonCode {
+		if got.Role != expected.Role || got.ScenarioSlug != expected.ScenarioSlug || got.ReasonCode != expected.ReasonCode {
 			t.Fatalf("recommendation[%d] = %+v, want slug %q and reason %q", index, got, expected.ScenarioSlug, expected.ReasonCode)
 		}
 		if got.ReasonText == "" {

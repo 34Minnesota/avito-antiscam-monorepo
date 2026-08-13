@@ -7,6 +7,7 @@ import { isUnauthorized } from '@/shared/api/errors';
 import { RoleSwitcher } from '@/features/roleSwitcher';
 import { ProgressOverview } from '@/widgets/ProgressOverview/ProgressOverview';
 import { ProgressInsights } from '@/widgets/ProgressInsights/ProgressInsights';
+import { ProgressRecommendations } from '@/widgets/ProgressRecommendations/ProgressRecommendations';
 import { ScenarioCatalog } from '@/widgets/ScenarioCatalog/ScenarioCatalog';
 import { AppHeader } from '@/widgets/AppHeader/AppHeader';
 import { Loader } from '@/shared/ui/Loader';
@@ -101,13 +102,6 @@ export const DashboardPage = () => {
 
   const roleProgress = progress.roles.find((item) => item.role === role);
   const scenarios = catalog?.scenarios ?? [];
-  const recommendation =
-    progress.recommendations.find((item) =>
-      roleProgress?.scenarios.some((scenario) => scenario.scenario_slug === item.scenario_slug),
-    ) ?? progress.recommendations[0];
-  const recommendationScenario = catalog?.scenarios.find(
-    (item) => item.slug === recommendation?.scenario_slug,
-  );
 
   return (
     <>
@@ -145,28 +139,12 @@ export const DashboardPage = () => {
           </div>
         </section>
 
-        {recommendation && recommendationScenario && (
-          <section className={cls.recommendation} aria-label="Рекомендованная тренировка">
-            <div>
-              <span>СЛЕДУЮЩИЙ ШАГ</span>
-              <h3>{recommendation.reason_text}</h3>
-              <p>
-                Рекомендация основана на вашем прогрессе и помогает закрыть следующий пробел в
-                навыках.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => navigate(`/training/${recommendationScenario.id}`)}
-            >
-              {recommendation.reason_code === 'ACTIVE_ATTEMPT'
-                ? 'Продолжить тренировку →'
-                : recommendation.reason_code === 'REPEAT_FOR_REINFORCEMENT'
-                  ? 'Повторить сценарий →'
-                  : 'Начать тренировку →'}
-            </button>
-          </section>
-        )}
+        <ProgressRecommendations
+          role={role}
+          recommendations={progress.recommendations}
+          scenarios={scenarios}
+          onStart={(scenario) => navigate(`/training/${scenario.id}`)}
+        />
 
         <section className={cls.catalog}>
           <div className={cls.sectionHead}>

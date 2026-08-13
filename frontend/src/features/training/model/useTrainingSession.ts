@@ -8,8 +8,16 @@ import { getAttemptSnapshot, saveAttemptScenario, saveAttemptSnapshot } from './
 import { withStableMessageIds } from '@/shared/lib/chat/messageIds';
 
 export type TrainingStatus =
-  'starting' | 'active' | 'feedback' | 'submitting' | 'finished' | 'error';
+  'starting' | 'active' | 'feedback' | 'submitting' | 'typing' | 'finished' | 'error';
 export type TrainingFeedback = { verdict: Verdict; text: string };
+
+const TYPING_DELAY_MIN_MS = 800;
+const TYPING_DELAY_RANGE_MS = 1000;
+
+export const getCounterpartTypingDelay = (random: () => number = Math.random) => {
+  const normalizedRandom = Math.min(1, Math.max(0, random()));
+  return Math.round(TYPING_DELAY_MIN_MS + normalizedRandom * TYPING_DELAY_RANGE_MS);
+};
 
 export const useTrainingSession = (scenarioId?: string) => {
   const navigate = useNavigate();
@@ -23,6 +31,33 @@ export const useTrainingSession = (scenarioId?: string) => {
   const [status, setStatus] = useState<TrainingStatus>('starting');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const startedFor = useRef<string | null>(null);
+  const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const resolveTyping = useRef<((active: boolean) => void) | null>(null);
+  const typingRun = useRef(0);
+
+  const cancelTyping = useCallback(() => {
+    typingRun.current += 1;
+    if (typingTimer.current) {
+      clearTimeout(typingTimer.current);
+      typingTimer.current = null;
+    }
+    resolveTyping.current?.(false);
+    resolveTyping.current = null;
+  }, []);
+
+  const waitForCounterpart = useCallback(() => {
+    const run = ++typingRun.current;
+    return new Promise<boolean>((resolve) => {
+      resolveTyping.current = resolve;
+      typingTimer.current = setTimeout(() => {
+        typingTimer.current = null;
+        resolveTyping.current = null;
+        resolve(run === typingRun.current);
+      }, getCounterpartTypingDelay());
+    });
+  }, []);
+
+  useEffect(() => cancelTyping, [cancelTyping, scenarioId]);
 
   const restore = useCallback(
     (result: StartResult) => {
@@ -59,6 +94,7 @@ export const useTrainingSession = (scenarioId?: string) => {
 
   const startSession = useCallback(async () => {
     if (!scenarioId || !getSessionId()) return;
+    cancelTyping();
     setStatus('starting');
     setErrorMessage(null);
     try {
@@ -73,7 +109,7 @@ export const useTrainingSession = (scenarioId?: string) => {
       setStatus('error');
       setErrorMessage('Не удалось открыть сценарий. Вернитесь к каталогу и попробуйте ещё раз.');
     }
-  }, [navigate, restore, scenarioId, start]);
+  }, [cancelTyping, navigate, restore, scenarioId, start]);
 
   useEffect(() => {
     if (!scenarioId || !getSessionId()) return;
@@ -84,8 +120,7 @@ export const useTrainingSession = (scenarioId?: string) => {
 
   const chooseOption = useCallback(
     async (optionId: string) => {
-      if (!training || status === 'submitting' || status === 'feedback' || status === 'finished')
-        return;
+      if (!training || status !== 'active') return;
       const currentAttemptId = training.attempt_id;
       setStatus('submitting');
       setErrorMessage(null);
@@ -98,19 +133,30 @@ export const useTrainingSession = (scenarioId?: string) => {
           expectedRevision: getAttemptSnapshot(currentAttemptId)?.revision ?? 0,
         }).unwrap();
 
-        const reaction = (result.reaction ?? []).filter((message) => message.text.trim().length > 0);
-        const withReaction = withStableMessageIds(
-          [...messages, ...reaction],
-          currentAttemptId,
+        const reaction = (result.reaction ?? []).filter(
+          (message) => message.text.trim().length > 0,
         );
-        setMessages(withReaction);
-        setFeedback(result.feedback);
+        const withReaction = withStableMessageIds([...messages, ...reaction], currentAttemptId);
+        const firstCounterpartIndex = reaction.findIndex(
+          (message) => message.author === 'counterpart',
+        );
         saveAttemptSnapshot(currentAttemptId, {
           sceneNumber,
           sceneId: training.scene.scene_id,
           messages: withReaction,
           revision: result.revision,
         });
+
+        if (firstCounterpartIndex >= 0) {
+          setMessages(withReaction.slice(0, messages.length + firstCounterpartIndex));
+          setFeedback(null);
+          setStatus('typing');
+          const active = await waitForCounterpart();
+          if (!active) return;
+        }
+
+        setMessages(withReaction);
+        setFeedback(result.feedback);
 
         if (result.finished) {
           setStatus('finished');
@@ -139,7 +185,7 @@ export const useTrainingSession = (scenarioId?: string) => {
         setErrorMessage('Не удалось сохранить выбор. Проверьте соединение и попробуйте ещё раз.');
       }
     },
-    [choose, messages, navigate, sceneNumber, startSession, status, training],
+    [choose, messages, navigate, sceneNumber, startSession, status, training, waitForCounterpart],
   );
 
   const continueAfterFeedback = useCallback(() => {
@@ -173,6 +219,7 @@ export const useTrainingSession = (scenarioId?: string) => {
     sceneNumber,
     feedback,
     status,
+    isCounterpartTyping: status === 'typing',
     errorMessage,
     chooseOption,
     continueAfterFeedback,

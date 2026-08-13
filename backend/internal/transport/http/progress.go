@@ -126,9 +126,10 @@ type roleComparisonResponse struct {
 }
 
 type recommendationResponse struct {
-	ScenarioSlug string `json:"scenario_slug"`
-	ReasonCode   string `json:"reason_code"`
-	ReasonText   string `json:"reason_text"`
+	Role         models.Role `json:"role"`
+	ScenarioSlug string      `json:"scenario_slug"`
+	ReasonCode   string      `json:"reason_code"`
+	ReasonText   string      `json:"reason_text"`
 }
 
 type achievementResponse struct {
@@ -207,6 +208,7 @@ func mapAchievement(achievement models.Achievement) achievementResponse {
 
 func mapRecommendation(recommendation models.Recommendation) recommendationResponse {
 	return recommendationResponse{
+		Role:         recommendation.Role,
 		ScenarioSlug: recommendation.ScenarioSlug,
 		ReasonCode:   recommendation.ReasonCode,
 		ReasonText:   recommendation.ReasonText,

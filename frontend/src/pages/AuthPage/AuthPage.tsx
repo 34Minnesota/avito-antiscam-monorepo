@@ -195,11 +195,6 @@ export const AuthPage = () => {
                 {loading ? 'Проверяем…' : register ? 'Создать аккаунт →' : 'Войти →'}
               </Button>
             </form>
-
-            <div className={cls.hint}>
-              Прогресс хранится на сервере. Session ID используется только для доступа к вашим
-              тренировкам.
-            </div>
           </div>
         </div>
       </div>
